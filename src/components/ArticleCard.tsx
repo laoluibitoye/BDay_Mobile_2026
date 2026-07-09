@@ -1,0 +1,80 @@
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { Article } from '../data/types';
+import { authors } from '../data/mock';
+import { useAppState } from '../state/AppState';
+import { layout, radius, space, type, useTheme } from '../theme';
+import { LiveBadge, PremiumBadge } from './Badge';
+
+type Props = {
+  article: Article;
+  onPress: () => void;
+  onListen?: () => void;
+  onShare?: () => void;
+};
+
+export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
+  const { theme } = useTheme();
+  const { savedArticleIds, toggleSaved } = useAppState();
+  const author = authors.find((a) => a.id === article.authorId);
+  const isSaved = savedArticleIds.includes(article.id);
+
+  return (
+    <Pressable onPress={onPress} style={[styles.card, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
+      <View style={[styles.hero, { backgroundColor: article.heroColor }]} />
+      <View style={styles.body}>
+        {article.isLive ? <LiveBadge /> : article.isPremium ? <PremiumBadge /> : null}
+        <Text style={[type.articleHeadline, { color: theme.ink, marginTop: space.sm }]} numberOfLines={3}>
+          {article.headline}
+        </Text>
+        <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]} numberOfLines={2}>
+          {article.dek}
+        </Text>
+        <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.sm }]}>
+          {author?.name.toUpperCase()} · {article.publishedAt} · {article.readTime}
+        </Text>
+        <View style={styles.toolbar}>
+          <Pressable
+            hitSlop={(layout.touchTarget - 20) / 2}
+            style={styles.toolbarItem}
+            onPress={onListen}
+            accessibilityLabel="Listen to this article"
+          >
+            <Feather name="headphones" size={20} color={theme.inkMuted} />
+          </Pressable>
+          <Pressable hitSlop={(layout.touchTarget - 20) / 2} style={styles.toolbarItem} accessibilityLabel="Comments">
+            <Feather name="message-circle" size={20} color={theme.inkMuted} />
+            {typeof article.commentCount === 'number' && (
+              <Text style={[type.caption, { color: theme.inkMuted, marginLeft: 4 }]}>{article.commentCount}</Text>
+            )}
+          </Pressable>
+          <Pressable
+            hitSlop={(layout.touchTarget - 20) / 2}
+            style={styles.toolbarItem}
+            onPress={() => toggleSaved(article.id)}
+            accessibilityLabel={isSaved ? 'Remove from saved' : 'Save article'}
+          >
+            <Feather name="bookmark" size={20} color={isSaved ? theme.accent : theme.inkMuted} />
+          </Pressable>
+          <Pressable
+            hitSlop={(layout.touchTarget - 20) / 2}
+            style={styles.toolbarItem}
+            onPress={onShare}
+            accessibilityLabel="Share article"
+          >
+            <Feather name="share" size={20} color={theme.inkMuted} />
+          </Pressable>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { borderWidth: 1, borderRadius: radius.card, overflow: 'hidden', marginBottom: space.lg },
+  hero: { height: 190 },
+  body: { padding: space.lg },
+  toolbar: { flexDirection: 'row', gap: space.lg, marginTop: space.md },
+  toolbarItem: { flexDirection: 'row', alignItems: 'center' },
+});
