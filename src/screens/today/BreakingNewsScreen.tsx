@@ -13,7 +13,13 @@ export function BreakingNewsScreen({ navigation }: Props) {
   const { theme } = useTheme();
   return (
     <View style={[styles.container, { backgroundColor: theme.ink }]}>
-      <Pressable style={styles.close} onPress={() => navigation.goBack()}>
+      <Pressable
+        style={styles.close}
+        onPress={() => navigation.goBack()}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        hitSlop={8}
+      >
         <Feather name="x" size={24} color={theme.bg} />
       </Pressable>
       <LiveBadge />

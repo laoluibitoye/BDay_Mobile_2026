@@ -1,10 +1,11 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { Button } from '../../components/Button';
 import { subscriptionPlans } from '../../data/mock';
 import { useAppState } from '../../state/AppState';
+import { confirmCancelSubscription } from '../../lib/confirmCancelSubscription';
 import { radius, space, type, useTheme } from '../../theme';
 
 export function SubscriptionPlansScreen() {
@@ -52,11 +53,12 @@ export function SubscriptionPlansScreen() {
 
         <View style={{ marginTop: space.xl }}>
           {isSubscribed ? (
-            <Pressable onPress={() => setSubscribed(false)}>
-              <Text style={[type.bodyUI, { color: theme.accentDeep, textAlign: 'center' }]}>
-                Cancel subscription
-              </Text>
-            </Pressable>
+            <Button
+              label="Cancel subscription"
+              variant="secondary"
+              onPress={() => confirmCancelSubscription(() => setSubscribed(false))}
+              fullWidth
+            />
           ) : (
             <Button label="Subscribe" onPress={() => setSubscribed(true)} fullWidth />
           )}

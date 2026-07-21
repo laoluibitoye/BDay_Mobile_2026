@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { radius, space, type, useTheme } from '../theme';
 
 type Props = {
@@ -7,30 +7,41 @@ type Props = {
   onPress?: () => void;
   variant?: 'primary' | 'secondary';
   fullWidth?: boolean;
+  disabled?: boolean;
+  loading?: boolean;
 };
 
-export function Button({ label, onPress, variant = 'primary', fullWidth }: Props) {
+export function Button({ label, onPress, variant = 'primary', fullWidth, disabled, loading }: Props) {
   const { theme } = useTheme();
   const isPrimary = variant === 'primary';
+  const isDisabled = disabled || loading;
   return (
     <Pressable
-      onPress={onPress}
+      onPress={isDisabled ? undefined : onPress}
+      disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={({ pressed }) => [
         styles.base,
         fullWidth && { alignSelf: 'stretch' },
         isPrimary
           ? { backgroundColor: pressed ? theme.accentDeep : theme.accent }
           : { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.rule },
+        isDisabled && { opacity: 0.5 },
       ]}
     >
-      <Text
-        style={[
-          type.label,
-          { color: isPrimary ? '#fff' : theme.ink, textAlign: 'center' },
-        ]}
-      >
-        {label}
-      </Text>
+      {loading ? (
+        <ActivityIndicator color={isPrimary ? '#fff' : theme.ink} size="small" />
+      ) : (
+        <Text
+          style={[
+            type.label,
+            { color: isPrimary ? '#fff' : theme.ink, textAlign: 'center' },
+          ]}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -42,5 +53,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 44,
   },
 });

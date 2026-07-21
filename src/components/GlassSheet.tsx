@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { elevation, glassBlur, radius, useTheme } from '../theme';
+import { useBlurTarget } from './BlurTargetContext';
 
 type Props = {
   children: React.ReactNode;
@@ -16,26 +17,33 @@ type Props = {
 // modal); `card` rounds all four (inline card sitting in a scroll view).
 export function GlassSheet({ children, variant = 'sheet', style }: Props) {
   const { theme, mode } = useTheme();
+  const blurTarget = useBlurTarget();
   const cornerRadius = variant === 'sheet' ? radius.card * 2 : radius.card;
   const shape: ViewStyle =
     variant === 'sheet'
       ? { borderTopLeftRadius: cornerRadius, borderTopRightRadius: cornerRadius }
       : { borderRadius: cornerRadius };
 
-  const Wrapper = Platform.OS === 'ios' ? BlurView : View;
+  // See `GlobalTabBar` for why Android needs `blurMethod` + `blurTarget` for a real blur instead
+  // of the flat-tint fallback `BlurView` otherwise renders there.
   const wrapperProps =
-    Platform.OS === 'ios'
-      ? { intensity: glassBlur.chrome, tint: (mode === 'dark' ? 'dark' : 'light') as 'dark' | 'light' }
-      : {};
+    Platform.OS === 'android'
+      ? {
+          blurMethod: 'dimezisBlurViewSdk31Plus' as const,
+          blurTarget,
+          intensity: glassBlur.chrome,
+          tint: (mode === 'dark' ? 'dark' : 'light') as 'dark' | 'light',
+        }
+      : { intensity: glassBlur.chrome, tint: (mode === 'dark' ? 'dark' : 'light') as 'dark' | 'light' };
 
   return (
     <View style={[shape, elevation.raised]}>
-      <Wrapper
+      <BlurView
         {...wrapperProps}
         style={[shape, styles.base, { borderColor: theme.glassChromeBorder, backgroundColor: theme.glassChromeFill }, style]}
       >
         {children}
-      </Wrapper>
+      </BlurView>
     </View>
   );
 }

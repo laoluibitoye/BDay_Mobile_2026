@@ -20,8 +20,10 @@ export type Article = {
   readTime: string;
   body: string[];
   heroColor: string;
+  imageUrl?: string; // real photo, when present — falls back to heroColor when absent/loading/errored
   isBrief?: boolean;
   commentCount?: number;
+  tags?: string[]; // secondary taxonomy tags, in addition to `section` — powers the Explore tag cloud
 };
 
 export type MarketQuote = {
@@ -39,6 +41,7 @@ export type PodcastEpisode = {
   duration: string;
   publishedAt: string;
   isDailyBriefing?: boolean;
+  artworkUrl?: string;
 };
 
 export type VideoItem = {
@@ -47,6 +50,18 @@ export type VideoItem = {
   channel: string;
   duration: string;
   playlist: string;
+  thumbnailUrl?: string;
+};
+
+export type ShortVideoItem = {
+  id: string;
+  title: string;
+  description: string;
+  channel: string;
+  duration: string;
+  thumbnailUrl?: string;
+  likeCount: number;
+  commentCount: number;
 };
 
 export type GameEntry = {
@@ -63,6 +78,7 @@ export type NotificationItem = {
   title: string;
   body: string;
   receivedAt: string;
+  articleId?: string; // present when the notification deep-links to an article
 };
 
 export type NewsletterIssue = {
@@ -70,6 +86,8 @@ export type NewsletterIssue = {
   title: string;
   summary: string;
   sentAt: string;
+  latestEditionSubject: string; // headline of the most recent issue
+  latestEditionBody: string[]; // full text of the most recent issue, shown in "View latest edition"
 };
 
 export type TodayModule =
@@ -107,7 +125,16 @@ export type Invoice = {
   date: string;
   description: string;
   amount: string;
-  status: 'Paid' | 'Refunded';
+  status: 'Paid' | 'Refunded' | 'Failed';
+};
+
+export type Comment = {
+  id: string;
+  articleId: string;
+  author: string;
+  avatarColor: string;
+  body: string;
+  postedAt: string;
 };
 
 export type QuizQuestion = {

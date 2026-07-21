@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
+import { useAppState, Edition } from '../../state/AppState';
 import { radius, space, type, useTheme } from '../../theme';
 
-const EDITIONS = [
+const EDITIONS: { id: Edition; label: string; note: string }[] = [
   { id: 'nigeria', label: 'Nigeria', note: 'Local markets, naira FX, and NGX coverage first.' },
   { id: 'africa', label: 'Africa', note: 'Pan-African business news, regional markets.' },
   { id: 'global', label: 'Global', note: 'International markets and world business news.' },
-] as const;
+];
 
 export function EditionRegionScreen() {
   const { theme } = useTheme();
-  const [edition, setEdition] = useState<string>('nigeria');
+  const { edition, setEdition } = useAppState();
 
   return (
     <Screen header={<AppHeader variant="compact" title="Edition & region" showBack />}>
@@ -27,6 +28,9 @@ export function EditionRegionScreen() {
             <Pressable
               key={e.id}
               onPress={() => setEdition(e.id)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active, checked: active }}
+              accessibilityLabel={e.label}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',

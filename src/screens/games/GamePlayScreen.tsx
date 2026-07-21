@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
@@ -24,6 +26,7 @@ export function GamePlayScreen({ route }: Props) {
 
 function QuizPlay() {
   const { theme } = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [pickedIndex, setPickedIndex] = useState<number | null>(null);
@@ -51,6 +54,9 @@ function QuizPlay() {
         <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs, textAlign: 'center' }]}>
           Nice work — come back tomorrow to keep your streak alive.
         </Text>
+        <View style={{ marginTop: space.xl, alignSelf: 'stretch', gap: space.sm }}>
+          <Button label="Back to Games" onPress={() => navigation.goBack()} fullWidth />
+        </View>
       </View>
     );
   }
@@ -74,10 +80,20 @@ function QuizPlay() {
                 ? theme.accent
                 : theme.rule
             : theme.rule;
+          const resultLabel = revealed
+            ? isCorrect
+              ? `${opt}, correct answer`
+              : isPicked
+                ? `${opt}, your answer, incorrect`
+                : opt
+            : opt;
           return (
             <Pressable
               key={opt}
               onPress={() => pick(i)}
+              disabled={revealed}
+              accessibilityRole="button"
+              accessibilityLabel={resultLabel}
               style={{
                 borderWidth: 1,
                 borderColor,

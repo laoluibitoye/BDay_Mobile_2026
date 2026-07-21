@@ -1,10 +1,11 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { Article } from '../data/types';
 import { authors } from '../data/mock';
 import { useAppState } from '../state/AppState';
 import { layout, radius, space, type, useTheme } from '../theme';
+import { ArticleImage } from './ArticleImage';
 import { LiveBadge, PremiumBadge } from './Badge';
 
 type Props = {
@@ -22,7 +23,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
 
   return (
     <Pressable onPress={onPress} style={[styles.card, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
-      <View style={[styles.hero, { backgroundColor: article.heroColor }]} />
+      <ArticleImage article={article} style={styles.hero} />
       <View style={styles.body}>
         {article.isLive ? <LiveBadge /> : article.isPremium ? <PremiumBadge /> : null}
         <Text style={[type.articleHeadline, { color: theme.ink, marginTop: space.sm }]} numberOfLines={3}>
@@ -55,7 +56,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
             onPress={() => toggleSaved(article.id)}
             accessibilityLabel={isSaved ? 'Remove from saved' : 'Save article'}
           >
-            <Feather name="bookmark" size={20} color={isSaved ? theme.accent : theme.inkMuted} />
+            <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={isSaved ? theme.accent : theme.inkMuted} />
           </Pressable>
           <Pressable
             hitSlop={(layout.touchTarget - 20) / 2}

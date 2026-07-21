@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,7 +25,18 @@ export function GamesScreen() {
           {games.map((game) => (
             <Pressable
               key={game.id}
-              onPress={() => navigation.navigate('GamePlay', { gameId: game.id })}
+              onPress={() => {
+                if (game.playedToday) {
+                  Alert.alert('Play again?', "You've already completed this today. Replay for practice?", [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Replay', onPress: () => navigation.navigate('GamePlay', { gameId: game.id }) },
+                  ]);
+                } else {
+                  navigation.navigate('GamePlay', { gameId: game.id });
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`${game.title}, ${game.playedToday ? 'completed today' : 'not played yet today'}, ${game.streak} day streak`}
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -48,7 +59,7 @@ export function GamesScreen() {
                 }}
               >
                 <Feather
-                  name={game.kind === 'crossword' ? 'grid' : 'zap'}
+                  name={game.kind === 'crossword' ? 'hash' : 'zap'}
                   size={22}
                   color={theme.accentDeep}
                 />

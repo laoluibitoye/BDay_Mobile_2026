@@ -1,18 +1,56 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { Button } from '../../components/Button';
-import { space, type, useTheme } from '../../theme';
+import { radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
 export function AuthScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
   const isSignup = route.params.mode === 'signup';
+  const [showEmailStep, setShowEmailStep] = useState(false);
+  const [email, setEmail] = useState('');
 
   const proceed = () => navigation.navigate('PersonaSelection');
+
+  if (showEmailStep) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.bg }]}>
+        <Text style={[type.articleHeadline, { color: theme.ink }]}>
+          {isSignup ? "What's your email?" : 'Enter your email'}
+        </Text>
+        <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm }]}>
+          We'll send a secure sign-in link — no password to create or remember.
+        </Text>
+
+        <View style={{ marginTop: space.xl }}>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="you@example.com"
+            placeholderTextColor={theme.inkFaint}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoFocus
+            style={[styles.input, { borderColor: theme.rule, color: theme.ink }]}
+          />
+          <View style={{ marginTop: space.lg }}>
+            <Button label="Send sign-in link" disabled={!email.includes('@')} onPress={proceed} fullWidth />
+          </View>
+        </View>
+
+        <Text
+          style={[type.bodyUI, { color: theme.inkMuted, textAlign: 'center', marginTop: space.xxl }]}
+          onPress={() => setShowEmailStep(false)}
+        >
+          Back
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -28,7 +66,7 @@ export function AuthScreen({ navigation, route }: Props) {
       <View style={{ marginTop: space.xxl, gap: space.md }}>
         <SocialButton icon="chrome" label="Continue with Google" onPress={proceed} theme={theme} />
         <SocialButton icon="smartphone" label="Continue with Apple" onPress={proceed} theme={theme} />
-        <SocialButton icon="mail" label="Continue with Email" onPress={proceed} theme={theme} />
+        <SocialButton icon="mail" label="Continue with Email" onPress={() => setShowEmailStep(true)} theme={theme} />
       </View>
 
       <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.xl, textAlign: 'center' }]}>
@@ -68,13 +106,19 @@ function SocialButton({
   theme: ReturnType<typeof useTheme>['theme'];
 }) {
   return (
-    <View
-      style={[styles.socialButton, { borderColor: theme.rule }]}
-      onTouchEnd={onPress}
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.socialButton,
+        { borderColor: theme.rule },
+        pressed && { backgroundColor: theme.bgCard },
+      ]}
     >
       <Feather name={icon} size={18} color={theme.ink} />
       <Text style={[type.label, { color: theme.ink }]}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -88,5 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: space.md,
     paddingHorizontal: space.lg,
+    minHeight: 44,
   },
+  input: { borderWidth: 1, borderRadius: radius.button, paddingVertical: space.md, paddingHorizontal: space.lg },
 });

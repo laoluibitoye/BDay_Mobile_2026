@@ -7,6 +7,7 @@ import { ThemeProvider } from './src/theme';
 import { useAppFonts } from './src/theme/useAppFonts';
 import { AppStateProvider } from './src/state/AppState';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { navigationRef } from './src/navigation/navigationRef';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -31,7 +32,7 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AppStateProvider>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <StatusBar style="auto" />
             <RootNavigator />
           </NavigationContainer>

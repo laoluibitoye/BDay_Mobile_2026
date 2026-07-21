@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Splash: undefined;
   Onboarding: undefined;
@@ -5,19 +7,15 @@ export type RootStackParamList = {
   AccountRecovery: undefined;
   PersonaSelection: undefined;
   InterestPicker: undefined;
-  Main: undefined;
+  Main: NavigatorScreenParams<MainTabParamList> | undefined;
   ArticleReader: { articleId: string };
   Paywall: undefined;
   Search: undefined;
   Notifications: undefined;
   NotificationPreferences: undefined;
-  Newsletters: undefined;
   SubscriptionPlans: undefined;
   ManageSubscription: undefined;
   BillingHistory: undefined;
-  Saved: undefined;
-  Downloads: undefined;
-  ReadingHistory: undefined;
   Profile: undefined;
   AccountSecurity: undefined;
   FeedSettings: undefined;
@@ -34,16 +32,18 @@ export type RootStackParamList = {
   TodaysPaper: undefined;
   BreakingNews: undefined;
   GamePlay: { gameId: string };
+  Markets: undefined;
+  MarketDetail: { symbol: string };
+  NewsletterIssue: { newsletterId: string };
   Watchlist: undefined;
-  GiftArticle: { articleId: string };
-  You: undefined;
+  Settings: undefined;
   Language: undefined;
 };
 
 export type MainTabParamList = {
-  Today: undefined;
-  Explore: undefined;
+  Home: undefined;
   WatchListen: undefined;
   Games: undefined;
-  Markets: undefined;
+  Latest: undefined;
+  ForYou: undefined;
 };

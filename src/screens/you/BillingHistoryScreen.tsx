@@ -1,9 +1,17 @@
 import React from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { Alert, FlatList, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
+import { ListRow } from '../../components/ListRow';
 import { invoices } from '../../data/mock';
-import { radius, space, type, useTheme } from '../../theme';
+import { Invoice } from '../../data/types';
+import { space, type, useTheme } from '../../theme';
+
+function statusColor(status: Invoice['status'], theme: ReturnType<typeof useTheme>['theme']) {
+  if (status === 'Paid') return theme.marketUp;
+  if (status === 'Failed') return theme.marketDown;
+  return theme.inkMuted; // Refunded — neutral, not a failure
+}
 
 export function BillingHistoryScreen() {
   const { theme } = useTheme();
@@ -19,28 +27,25 @@ export function BillingHistoryScreen() {
           <Text style={[type.bodyUI, { color: theme.inkMuted }]}>No invoices yet.</Text>
         }
         renderItem={({ item }) => (
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: space.lg,
-              borderRadius: radius.card,
-              borderWidth: 1,
-              borderColor: theme.rule,
-              backgroundColor: theme.bgCard,
-              marginBottom: space.md,
-            }}
-          >
-            <View>
-              <Text style={[type.label, { color: theme.ink }]}>{item.description}</Text>
-              <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>{item.date}</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={[type.mono, { color: theme.ink }]}>{item.amount}</Text>
-              <Text style={[type.caption, { color: theme.marketUp, marginTop: 2 }]}>{item.status}</Text>
-            </View>
-          </View>
+          <ListRow
+            title={item.description}
+            meta={item.date}
+            onPress={() =>
+              Alert.alert(
+                item.description,
+                `${item.date}\n${item.amount} · ${item.status}\n\nReceipt download isn't available in this preview build yet.`
+              )
+            }
+            accessibilityLabel={`${item.description}, ${item.date}, ${item.amount}, ${item.status}`}
+            rightElement={
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[type.mono, { color: theme.ink }]}>{item.amount}</Text>
+                <Text style={[type.caption, { color: statusColor(item.status, theme), marginTop: 2 }]}>
+                  {item.status}
+                </Text>
+              </View>
+            }
+          />
         )}
       />
     </Screen>

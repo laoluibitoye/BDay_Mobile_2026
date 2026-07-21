@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Article } from '../data/types';
 import { layout, radius, space, type, useTheme } from '../theme';
+import { ArticleImage } from './ArticleImage';
 import { SectionLabel } from './SectionLabel';
 
 type Props = {
@@ -36,7 +37,7 @@ function BriefTile({ article, onPress }: { article: Article; onPress: () => void
   const { theme } = useTheme();
   return (
     <Pressable onPress={onPress} style={[styles.tile, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
-      <View style={[styles.thumb, { backgroundColor: article.heroColor }]} />
+      <ArticleImage article={article} style={styles.thumb} />
       <Text style={[type.label, { color: theme.ink, marginTop: space.sm }]} numberOfLines={3}>
         {article.headline}
       </Text>

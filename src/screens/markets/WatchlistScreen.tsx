@@ -1,12 +1,12 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { SectionLabel } from '../../components/SectionLabel';
 import { marketQuotes } from '../../data/mock';
 import { useAppState } from '../../state/AppState';
-import { space, type, useTheme } from '../../theme';
+import { layout, space, type, useTheme } from '../../theme';
 
 export function WatchlistScreen() {
   const { theme } = useTheme();
@@ -68,8 +68,13 @@ function QuoteRow({
         gap: space.md,
       }}
     >
-      <Pressable onPress={onToggle} hitSlop={8} accessibilityLabel={watched ? 'Remove from watchlist' : 'Add to watchlist'}>
-        <Feather name="star" size={18} color={watched ? theme.accent : theme.inkFaint} />
+      <Pressable
+        onPress={onToggle}
+        hitSlop={(layout.touchTarget - 18) / 2}
+        accessibilityRole="button"
+        accessibilityLabel={watched ? 'Remove from watchlist' : 'Add to watchlist'}
+      >
+        <Ionicons name={watched ? 'star' : 'star-outline'} size={18} color={watched ? theme.accent : theme.inkFaint} />
       </Pressable>
       <View style={{ flex: 1 }}>
         <Text style={[type.label, { color: theme.ink }]}>{label}</Text>

@@ -1,6 +1,7 @@
 import {
   Article,
   Author,
+  Comment,
   CorrectionEntry,
   GameEntry,
   Invoice,
@@ -10,10 +11,13 @@ import {
   Persona,
   PodcastEpisode,
   QuizQuestion,
+  ShortVideoItem,
   SubscriptionPlan,
   TodayModule,
   VideoItem,
 } from './types';
+import { ALL_EXTRA_TAGS, buildSectionArticles } from './generatedArticles';
+import { minutesAgo } from '../lib/relativeTime';
 
 export const authors: Author[] = [
   { id: 'a1', name: 'Amaka Eze', title: 'Banking & Finance Editor', avatarColor: '#F73200' },
@@ -60,7 +64,7 @@ export const marketQuotes: MarketQuote[] = [
   { symbol: 'ETH', label: 'Ethereum', value: '$3,412', changePct: 2.1, category: 'Crypto' },
 ];
 
-export const articles: Article[] = [
+const curatedArticles: Article[] = [
   {
     id: 'art-1',
     headline: 'Naira steadies as reserves cross $40bn mark',
@@ -72,6 +76,7 @@ export const articles: Article[] = [
     isPremium: false,
     readTime: '4 min read',
     heroColor: '#F73200',
+    imageUrl: 'https://picsum.photos/seed/art-1/800/600',
     commentCount: 12,
     body: [
       'The naira held steady against the dollar this week as external reserves crossed the $40 billion mark for the first time in eighteen months, according to figures released by the Central Bank of Nigeria.',
@@ -90,6 +95,7 @@ export const articles: Article[] = [
     isPremium: false,
     readTime: '3 min read',
     heroColor: '#333333',
+    imageUrl: 'https://picsum.photos/seed/art-2/800/600',
     isBrief: true,
     body: [
       'Dangote Petroleum Refinery increased its export volumes of diesel and aviation fuel in the second quarter, according to shipping data reviewed by BusinessDay.',
@@ -107,6 +113,7 @@ export const articles: Article[] = [
     isPremium: true,
     readTime: '9 min read',
     heroColor: '#111111',
+    imageUrl: 'https://picsum.photos/seed/art-3/800/600',
     body: [
       'The Central Bank of Nigeria’s decision to hold its benchmark rate steady at last week’s MPC meeting sends a mixed signal to the banking sector heading into third-quarter earnings season.',
       'BusinessDay’s analysis of five Tier-1 lenders’ balance sheets suggests net interest margins will likely compress modestly, even as loan books continue to reprice upward from the prior tightening cycle.',
@@ -125,6 +132,7 @@ export const articles: Article[] = [
     isPremium: false,
     readTime: '3 min read',
     heroColor: '#1E7F4C',
+    imageUrl: 'https://picsum.photos/seed/art-4/800/600',
     isBrief: true,
     commentCount: 4,
     body: [
@@ -143,6 +151,7 @@ export const articles: Article[] = [
     isPremium: true,
     readTime: '11 min read',
     heroColor: '#F73200',
+    imageUrl: 'https://picsum.photos/seed/art-5/800/600',
     body: [
       'A year after global investors pulled back sharply from African fintech, BusinessDay’s proprietary deal-tracking data shows an uneven recovery taking shape.',
       'Payments infrastructure and B2B commerce platforms have seen renewed interest from regional funds, while consumer lending startups continue to struggle to raise beyond seed stage.',
@@ -160,6 +169,7 @@ export const articles: Article[] = [
     isPremium: false,
     readTime: '3 min read',
     heroColor: '#333333',
+    imageUrl: 'https://picsum.photos/seed/art-6/800/600',
     isBrief: true,
     body: [
       'Nigeria’s headline inflation rate eased to 22.1 percent in the year to last month, according to the National Bureau of Statistics, marking a second straight month of moderation.',
@@ -167,6 +177,38 @@ export const articles: Article[] = [
     ],
   },
 ];
+
+// Every real section gets a deterministic pool of 100+ generated articles (see generatedArticles.ts)
+// so every Home category tab and taxonomy archive has enough content to scroll through, on top of
+// the small hand-authored `curatedArticles` set above (kept for narrative/demo consistency, e.g. the
+// hero/module sequence and cross-references from Notifications/Corrections/etc).
+const authorIds = authors.map((a) => a.id);
+const generatedArticles: Article[] = sections
+  .filter((s) => s !== 'Top Stories')
+  .flatMap((section) => buildSectionArticles(section, 100, authorIds));
+
+export const articles: Article[] = [...curatedArticles, ...generatedArticles];
+
+// The full taxonomy universe for the Latest → Explore tag cloud: every Home category tab, every
+// onboarding interest topic, plus each section's secondary tags (SECTION_EXTRA_TAGS) — 30+ terms,
+// matching how a real WordPress install's category + tag taxonomies would read. Deduped.
+export const taxonomies: string[] = Array.from(
+  new Set<string>([...sections, ...interestTopics, ...ALL_EXTRA_TAGS])
+);
+
+// Every post tagged to a given taxonomy — matches on `section` (categories) OR `tags` (secondary
+// topics), same "OR" match a real WP taxonomy query would do. 'Top Stories' means "everything."
+export function articlesForTaxonomy(name: string): Article[] {
+  if (name === 'Top Stories') return articles;
+  return articles.filter((a) => a.section === name || a.tags?.includes(name));
+}
+
+// Newest-first recency for a taxonomy — drives Explore's "most recently published" ordering.
+export function taxonomyFreshnessMinutes(name: string): number {
+  const matches = articlesForTaxonomy(name);
+  if (matches.length === 0) return Number.MAX_SAFE_INTEGER;
+  return Math.min(...matches.map((a) => minutesAgo(a.publishedAt)));
+}
 
 export const breakingArticle: Article = {
   id: 'art-breaking',
@@ -180,6 +222,7 @@ export const breakingArticle: Article = {
   isLive: true,
   readTime: '2 min read',
   heroColor: '#F73200',
+  imageUrl: 'https://picsum.photos/seed/art-breaking/800/600',
   body: [
     'The Central Bank of Nigeria’s Monetary Policy Committee raised the benchmark interest rate by 50 basis points to 27.25 percent on Tuesday, a move that caught most market watchers off guard.',
     'This is a developing story. BusinessDay will update this article as more details become available.',
@@ -194,6 +237,7 @@ export const podcasts: PodcastEpisode[] = [
     duration: '6 min',
     publishedAt: 'Today, 6:00am',
     isDailyBriefing: true,
+    artworkUrl: 'https://picsum.photos/seed/pod-daily/300/300',
   },
   {
     id: 'pod-1',
@@ -201,6 +245,7 @@ export const podcasts: PodcastEpisode[] = [
     title: 'Inside Nigeria’s fintech funding winter, with Tosin Faniro-Dada',
     duration: '38 min',
     publishedAt: '2 days ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-1/300/300',
   },
   {
     id: 'pod-2',
@@ -208,6 +253,7 @@ export const podcasts: PodcastEpisode[] = [
     title: 'Why banking stocks are outperforming the broader index',
     duration: '24 min',
     publishedAt: '3 days ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-2/300/300',
   },
   {
     id: 'pod-3',
@@ -215,14 +261,80 @@ export const podcasts: PodcastEpisode[] = [
     title: 'Decoding the 2026 fiscal framework',
     duration: '31 min',
     publishedAt: '5 days ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-3/300/300',
+  },
+  {
+    id: 'pod-4',
+    show: 'BusinessDay Conversations',
+    title: 'Building for the next 100 million African bank accounts',
+    duration: '42 min',
+    publishedAt: '6 days ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-4/300/300',
+  },
+  {
+    id: 'pod-5',
+    show: 'Markets Weekly',
+    title: 'Reading the yield curve: what the Treasury bills market is signalling',
+    duration: '19 min',
+    publishedAt: '1 week ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-5/300/300',
+  },
+  {
+    id: 'pod-6',
+    show: 'Energy Desk',
+    title: 'Inside the Dangote Refinery\'s export ramp-up',
+    duration: '27 min',
+    publishedAt: '1 week ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-6/300/300',
+  },
+  {
+    id: 'pod-7',
+    show: 'Policy Room',
+    title: 'What the new tax reform bill means for SMEs',
+    duration: '33 min',
+    publishedAt: '9 days ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-7/300/300',
+  },
+  {
+    id: 'pod-8',
+    show: 'BusinessDay Conversations',
+    title: 'Real estate financing after the mortgage reform, with industry leaders',
+    duration: '35 min',
+    publishedAt: '10 days ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-8/300/300',
+  },
+  {
+    id: 'pod-9',
+    show: 'Markets Weekly',
+    title: 'Currency watch: three scenarios for the naira into year-end',
+    duration: '22 min',
+    publishedAt: '2 weeks ago',
+    artworkUrl: 'https://picsum.photos/seed/pod-9/300/300',
   },
 ];
 
 export const videos: VideoItem[] = [
-  { id: 'vid-1', title: 'Inside the Dangote Refinery: A Rare Tour', channel: 'BusinessDay TV', duration: '12:04', playlist: 'Features' },
-  { id: 'vid-2', title: 'CBN Governor on Rate Decision: Full Interview', channel: 'BusinessDay TV', duration: '18:41', playlist: 'Interviews' },
-  { id: 'vid-3', title: 'Market Analysis: Banking Sector Q2 Earnings', channel: 'BusinessDay TV', duration: '9:22', playlist: 'Market Analysis' },
-  { id: 'vid-4', title: 'The Fintech Founders Redefining Payments', channel: 'BusinessDay TV', duration: '15:10', playlist: 'Features' },
+  { id: 'vid-1', title: 'Inside the Dangote Refinery: A Rare Tour', channel: 'BusinessDay TV', duration: '12:04', playlist: 'Features', thumbnailUrl: 'https://picsum.photos/seed/vid-1/600/340' },
+  { id: 'vid-2', title: 'CBN Governor on Rate Decision: Full Interview', channel: 'BusinessDay TV', duration: '18:41', playlist: 'Interviews', thumbnailUrl: 'https://picsum.photos/seed/vid-2/600/340' },
+  { id: 'vid-3', title: 'Market Analysis: Banking Sector Q2 Earnings', channel: 'BusinessDay TV', duration: '9:22', playlist: 'Market Analysis', thumbnailUrl: 'https://picsum.photos/seed/vid-3/600/340' },
+  { id: 'vid-4', title: 'The Fintech Founders Redefining Payments', channel: 'BusinessDay TV', duration: '15:10', playlist: 'Features', thumbnailUrl: 'https://picsum.photos/seed/vid-4/600/340' },
+  { id: 'vid-5', title: 'Inside Lagos\' New Deep Sea Port', channel: 'BusinessDay TV', duration: '11:36', playlist: 'Features', thumbnailUrl: 'https://picsum.photos/seed/vid-5/600/340' },
+  { id: 'vid-6', title: 'Finance Minister on the 2026 Fiscal Framework', channel: 'BusinessDay TV', duration: '21:08', playlist: 'Interviews', thumbnailUrl: 'https://picsum.photos/seed/vid-6/600/340' },
+  { id: 'vid-7', title: 'Market Analysis: NGX Mid-Year Review', channel: 'BusinessDay TV', duration: '13:47', playlist: 'Market Analysis', thumbnailUrl: 'https://picsum.photos/seed/vid-7/600/340' },
+  { id: 'vid-8', title: 'How Moniepoint Scaled to a Unicorn', channel: 'BusinessDay TV', duration: '16:29', playlist: 'Features', thumbnailUrl: 'https://picsum.photos/seed/vid-8/600/340' },
+  { id: 'vid-9', title: 'Agribusiness Founders on Feeding a Continent', channel: 'BusinessDay TV', duration: '14:02', playlist: 'Features', thumbnailUrl: 'https://picsum.photos/seed/vid-9/600/340' },
+  { id: 'vid-10', title: 'Power Sector Reform: An Explainer', channel: 'BusinessDay TV', duration: '8:55', playlist: 'Market Analysis', thumbnailUrl: 'https://picsum.photos/seed/vid-10/600/340' },
+];
+
+export const shorts: ShortVideoItem[] = [
+  { id: 'short-1', title: "Naira in 60 seconds: this week's move", description: "Reserves, the parallel rate, and what's driving both this week.", channel: 'BusinessDay TV', duration: '0:58', thumbnailUrl: 'https://picsum.photos/seed/short-1/720/1280', likeCount: 842, commentCount: 46 },
+  { id: 'short-2', title: '3 charts on the NGX rally', description: 'Banking stocks, market breadth, and foreign inflows — charted fast.', channel: 'BusinessDay TV', duration: '0:42', thumbnailUrl: 'https://picsum.photos/seed/short-2/720/1280', likeCount: 613, commentCount: 28 },
+  { id: 'short-3', title: 'What is a Treasury bill? Explained fast', description: 'The basics of T-bills, yields, and why they move so much money.', channel: 'BusinessDay TV', duration: '1:05', thumbnailUrl: 'https://picsum.photos/seed/short-3/720/1280', likeCount: 1204, commentCount: 91 },
+  { id: 'short-4', title: 'Inside Dangote Refinery in 60 seconds', description: 'A rare look at the 650,000 bpd facility, condensed.', channel: 'BusinessDay TV', duration: '0:51', thumbnailUrl: 'https://picsum.photos/seed/short-4/720/1280', likeCount: 2031, commentCount: 154 },
+  { id: 'short-5', title: 'Quick take: MPC rate decision', description: "What the 50bps hike means for borrowers and savers.", channel: 'BusinessDay TV', duration: '0:47', thumbnailUrl: 'https://picsum.photos/seed/short-5/720/1280', likeCount: 789, commentCount: 63 },
+  { id: 'short-6', title: 'Fintech funding, one chart', description: "A year of Series A/B deal flow, visualised.", channel: 'BusinessDay TV', duration: '0:39', thumbnailUrl: 'https://picsum.photos/seed/short-6/720/1280', likeCount: 455, commentCount: 19 },
+  { id: 'short-7', title: 'Inflation, explained in a minute', description: 'Headline vs. food inflation, and why the gap matters.', channel: 'BusinessDay TV', duration: '1:02', thumbnailUrl: 'https://picsum.photos/seed/short-7/720/1280', likeCount: 967, commentCount: 72 },
+  { id: 'short-8', title: 'Behind the scenes: BusinessDay newsroom', description: 'How a front page comes together on deadline.', channel: 'BusinessDay TV', duration: '0:55', thumbnailUrl: 'https://picsum.photos/seed/short-8/720/1280', likeCount: 1580, commentCount: 203 },
 ];
 
 export const games: GameEntry[] = [
@@ -231,17 +343,66 @@ export const games: GameEntry[] = [
 ];
 
 export const notifications: NotificationItem[] = [
-  { id: 'n1', category: 'Breaking News', title: 'CBN raises MPR by 50bps to 27.25%', body: 'The Monetary Policy Committee cited persistent inflationary pressure.', receivedAt: '2m ago' },
-  { id: 'n2', category: 'Market Moves', title: 'NGX up 1.2% at midday', body: 'Banking stocks lead gains after strong half-year results.', receivedAt: '3h ago' },
+  { id: 'n1', category: 'Breaking News', title: 'CBN raises MPR by 50bps to 27.25%', body: 'The Monetary Policy Committee cited persistent inflationary pressure.', receivedAt: '2m ago', articleId: 'art-breaking' },
+  { id: 'n2', category: 'Market Moves', title: 'NGX up 1.2% at midday', body: 'Banking stocks lead gains after strong half-year results.', receivedAt: '3h ago', articleId: 'art-4' },
   { id: 'n3', category: 'Weekly Briefing', title: 'Your Friday briefing is ready', body: '5 stories that moved Banking & Energy this week.', receivedAt: '1d ago' },
   { id: 'n4', category: 'Game & Quiz Reminders', title: 'Keep your streak alive', body: 'You have a 12-day streak on News Recall Quiz. Play today’s round.', receivedAt: '1d ago' },
 ];
 
+// The newsletter list itself (title, summary, cadence, and each one's latest edition) is
+// exactly the kind of publisher-owned config IMPLEMENTATION_PLAN.md §9.5's WP-admin curation
+// plugin should manage — editors publish a new "latest edition" from WordPress without an app
+// release, the same pattern already flagged for Home's category tabs.
 export const newsletters: NewsletterIssue[] = [
-  { id: 'nl-1', title: 'The Friday Briefing: Banking & Energy', summary: '5 stories that moved Banking & Energy this week.', sentAt: 'Fri, 8:00am' },
-  { id: 'nl-2', title: 'Market Movers Weekly', summary: 'NGX, naira, and the week’s biggest sector rotations.', sentAt: 'Last Friday' },
-  { id: 'nl-3', title: 'Policy Watch', summary: 'What the new fiscal framework means for business.', sentAt: '2 weeks ago' },
+  {
+    id: 'nl-1',
+    title: 'The Friday Briefing: Banking & Energy',
+    summary: '5 stories that moved Banking & Energy this week.',
+    sentAt: 'Fri, 8:00am',
+    latestEditionSubject: 'Reserves cross $40bn, and three refinery stories to watch',
+    latestEditionBody: [
+      'Good morning — here are five stories that moved Banking & Energy this week.',
+      '1. External reserves crossed $40bn for the first time in eighteen months, easing pressure on the naira.',
+      '2. Dangote Refinery lifted export volumes of diesel and jet fuel to European buyers in Q2.',
+      '3. Tier-1 banks posted strong half-year results, led by GTCO and Zenith Bank.',
+      '4. The CBN held its benchmark rate steady, a mixed signal heading into Q3 earnings season.',
+      '5. Two lenders were flagged as needing fresh capital within two reporting cycles.',
+      'That\'s your Friday Briefing — see you next week.',
+    ],
+  },
+  {
+    id: 'nl-2',
+    title: 'Market Movers Weekly',
+    summary: 'NGX, naira, and the week’s biggest sector rotations.',
+    sentAt: 'Last Friday',
+    latestEditionSubject: 'Banking stocks lead a ₦130bn rally on the NGX',
+    latestEditionBody: [
+      'The Nigerian Exchange added ₦130 billion in market capitalisation this week as banking stocks led a broad rally.',
+      'GTCO, Zenith Bank, and Access Holdings posted the largest single-day gains, each closing up more than 4 percent.',
+      'Foreign portfolio investors returned to the local bourse for a second straight week, per NGX flow data.',
+      'Fixed income: Treasury bill yields eased slightly on renewed demand at this week\'s auction.',
+      'Watch next week: Q3 earnings season kicks off in earnest with three Tier-1 banks reporting.',
+    ],
+  },
+  {
+    id: 'nl-3',
+    title: 'Policy Watch',
+    summary: 'What the new fiscal framework means for business.',
+    sentAt: '2 weeks ago',
+    latestEditionSubject: 'Inflation eases to 22.1% — what it means for the 2026 fiscal framework',
+    latestEditionBody: [
+      'Headline inflation eased to 22.1 percent this month, the second straight month of moderation, per the NBS.',
+      'Food inflation, the largest component of the basket, slowed to 24.3 percent as harvest-season supply improved.',
+      'The Debt Management Office signalled a lighter borrowing calendar for the second half of the fiscal year.',
+      'The Federal Ministry of Finance is expected to present its revised 2026 fiscal framework to the National Assembly next month.',
+      'What we\'re watching: whether the moderation gives the CBN room to ease its benchmark rate at the next MPC meeting.',
+    ],
+  },
 ];
+
+// Stands in for a WP-admin "App content" setting: the publisher uploads a new PDF each day and
+// this URL updates from the dashboard — the app never bundles the file itself.
+export const todaysPaperPdfUrl = 'https://www.africau.edu/images/default/sample.pdf';
 
 export const subscriptionPlans: SubscriptionPlan[] = [
   {
@@ -295,9 +456,59 @@ export const corrections: CorrectionEntry[] = [
 ];
 
 export const invoices: Invoice[] = [
+  { id: 'inv-3', date: '1 Sep 2026', description: 'Premium Annual — renewal attempt', amount: '₦25,000', status: 'Failed' },
   { id: 'inv-2', date: '1 Jun 2026', description: 'Premium Annual — renewal', amount: '₦25,000', status: 'Paid' },
   { id: 'inv-1', date: '1 Jun 2025', description: 'Premium Annual — first year', amount: '₦25,000', status: 'Paid' },
 ];
+
+// Stands in for the WordPress site's own comment thread (wp-comments) for each post — a real
+// integration would fetch/post against WP's REST comments endpoint per article ID.
+export const comments: Comment[] = [
+  {
+    id: 'cm-1',
+    articleId: 'art-1',
+    author: 'Chinedu O.',
+    avatarColor: '#1E7F4C',
+    body: "Good to see the reserves build-up holding. Curious how much of this is oil receipts vs portfolio inflows.",
+    postedAt: '1h ago',
+  },
+  {
+    id: 'cm-2',
+    articleId: 'art-1',
+    author: 'Aisha B.',
+    avatarColor: '#F73200',
+    body: 'Third straight week of gains is genuinely encouraging, but the CBN has surprised us before.',
+    postedAt: '45m ago',
+  },
+  {
+    id: 'cm-3',
+    articleId: 'art-1',
+    author: 'Femi A.',
+    avatarColor: '#333333',
+    body: "Would love a follow-up on what this means for import-dependent manufacturers.",
+    postedAt: '20m ago',
+  },
+  {
+    id: 'cm-4',
+    articleId: 'art-4',
+    author: 'Ngozi K.',
+    avatarColor: '#B22800',
+    body: 'GTCO leading the rally is no surprise after that earnings beat.',
+    postedAt: '3h ago',
+  },
+  {
+    id: 'cm-5',
+    articleId: 'art-breaking',
+    author: 'Tunde R.',
+    avatarColor: '#1E7F4C',
+    body: '50bps was more aggressive than most desks were pricing in this morning.',
+    postedAt: '5m ago',
+  },
+];
+
+export function commentsForArticle(articleId: string): Comment[] {
+  return comments.filter((c) => c.articleId === articleId);
+}
 
 export const quizQuestions: QuizQuestion[] = [
   { id: 'q1', prompt: 'External reserves crossed what mark this week?', options: ['$30bn', '$40bn', '$50bn'], correctIndex: 1 },
@@ -307,7 +518,7 @@ export const quizQuestions: QuizQuestion[] = [
   { id: 'q5', prompt: 'By how much did the CBN raise its benchmark rate?', options: ['25bps', '50bps', '100bps'], correctIndex: 1 },
 ];
 
-// design.md §6 — drives TodayScreen's mixed module layout. "Which articles go where" as data,
+// design.md §6 — drives HomeScreen's "Today" tab mixed module layout. "Which articles go where" as data,
 // not scattered filters inside the screen component.
 export const todayModuleSequence: TodayModule[] = [
   { type: 'hero', articleId: 'art-breaking' },

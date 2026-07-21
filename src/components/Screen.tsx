@@ -9,20 +9,27 @@ type Props = {
   scroll?: boolean;
   style?: ViewStyle;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
+  scrollRef?: React.RefObject<ScrollView | null>;
 };
 
-export function Screen({ children, header, scroll = true, style, edges = ['top'] }: Props) {
+export function Screen({ children, header, scroll = true, style, edges = ['top'], scrollRef }: Props) {
   const { theme } = useTheme();
-  const Container = scroll ? ScrollView : View;
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: theme.bg }]} edges={edges}>
       {header}
-      <Container
-        style={styles.flex}
-        contentContainerStyle={scroll ? [{ paddingBottom: 120 }, style] : undefined}
-      >
-        {scroll ? children : <View style={[styles.flex, style]}>{children}</View>}
-      </Container>
+      {scroll ? (
+        <ScrollView
+          ref={scrollRef}
+          style={styles.flex}
+          contentContainerStyle={[{ paddingBottom: 120 }, style]}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={styles.flex}>
+          <View style={[styles.flex, style]}>{children}</View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

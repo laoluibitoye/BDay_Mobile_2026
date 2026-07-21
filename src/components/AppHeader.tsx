@@ -14,23 +14,23 @@ type Props = {
   variant: 'masthead' | 'compact';
   title?: string;
   showBack?: boolean;
-  rightAction?: RightAction | null; // omit for the default "You" icon; pass null to hide the right icon entirely
+  rightAction?: RightAction | null; // omit for the default "Settings" icon; pass null to hide the right icon entirely
 };
 
-// design.md §6 "App header" — masthead (Today only) / compact (everywhere else).
+// design.md §6 "App header" — masthead (Home only) / compact (everywhere else).
 // Brand assets: app/assets/brand/bd-logo.png, bd-icon.png.
 export function AppHeader({ variant, title, showBack, rightAction }: Props) {
   const { theme } = useTheme();
   const navigation = useNavigation();
 
-  const goToYou = () => (navigation as any).navigate('You');
+  const goToSettings = () => (navigation as any).navigate('Settings');
 
   if (variant === 'masthead') {
     return (
       <View style={[styles.mastheadWrap, { borderColor: theme.rule }]}>
         <View style={styles.masthead}>
           <View style={styles.side}>
-            <Pressable hitSlop={(layout.touchTarget - 22) / 2} onPress={goToYou} accessibilityLabel="You">
+            <Pressable hitSlop={(layout.touchTarget - 22) / 2} onPress={goToSettings} accessibilityLabel="Settings">
               <Feather name="user" size={22} color={theme.ink} />
             </Pressable>
           </View>
@@ -82,13 +82,23 @@ export function AppHeader({ variant, title, showBack, rightAction }: Props) {
         )}
       </View>
       {rightAction !== null && (
-        <Pressable
-          hitSlop={(layout.touchTarget - 22) / 2}
-          onPress={rightAction ? rightAction.onPress : goToYou}
-          accessibilityLabel={rightAction ? rightAction.accessibilityLabel : 'You'}
-        >
-          <Feather name={rightAction ? rightAction.icon : 'user'} size={22} color={theme.ink} />
-        </Pressable>
+        <View style={styles.rightGroup}>
+          {rightAction && (
+            <Pressable
+              hitSlop={(layout.touchTarget - 22) / 2}
+              onPress={rightAction.onPress}
+              accessibilityLabel={rightAction.accessibilityLabel}
+            >
+              <Feather name={rightAction.icon} size={22} color={theme.ink} />
+            </Pressable>
+          )}
+          {/* Settings is never fully replaced by a screen-specific action — it must stay reachable
+              from every screen (design.md §6 "App header"), so a custom rightAction is shown
+              alongside it, not instead of it. */}
+          <Pressable hitSlop={(layout.touchTarget - 22) / 2} onPress={goToSettings} accessibilityLabel="Settings">
+            <Feather name="user" size={22} color={theme.ink} />
+          </Pressable>
+        </View>
       )}
     </View>
   );
@@ -114,6 +124,7 @@ const styles = StyleSheet.create({
   },
   compact: { height: 52, borderBottomWidth: 1 },
   left: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexShrink: 1 },
+  rightGroup: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   back: { marginRight: space.xs },
   icon: { width: 34, height: 34 },
 });

@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { interestTopics } from '../../data/mock';
+import { useAppState } from '../../state/AppState';
 import { radius, space, type, useTheme } from '../../theme';
 
 export function FeedSettingsScreen() {
   const { theme } = useTheme();
-  const [selected, setSelected] = useState<string[]>(['Banking', 'Markets']);
-
-  const toggle = (topic: string) =>
-    setSelected((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic]));
+  const { followedTopics, toggleFollowedTopic } = useAppState();
 
   return (
     <Screen header={<AppHeader variant="compact" title="Feed Settings" showBack />}>
@@ -20,11 +18,13 @@ export function FeedSettingsScreen() {
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xl }}>
           {interestTopics.map((topic) => {
-            const active = selected.includes(topic);
+            const active = followedTopics.includes(topic);
             return (
               <Pressable
                 key={topic}
-                onPress={() => toggle(topic)}
+                onPress={() => toggleFollowedTopic(topic)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
                 style={{
                   borderWidth: 1,
                   borderRadius: radius.pill,

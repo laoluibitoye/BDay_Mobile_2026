@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Article } from '../data/types';
 import { layout, radius, space, type, useTheme } from '../theme';
+import { ArticleImage } from './ArticleImage';
 import { SectionLabel } from './SectionLabel';
 
 type Props = {
@@ -30,7 +31,7 @@ function Tile({ article, onPress }: { article: Article; onPress: () => void }) {
   const { theme } = useTheme();
   return (
     <Pressable onPress={onPress} style={styles.tile}>
-      <View style={[styles.thumb, { backgroundColor: article.heroColor }]} />
+      <ArticleImage article={article} style={styles.thumb} />
       <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.sm }]}>{article.section.toUpperCase()}</Text>
       <Text style={[type.label, { color: theme.ink, marginTop: 2 }]} numberOfLines={3}>
         {article.headline}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,19 +8,35 @@ import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { AppearanceRow } from '../../components/AppearanceRow';
 import { MenuRow } from '../../components/MenuRow';
+import { SectionLabel } from '../../components/SectionLabel';
 import { useAppState } from '../../state/AppState';
 import { LANGUAGES } from '../../data/languages';
-import { radius, space, type, useTheme } from '../../theme';
+import { notifications } from '../../data/mock';
+import { layout, radius, space, type, useTheme } from '../../theme';
 
-export function YouScreen() {
+// Account/profile/preferences only — "what you've engaged with" (saved articles, downloads,
+// reading history, newsletters) lives in the For You tab instead. See design.md §3.
+export function SettingsScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { isSubscribed, savedArticleIds, language } = useAppState();
+  const { isSubscribed, language, readNotificationIds, profile } = useAppState();
   const languageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
+  const unreadCount = notifications.filter((n) => !readNotificationIds.includes(n.id)).length;
+
+  const signOut = () => {
+    Alert.alert('Sign out?', "You'll need to sign back in to access your saved articles and subscription.", [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] }),
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
-      <AppHeader variant="compact" title="You" showBack rightAction={null} />
+      <AppHeader variant="compact" title="Settings" showBack rightAction={null} />
       <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}>
         <View
           style={{
@@ -45,40 +61,31 @@ export function YouScreen() {
               justifyContent: 'center',
             }}
           >
-            <Text style={[type.label, { color: theme.bg }]}>AO</Text>
+            <Text style={[type.label, { color: theme.bg }]}>
+              {profile.name.split(' ').map((n) => n[0]).join('')}
+            </Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[type.label, { color: theme.ink }]}>Ada Okafor</Text>
+            <Text style={[type.label, { color: theme.ink }]}>{profile.name}</Text>
             <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>
               {isSubscribed ? 'Premium subscriber' : 'Free reader'}
             </Text>
           </View>
           {!isSubscribed && (
-            <Text
-              style={[type.label, { color: theme.accent }]}
+            <Pressable
               onPress={() => navigation.navigate('Paywall')}
+              hitSlop={(layout.touchTarget - 20) / 2}
+              accessibilityRole="button"
+              accessibilityLabel="Upgrade to Premium"
             >
-              Upgrade
-            </Text>
+              <Text style={[type.label, { color: theme.accent }]}>Upgrade</Text>
+            </Pressable>
           )}
         </View>
 
-        <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.xl, marginBottom: space.xs }]}>
-          LIBRARY
-        </Text>
-        <MenuRow
-          icon="bookmark"
-          label="Saved articles"
-          value={`${savedArticleIds.length}`}
-          onPress={() => navigation.navigate('Saved')}
-        />
-        <MenuRow icon="mail" label="Newsletters" onPress={() => navigation.navigate('Newsletters')} />
-        <MenuRow icon="download" label="Downloads" onPress={() => navigation.navigate('Downloads')} />
-        <MenuRow icon="clock" label="Reading history" onPress={() => navigation.navigate('ReadingHistory')} />
-
-        <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.xl, marginBottom: space.xs }]}>
-          ACCOUNT
-        </Text>
+        <View style={{ marginTop: space.xl }}>
+          <SectionLabel label="Account" />
+        </View>
         <MenuRow icon="user" label="Profile" onPress={() => navigation.navigate('Profile')} />
         <MenuRow
           icon="credit-card"
@@ -89,13 +96,19 @@ export function YouScreen() {
         <MenuRow icon="shield" label="Account & security" onPress={() => navigation.navigate('AccountSecurity')} />
         <MenuRow
           icon="bell"
+          label="Notifications"
+          value={unreadCount ? String(unreadCount) : undefined}
+          onPress={() => navigation.navigate('Notifications')}
+        />
+        <MenuRow
+          icon="sliders"
           label="Notification preferences"
           onPress={() => navigation.navigate('NotificationPreferences')}
         />
 
-        <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.xl, marginBottom: space.xs }]}>
-          SETTINGS & SUPPORT
-        </Text>
+        <View style={{ marginTop: space.xl }}>
+          <SectionLabel label="Settings & support" />
+        </View>
         <AppearanceRow />
         <MenuRow icon="sliders" label="Feed settings" onPress={() => navigation.navigate('FeedSettings')} />
         <MenuRow icon="globe" label="Language" value={languageLabel} onPress={() => navigation.navigate('Language')} />
@@ -111,6 +124,10 @@ export function YouScreen() {
         />
         <MenuRow icon="alert-circle" label="Corrections" onPress={() => navigation.navigate('Corrections')} />
         <MenuRow icon="info" label="About" onPress={() => navigation.navigate('About')} />
+
+        <View style={{ marginTop: space.xl }}>
+          <MenuRow icon="log-out" label="Sign out" onPress={signOut} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
