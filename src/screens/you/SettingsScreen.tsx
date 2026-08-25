@@ -11,7 +11,7 @@ import { MenuRow } from '../../components/MenuRow';
 import { SectionLabel } from '../../components/SectionLabel';
 import { useAppState } from '../../state/AppState';
 import { LANGUAGES } from '../../data/languages';
-import { notifications } from '../../data/mock';
+import { useNotifications } from '../../hooks/useNotifications';
 import { useUnreadCommentNotificationCount } from '../../hooks/useCommentNotifications';
 import { layout, radius, space, type, useTheme } from '../../theme';
 
@@ -22,7 +22,8 @@ export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isSubscribed, language, readNotificationIds, profile } = useAppState();
   const languageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
-  const unreadCount = notifications.filter((n) => !readNotificationIds.includes(n.id)).length;
+  const notifications = useNotifications();
+  const unreadCount = (notifications ?? []).filter((n) => !readNotificationIds.includes(n.id)).length;
   const unreadCommentReplies = useUnreadCommentNotificationCount();
 
   const signOut = () => {
