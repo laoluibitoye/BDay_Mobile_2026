@@ -59,7 +59,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
           <Pressable
             hitSlop={(layout.touchTarget - 20) / 2}
             style={styles.toolbarItem}
-            onPress={() => toggleSaved(article.id)}
+            onPress={() => toggleSaved(article)}
             accessibilityLabel={isSaved ? 'Remove from saved' : 'Save article'}
           >
             <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={isSaved ? theme.accent : theme.inkMuted} />

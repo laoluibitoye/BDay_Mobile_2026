@@ -49,7 +49,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
             </Pressable>
             <Pressable
               hitSlop={(layout.touchTarget - 20) / 2}
-              onPress={() => toggleSaved(article.id)}
+              onPress={() => toggleSaved(article)}
               accessibilityLabel={isSaved ? 'Remove from saved' : 'Save article'}
             >
               <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={isSaved ? theme.accent : theme.inkMuted} />

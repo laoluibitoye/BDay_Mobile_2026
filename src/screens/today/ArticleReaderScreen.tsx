@@ -68,7 +68,7 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
   const isSpeaking = useIsSpeaking(article.id);
 
   useEffect(() => {
-    recordView(article.id);
+    recordView(article);
     if (isRealArticle) {
       getArticleEntitlement(article.id)
         .then(setEntitlement)
@@ -177,7 +177,7 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
             )}
           </Pressable>
           <Pressable
-            onPress={() => toggleSaved(article.id)}
+            onPress={() => toggleSaved(article)}
             hitSlop={8}
             accessibilityLabel={isSaved ? 'Remove from saved' : 'Save article'}
           >

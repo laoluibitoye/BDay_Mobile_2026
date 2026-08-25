@@ -4,6 +4,11 @@ import { LanguageCode } from '../data/languages';
 import { clearTokens, getAccessToken } from '../lib/api/client';
 import { getMe } from '../lib/api/auth';
 import type { MeResponse } from '../lib/api/types';
+import { addBookmark, getBookmarks, removeBookmark } from '../lib/api/bookmarks';
+import { invalidateBookmarksCache } from '../hooks/useBookmarks';
+import { getReadingHistory, recordReadingHistoryView } from '../lib/api/readingHistory';
+import { invalidateReadingHistoryCache } from '../hooks/useReadingHistory';
+import type { Article } from '../data/types';
 
 export type AccessibilityPrefs = {
   largeTouchTargets: boolean;
@@ -40,11 +45,11 @@ type AppStateValue = {
   logout: () => void;
   isSubscribed: boolean;
   savedArticleIds: string[];
-  toggleSaved: (id: string) => void;
+  toggleSaved: (article: Article) => void;
   language: LanguageCode;
   setLanguage: (l: LanguageCode) => void;
   readingHistoryIds: string[];
-  recordView: (id: string) => void;
+  recordView: (article: Article) => void;
   clearHistory: () => void;
   watchlistSymbols: string[];
   toggleWatchlist: (symbol: string) => void;
@@ -99,21 +104,37 @@ const DEFAULT_PROFILE: ProfileInfo = {
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<MeResponse | null>(null);
   const isSubscribed = authUser?.subscription?.status === 'active';
+  const [savedArticleIds, setSavedArticleIds] = useState<string[]>([]);
+  const [readingHistoryIds, setReadingHistoryIds] = useState<string[]>([]);
+
+  // Bookmarks/reading history are server-backed once signed in — seeded here (not lazily inside
+  // ForYouScreen) so isSaved checks on ArticleCard/HeroArticleCard/ArticleReaderScreen are
+  // correct app-wide, not just on the Saved tab itself.
+  const syncServerBackedLists = useCallback(async () => {
+    const [bookmarks, history] = await Promise.all([
+      getBookmarks().catch(() => []),
+      getReadingHistory().catch(() => []),
+    ]);
+    setSavedArticleIds(bookmarks.map((b) => b.postId));
+    setReadingHistoryIds(history.map((h) => h.postId));
+  }, []);
+
   const refreshSession = useCallback(async () => {
     const token = await getAccessToken();
     if (!token) {
       setAuthUser(null);
+      setSavedArticleIds([]);
+      setReadingHistoryIds([]);
       return;
     }
     try {
       setAuthUser(await getMe());
+      void syncServerBackedLists();
     } catch {
       // leave the last-known session in place on a transient failure
     }
-  }, []);
-  const [savedArticleIds, setSavedArticleIds] = useState<string[]>([]);
+  }, [syncServerBackedLists]);
   const [language, setLanguage] = useState<LanguageCode>('en');
-  const [readingHistoryIds, setReadingHistoryIds] = useState<string[]>([]);
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(['NGX', 'USDNGN']);
   const [downloadedArticleIds, setDownloadedArticleIds] = useState<string[]>([]);
   const [accessibilityPrefs, setAccessibilityPrefs] = useState<AccessibilityPrefs>(DEFAULT_ACCESSIBILITY_PREFS);
@@ -141,14 +162,41 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       },
       isSubscribed,
       savedArticleIds,
-      toggleSaved: (id: string) =>
-        setSavedArticleIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
+      // Optimistic, same posture as the web SDK's bookmark-button.ts: flips immediately, then
+      // fires the real request in the background. A failed request (offline, or a mock/demo
+      // article with no real sourceUrl to save) just means this save won't survive a refetch —
+      // never blocks or errors the tap itself.
+      toggleSaved: (article: Article) => {
+        const isSaved = savedArticleIds.includes(article.id);
+        setSavedArticleIds((prev) => (isSaved ? prev.filter((x) => x !== article.id) : [...prev, article.id]));
+        const request = isSaved
+          ? removeBookmark(article.id)
+          : addBookmark({ postId: article.id, title: article.headline, url: article.sourceUrl ?? '', imageUrl: article.imageUrl });
+        request.then(invalidateBookmarksCache).catch(() => undefined);
+      },
       language,
       setLanguage,
       readingHistoryIds,
-      recordView: (id: string) =>
-        setReadingHistoryIds((prev) => [id, ...prev.filter((x) => x !== id)].slice(0, 50)),
-      clearHistory: () => setReadingHistoryIds([]),
+      // Optimistic local ordering plus a fire-and-forget server write, mirroring the web SDK's
+      // recordReadingHistoryView() exactly — never blocks the reading session.
+      recordView: (article: Article) => {
+        setReadingHistoryIds((prev) => [article.id, ...prev.filter((x) => x !== article.id)].slice(0, 50));
+        if (!authUser) return;
+        recordReadingHistoryView({
+          postId: article.id,
+          title: article.headline,
+          url: article.sourceUrl ?? '',
+          imageUrl: article.imageUrl,
+        });
+        invalidateReadingHistoryCache();
+      },
+      // No bulk-clear endpoint exists server-side (reading history self-prunes to 200 rows) —
+      // this only clears the local id list and cached hook data, used by the Account & Security
+      // screen's simulated "delete account" flow, not a real per-reader data-deletion action.
+      clearHistory: () => {
+        setReadingHistoryIds([]);
+        invalidateReadingHistoryCache();
+      },
       watchlistSymbols,
       toggleWatchlist: (symbol: string) =>
         setWatchlistSymbols((prev) => (prev.includes(symbol) ? prev.filter((x) => x !== symbol) : [...prev, symbol])),

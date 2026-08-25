@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -9,12 +9,41 @@ import { AppHeader } from '../../components/AppHeader';
 import { ArticleCard } from '../../components/ArticleCard';
 import { ListRow } from '../../components/ListRow';
 import { articles, breakingArticle, newsletters } from '../../data/mock';
+import type { Article } from '../../data/types';
+import { registerArticle } from '../../lib/api/content';
 import { useAppState } from '../../state/AppState';
+import { useBookmarks } from '../../hooks/useBookmarks';
+import { useReadingHistory } from '../../hooks/useReadingHistory';
+import type { BookmarkRow } from '../../lib/api/bookmarks';
+import type { ReadingHistoryRow } from '../../lib/api/readingHistory';
 import { layout, radius, space, type, useTheme } from '../../theme';
 
 const allArticles = [...articles, breakingArticle];
 const TABS = ['Saved', 'History', 'Downloads', 'Newsletters'] as const;
 type Tab = (typeof TABS)[number];
+
+// Bookmark/reading-history rows only carry the denormalized {postId, title, url, imageUrl} the
+// backend stores at save time — not a full Article. Registering a minimal Article from each row
+// (via content.ts's shared registry) means tapping through from this tab still resolves the real
+// article in ArticleReaderScreen via its live entitlement check, rather than only ever
+// falling back to an arbitrary mock article for a post never fetched this session.
+function rowToArticle(row: BookmarkRow | ReadingHistoryRow, section: string): Article {
+  return {
+    id: row.postId,
+    headline: row.title,
+    dek: '',
+    section,
+    authorId: '',
+    publishedAt: '',
+    contentType: 'news',
+    isPremium: false,
+    readTime: '',
+    body: [],
+    heroColor: '#333333',
+    imageUrl: row.imageUrl ?? undefined,
+    sourceUrl: row.url,
+  };
+}
 
 // The app's content-interaction hub — everything you've saved, read, downloaded, or
 // subscribed to, in one place. Distinct from Settings: this screen is "what you've engaged
@@ -23,18 +52,26 @@ export function ForYouScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [tab, setTab] = useState<Tab>('Saved');
-  const {
-    savedArticleIds,
-    readingHistoryIds,
-    clearHistory,
-    downloadedArticleIds,
-    toggleDownload,
-    subscribedNewsletterIds,
-    toggleNewsletterSubscription,
-  } = useAppState();
+  const { downloadedArticleIds, toggleDownload, subscribedNewsletterIds, toggleNewsletterSubscription } =
+    useAppState();
 
-  const saved = savedArticleIds.map((id) => allArticles.find((a) => a.id === id)).filter((a): a is (typeof allArticles)[number] => !!a);
-  const history = readingHistoryIds.map((id) => allArticles.find((a) => a.id === id)).filter((a): a is (typeof allArticles)[number] => !!a);
+  const bookmarkRows = useBookmarks();
+  const historyRows = useReadingHistory();
+
+  const saved = useMemo(() => {
+    const rows = bookmarkRows ?? [];
+    const mapped = rows.map((row) => rowToArticle(row, 'Saved'));
+    for (const a of mapped) registerArticle(a);
+    return mapped;
+  }, [bookmarkRows]);
+
+  const history = useMemo(() => {
+    const rows = historyRows ?? [];
+    const mapped = rows.map((row) => rowToArticle(row, 'History'));
+    for (const a of mapped) registerArticle(a);
+    return mapped;
+  }, [historyRows]);
+
   const downloaded = downloadedArticleIds.map((id) => allArticles.find((a) => a.id === id)).filter((a): a is (typeof allArticles)[number] => !!a);
 
   return (
@@ -89,17 +126,6 @@ export function ForYouScreen() {
         })}
       </View>
 
-      {tab === 'History' && history.length > 0 && (
-        <Pressable
-          onPress={clearHistory}
-          hitSlop={8}
-          accessibilityRole="button"
-          style={{ alignSelf: 'flex-end', paddingHorizontal: space.lg, paddingTop: space.md }}
-        >
-          <Text style={[type.caption, { color: theme.accentDeep }]}>Clear history</Text>
-        </Pressable>
-      )}
-
       {tab === 'Saved' && (
         <FlatList
           data={saved}
@@ -107,7 +133,7 @@ export function ForYouScreen() {
           contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
           ListEmptyComponent={
             <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xl }]}>
-              Nothing saved yet — tap the bookmark icon on any article to add it here.
+              {bookmarkRows === null ? 'Loading…' : 'Nothing saved yet — tap the bookmark icon on any article to add it here.'}
             </Text>
           }
           renderItem={({ item }) => (
@@ -123,7 +149,7 @@ export function ForYouScreen() {
           contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
           ListEmptyComponent={
             <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xl }]}>
-              Articles you open will show up here so you can pick up where you left off.
+              {historyRows === null ? 'Loading…' : 'Articles you open will show up here so you can pick up where you left off.'}
             </Text>
           }
           renderItem={({ item }) => (
