@@ -108,6 +108,7 @@ export function SettingsScreen() {
           onPress={() => navigation.navigate('NotificationPreferences')}
         />
         <MenuRow icon="tag" label="Your interests" onPress={() => navigation.navigate('Interests')} />
+        <MenuRow icon="gift" label="Refer a friend" onPress={() => navigation.navigate('Referrals')} />
         <MenuRow
           icon="message-circle"
           label="Comment replies"
