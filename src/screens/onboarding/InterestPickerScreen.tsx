@@ -9,16 +9,17 @@ import { layout, radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'InterestPicker'>;
 
+const MAX_INTERESTS = 5;
+
 export function InterestPickerScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { followedTopics, toggleFollowedTopic } = useAppState();
   const [selected, setSelected] = useState<string[]>(followedTopics);
 
   const toggle = (topic: string) => {
-    setSelected((prev) => {
-      const next = prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic];
-      return next;
-    });
+    const isSelected = selected.includes(topic);
+    if (!isSelected && selected.length >= MAX_INTERESTS) return;
+    setSelected((prev) => (isSelected ? prev.filter((t) => t !== topic) : [...prev, topic]));
     toggleFollowedTopic(topic);
   };
 
@@ -29,7 +30,7 @@ export function InterestPickerScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={[type.articleHeadline, { color: theme.ink }]}>What do you want to follow?</Text>
         <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]}>
-          Pick 2-3 topics to start
+          Pick 2-5 topics to start
         </Text>
 
         <View style={styles.grid}>

@@ -105,6 +105,7 @@ export function SettingsScreen() {
           label="Notification preferences"
           onPress={() => navigation.navigate('NotificationPreferences')}
         />
+        <MenuRow icon="tag" label="Your interests" onPress={() => navigation.navigate('Interests')} />
 
         <View style={{ marginTop: space.xl }}>
           <SectionLabel label="Settings & support" />

@@ -13,6 +13,8 @@ export type RootStackParamList = {
   Search: undefined;
   Notifications: undefined;
   NotificationPreferences: undefined;
+  Interests: undefined;
+  Referrals: undefined;
   SubscriptionPlans: undefined;
   ManageSubscription: undefined;
   BillingHistory: undefined;

@@ -8,6 +8,7 @@ import { addBookmark, getBookmarks, removeBookmark } from '../lib/api/bookmarks'
 import { invalidateBookmarksCache } from '../hooks/useBookmarks';
 import { getReadingHistory, recordReadingHistoryView } from '../lib/api/readingHistory';
 import { invalidateReadingHistoryCache } from '../hooks/useReadingHistory';
+import { follow as followRequest, getFollows, unfollow as unfollowRequest } from '../lib/api/follows';
 import type { Article } from '../data/types';
 
 export type AccessibilityPrefs = {
@@ -111,12 +112,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   // ForYouScreen) so isSaved checks on ArticleCard/HeroArticleCard/ArticleReaderScreen are
   // correct app-wide, not just on the Saved tab itself.
   const syncServerBackedLists = useCallback(async () => {
-    const [bookmarks, history] = await Promise.all([
+    const [bookmarks, history, follows] = await Promise.all([
       getBookmarks().catch(() => []),
       getReadingHistory().catch(() => []),
+      getFollows().catch(() => []),
     ]);
     setSavedArticleIds(bookmarks.map((b) => b.postId));
     setReadingHistoryIds(history.map((h) => h.postId));
+    setFollowedTopics(follows.filter((f) => f.taxonomy === 'category').map((f) => f.termId));
   }, []);
 
   const refreshSession = useCallback(async () => {
@@ -125,6 +128,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setAuthUser(null);
       setSavedArticleIds([]);
       setReadingHistoryIds([]);
+      setFollowedTopics([]);
       return;
     }
     try {
@@ -213,8 +217,17 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       edition,
       setEdition,
       followedTopics,
-      toggleFollowedTopic: (topic: string) =>
-        setFollowedTopics((prev) => (prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic])),
+      // Mock topics carry no real WP taxonomy term id — the topic label doubles as termId and
+      // termLabel, same stand-in every other mock-data call site in this app uses until a real
+      // taxonomy feed exists. Optimistic, same posture as toggleSaved above.
+      toggleFollowedTopic: (topic: string) => {
+        const isFollowed = followedTopics.includes(topic);
+        setFollowedTopics((prev) => (isFollowed ? prev.filter((t) => t !== topic) : [...prev, topic]));
+        const request = isFollowed
+          ? unfollowRequest('category', topic)
+          : followRequest({ taxonomy: 'category', termId: topic, termLabel: topic });
+        request.catch(() => undefined);
+      },
       subscribedNewsletterIds,
       toggleNewsletterSubscription: (id: string) =>
         setSubscribedNewsletterIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),

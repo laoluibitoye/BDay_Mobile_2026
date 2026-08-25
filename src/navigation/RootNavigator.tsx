@@ -27,6 +27,7 @@ import { ManageSubscriptionScreen } from '../screens/you/ManageSubscriptionScree
 import { BillingHistoryScreen } from '../screens/you/BillingHistoryScreen';
 import { NotificationPreferencesScreen } from '../screens/you/NotificationPreferencesScreen';
 import { NotificationsScreen } from '../screens/you/NotificationsScreen';
+import { InterestsScreen } from '../screens/you/InterestsScreen';
 import { ProfileScreen } from '../screens/you/ProfileScreen';
 import { FeedSettingsScreen } from '../screens/you/FeedSettingsScreen';
 import { AccessibilityScreen } from '../screens/you/AccessibilityScreen';
@@ -81,6 +82,7 @@ export function RootNavigator() {
       <Stack.Screen name="Search" component={SearchScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="NotificationPreferences" component={NotificationPreferencesScreen} />
+      <Stack.Screen name="Interests" component={InterestsScreen} />
 
       <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlansScreen} />
       <Stack.Screen name="ManageSubscription" component={ManageSubscriptionScreen} />
