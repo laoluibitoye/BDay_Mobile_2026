@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
@@ -6,19 +6,52 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { ArticleCard } from '../../components/ArticleCard';
 import { articles } from '../../data/mock';
+import { Article } from '../../data/types';
+import { searchArticles } from '../../lib/api/content';
 import { radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Search'>;
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 export function SearchScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const [query, setQuery] = useState('');
+  const [remoteResults, setRemoteResults] = useState<Article[]>([]);
 
-  const results = useMemo(() => {
+  const mockResults = useMemo(() => {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
     return articles.filter((a) => a.headline.toLowerCase().includes(q) || a.section.toLowerCase().includes(q));
   }, [query]);
+
+  useEffect(() => {
+    if (!query.trim()) {
+      setRemoteResults([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      searchArticles(query.trim())
+        .then((results) => {
+          if (!cancelled) setRemoteResults(results);
+        })
+        .catch(() => {
+          if (!cancelled) setRemoteResults([]);
+        });
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  // Real results first, then mock ones not already covered — keeps the screen useful even
+  // against a sparsely-populated or unconfigured WordPress site.
+  const results = useMemo(() => {
+    const seen = new Set(remoteResults.map((a) => a.id));
+    return [...remoteResults, ...mockResults.filter((a) => !seen.has(a.id))];
+  }, [remoteResults, mockResults]);
 
   return (
     <Screen scroll={false}>

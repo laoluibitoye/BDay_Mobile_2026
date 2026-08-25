@@ -1,3 +1,18 @@
+// Formats a real ISO timestamp (from the WP feed API) into the same relative-label convention
+// mock data uses ("2h ago", "3d ago", "Just now") — `Article.publishedAt` is a display label
+// everywhere in the UI, not a raw timestamp, regardless of whether the article is real or mock.
+export function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMin = Math.max(0, Math.round(diffMs / 60000));
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.round(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return `${Math.round(diffDay / 7)}w ago`;
+}
+
 // Parses mock `publishedAt` labels ("2h ago", "3d ago", "1w ago", "Just now") into minutes-ago,
 // so recency-ordered feeds (Latest → Recent) can sort mock data without a real timestamp field.
 export function minutesAgo(label: string): number {

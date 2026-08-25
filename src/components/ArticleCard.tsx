@@ -1,9 +1,11 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Article } from '../data/types';
 import { authors } from '../data/mock';
 import { useAppState } from '../state/AppState';
+import { useIsSpeaking } from '../hooks/useIsSpeaking';
+import { toggleSpeak } from '../lib/tts';
 import { layout, radius, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
 import { LiveBadge, PremiumBadge } from './Badge';
@@ -17,9 +19,13 @@ type Props = {
 
 export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
   const { theme } = useTheme();
-  const { savedArticleIds, toggleSaved } = useAppState();
+  const { savedArticleIds, toggleSaved, language } = useAppState();
   const author = authors.find((a) => a.id === article.authorId);
   const isSaved = savedArticleIds.includes(article.id);
+  const isSpeaking = useIsSpeaking(article.id);
+
+  const listen = onListen ?? (() => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, language));
+  const share = onShare ?? (() => Share.share({ message: article.sourceUrl ? `${article.headline}\n\n${article.sourceUrl}` : `${article.headline}\n\n${article.dek}` }));
 
   return (
     <Pressable onPress={onPress} style={[styles.card, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
@@ -39,10 +45,10 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
           <Pressable
             hitSlop={(layout.touchTarget - 20) / 2}
             style={styles.toolbarItem}
-            onPress={onListen}
-            accessibilityLabel="Listen to this article"
+            onPress={listen}
+            accessibilityLabel={isSpeaking ? 'Stop listening' : 'Listen to this article'}
           >
-            <Feather name="headphones" size={20} color={theme.inkMuted} />
+            <Feather name={isSpeaking ? 'pause-circle' : 'headphones'} size={20} color={isSpeaking ? theme.accent : theme.inkMuted} />
           </Pressable>
           <Pressable hitSlop={(layout.touchTarget - 20) / 2} style={styles.toolbarItem} accessibilityLabel="Comments">
             <Feather name="message-circle" size={20} color={theme.inkMuted} />
@@ -61,7 +67,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
           <Pressable
             hitSlop={(layout.touchTarget - 20) / 2}
             style={styles.toolbarItem}
-            onPress={onShare}
+            onPress={share}
             accessibilityLabel="Share article"
           >
             <Feather name="share" size={20} color={theme.inkMuted} />

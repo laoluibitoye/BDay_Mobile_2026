@@ -6,7 +6,7 @@ import { ArticleImage } from './ArticleImage';
 import { SectionLabel } from './SectionLabel';
 
 type Props = {
-  label: string;
+  label?: string;
   articles: Article[];
   onPressArticle: (id: string) => void;
 };
@@ -14,12 +14,16 @@ type Props = {
 const TILE_WIDTH = 168;
 
 // design.md §6 "Brief carousel rail" — Economist-style "World in Brief" analog: glanceable, not actionable inline.
+// `label` is optional — an unlabeled chronological stream (e.g. the Recent tab) skips the header
+// rather than showing an empty one.
 export function BriefCarouselRail({ label, articles, onPressArticle }: Props) {
   return (
     <View style={{ marginBottom: layout.sectionGap }}>
-      <View style={{ paddingHorizontal: space.lg }}>
-        <SectionLabel label={label} />
-      </View>
+      {label && (
+        <View style={{ paddingHorizontal: space.lg }}>
+          <SectionLabel label={label} />
+        </View>
+      )}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

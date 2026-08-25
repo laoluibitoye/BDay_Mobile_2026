@@ -9,14 +9,30 @@ import { Button } from '../../components/Button';
 import { subscriptionPlans } from '../../data/mock';
 import { useAppState } from '../../state/AppState';
 import { confirmCancelSubscription } from '../../lib/confirmCancelSubscription';
+import { cancelSubscription } from '../../lib/api/auth';
 import { radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ManageSubscription'>;
 
 export function ManageSubscriptionScreen({ navigation }: Props) {
   const { theme } = useTheme();
-  const { isSubscribed, setSubscribed } = useAppState();
-  const currentPlan = subscriptionPlans.find((p) => p.highlight) ?? subscriptionPlans[0];
+  const { authUser, isSubscribed, refreshSession } = useAppState();
+  const mockPlan = subscriptionPlans.find((p) => p.highlight) ?? subscriptionPlans[0];
+  const currentPlan = authUser?.subscription
+    ? { name: authUser.subscription.planName, price: `expires ${new Date(authUser.subscription.expiresAt).toLocaleDateString()}` }
+    : { name: mockPlan.name, price: mockPlan.price };
+
+  const cancel = () => {
+    confirmCancelSubscription(async () => {
+      const subscriptionId = authUser?.subscription?.id;
+      if (!subscriptionId) return;
+      try {
+        await cancelSubscription(subscriptionId);
+      } finally {
+        await refreshSession();
+      }
+    });
+  };
 
   return (
     <Screen header={<AppHeader variant="compact" title="Manage subscription" showBack />}>
@@ -34,9 +50,7 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
             >
               <Text style={[type.mono, { color: theme.accentDeep }]}>CURRENT PLAN</Text>
               <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.xs }]}>{currentPlan.name}</Text>
-              <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: 2 }]}>
-                {currentPlan.price} · renews automatically
-              </Text>
+              <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: 2 }]}>{currentPlan.price}</Text>
             </View>
 
             <View style={{ marginTop: space.xl }}>
@@ -47,12 +61,7 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
             </View>
 
             <View style={{ marginTop: space.xl }}>
-              <Button
-                label="Cancel subscription"
-                variant="secondary"
-                onPress={() => confirmCancelSubscription(() => setSubscribed(false))}
-                fullWidth
-              />
+              <Button label="Cancel subscription" variant="secondary" onPress={cancel} fullWidth />
               <Text style={[type.caption, { color: theme.inkMuted, marginTop: space.sm, textAlign: 'center' }]}>
                 You'll keep Premium access until the end of the current billing period.
               </Text>

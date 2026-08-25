@@ -1,113 +1,51 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, space, type, useTheme } from '../theme';
 
 const FAB_SIZE = 52;
 
-// design.md §6 "Sia chat panel" — a floating widget (FAB → slide-up sheet), not an inline card
-// taking up space in the article flow. Phase 1 note: responses are canned/stubbed until Sia's
-// backend API is confirmed (IMPLEMENTATION_PLAN.md §14.2).
+// design.md §6 "Sia chat panel" — floating widget (FAB), lower-right, above the tab bar. Show
+// only for now, per explicit direction: no chat backend exists yet, so this doesn't pretend to
+// answer — it just confirms the surface is coming, rather than faking responses.
 export function SiaPanel({ articleHeadline }: { articleHeadline: string }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<{ from: 'user' | 'sia'; text: string }[]>([]);
-  const [draft, setDraft] = useState('');
-
-  const send = (text: string) => {
-    if (!text.trim()) return;
-    setMessages((prev) => [...prev, { from: 'user', text }]);
-    setDraft('');
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          from: 'sia',
-          text: `(Prototype response) Here's a quick take on "${articleHeadline}" — this is a placeholder until Sia's live backend is connected.`,
-        },
-      ]);
-    }, 500);
-  };
 
   return (
     <>
       <Pressable
         onPress={() => setOpen(true)}
-        style={[
-          styles.fab,
-          { bottom: insets.bottom + 96, backgroundColor: theme.accent, shadowColor: theme.ink },
-        ]}
+        style={[styles.fab, { bottom: insets.bottom + 96, backgroundColor: theme.accent, shadowColor: theme.ink }]}
         accessibilityRole="button"
         accessibilityLabel="Ask Sia about this article"
       >
         <Text style={[type.label, { color: '#FFFFFF', fontSize: 18 }]}>S</Text>
       </Pressable>
 
-      <Modal visible={open} animationType="slide" transparent onRequestClose={() => setOpen(false)}>
+      <Modal visible={open} animationType="fade" transparent onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel="Close Sia" />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.sheetWrap}
-        >
-          <View style={[styles.sheet, { backgroundColor: theme.bg, paddingBottom: insets.bottom + space.lg }]}>
-            <View style={styles.grabber} />
-            <View style={styles.header}>
-              <View style={styles.headerLeft}>
-                <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-                  <Text style={[type.label, { color: '#fff' }]}>S</Text>
-                </View>
-                <Text style={[type.label, { color: theme.ink }]}>Sia</Text>
-              </View>
-              <Pressable onPress={() => setOpen(false)} hitSlop={8} accessibilityLabel="Close">
-                <Feather name="x" size={20} color={theme.inkMuted} />
-              </Pressable>
+        <View style={styles.centerWrap}>
+          <View style={[styles.card, { backgroundColor: theme.bg }]}>
+            <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
+              <Text style={[type.label, { color: '#fff' }]}>S</Text>
             </View>
-
-            <ScrollView style={styles.messages} contentContainerStyle={{ gap: space.sm }}>
-              {messages.length === 0 && (
-                <Text style={[type.bodyUI, { color: theme.inkMuted }]}>
-                  Ask Sia about "{articleHeadline}" — get a quick summary or context.
-                </Text>
-              )}
-              {messages.map((m, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.bubble,
-                    m.from === 'user'
-                      ? { alignSelf: 'flex-end', backgroundColor: theme.accentTint }
-                      : { alignSelf: 'flex-start', backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.rule },
-                  ]}
-                >
-                  <Text style={[type.bodyUI, { color: theme.ink }]}>{m.text}</Text>
-                </View>
-              ))}
-            </ScrollView>
-
+            <Text style={[type.label, { color: theme.ink, marginTop: space.md }]}>Sia</Text>
+            <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs, textAlign: 'center' }]}>
+              Your AI reading assistant for "{articleHeadline}" is coming soon.
+            </Text>
             <Pressable
-              style={[styles.chip, { borderColor: theme.rule }]}
-              onPress={() => send('Summarise this for me')}
+              onPress={() => setOpen(false)}
+              style={[styles.closeButton, { backgroundColor: theme.accentTint }]}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
             >
-              <Text style={[type.label, { color: theme.ink }]}>Summarise this for me</Text>
+              <Feather name="x" size={16} color={theme.accentDeep} />
             </Pressable>
-
-            <View style={[styles.inputRow, { borderColor: theme.rule }]}>
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                placeholder="Ask Sia about this article..."
-                placeholderTextColor={theme.inkFaint}
-                style={[type.bodyUI, { flex: 1, color: theme.ink }]}
-                onSubmitEditing={() => send(draft)}
-              />
-              <Pressable onPress={() => send(draft)} accessibilityRole="button" accessibilityLabel="Send message">
-                <Feather name="arrow-up-circle" size={22} color={theme.accent} />
-              </Pressable>
-            </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
     </>
   );
@@ -127,28 +65,16 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  backdrop: { flex: 1, backgroundColor: 'rgba(17,17,17,0.4)' },
-  sheetWrap: { justifyContent: 'flex-end' },
-  sheet: {
-    borderTopLeftRadius: radius.card * 1.5,
-    borderTopRightRadius: radius.card * 1.5,
-    padding: space.lg,
-    maxHeight: '75%',
-  },
-  grabber: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: '#00000022', marginBottom: space.md },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.md },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  avatar: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  messages: { marginBottom: space.sm },
-  bubble: { borderRadius: radius.card, padding: space.md, maxWidth: '85%' },
-  chip: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: radius.pill, paddingVertical: space.xs, paddingHorizontal: space.md, marginBottom: space.sm },
-  inputRow: {
-    flexDirection: 'row',
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(17,17,17,0.4)' },
+  centerWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl },
+  card: { borderRadius: radius.card * 1.5, padding: space.xl, alignItems: 'center', width: '100%', maxWidth: 320 },
+  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  closeButton: {
+    marginTop: space.lg,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
-    gap: space.sm,
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
+    justifyContent: 'center',
   },
 });

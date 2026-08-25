@@ -37,7 +37,9 @@
           }
         }
       ],
-      "expo-image"
+      "expo-image",
+      "expo-secure-store",
+      "expo-web-browser"
     ]
   }
 }

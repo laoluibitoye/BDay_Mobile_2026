@@ -6,18 +6,20 @@ import { ArticleImage } from './ArticleImage';
 import { SectionLabel } from './SectionLabel';
 
 type Props = {
-  label: string;
+  label?: string;
   articles: Article[];
   onPressArticle: (id: string) => void;
 };
 
 // design.md §6 "Tile grid row" — 2-column "Recent Highlights" cluster: glanceable, no toolbar.
+// `label` is optional — an unlabeled chronological stream (e.g. the Recent tab) skips the header
+// rather than showing an empty one.
 export function TileGridRow({ label, articles, onPressArticle }: Props) {
   const pairedArticles = articles.length % 2 === 0 ? articles : articles.slice(0, -1);
 
   return (
     <View style={{ marginBottom: layout.sectionGap, paddingHorizontal: space.lg }}>
-      <SectionLabel label={label} />
+      {label && <SectionLabel label={label} />}
       <View style={styles.grid}>
         {pairedArticles.map((article) => (
           <Tile key={article.id} article={article} onPress={() => onPressArticle(article.id)} />

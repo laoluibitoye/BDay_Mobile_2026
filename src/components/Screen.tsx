@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 
@@ -10,9 +10,10 @@ type Props = {
   style?: ViewStyle;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   scrollRef?: React.RefObject<ScrollView | null>;
+  onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 };
 
-export function Screen({ children, header, scroll = true, style, edges = ['top'], scrollRef }: Props) {
+export function Screen({ children, header, scroll = true, style, edges = ['top'], scrollRef, onScroll }: Props) {
   const { theme } = useTheme();
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: theme.bg }]} edges={edges}>
@@ -22,6 +23,8 @@ export function Screen({ children, header, scroll = true, style, edges = ['top']
           ref={scrollRef}
           style={styles.flex}
           contentContainerStyle={[{ paddingBottom: 120 }, style]}
+          onScroll={onScroll}
+          scrollEventThrottle={onScroll ? 16 : undefined}
         >
           {children}
         </ScrollView>

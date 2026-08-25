@@ -1,56 +1,57 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { Button } from '../../components/Button';
 import { radius, space, type, useTheme } from '../../theme';
+import { useAppState } from '../../state/AppState';
+import { getMe, login, register } from '../../lib/api/auth';
+import { ApiError } from '../../lib/api/client';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
 export function AuthScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
+  const { setAuthUser } = useAppState();
   const isSignup = route.params.mode === 'signup';
-  const [showEmailStep, setShowEmailStep] = useState(false);
+
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const proceed = () => navigation.navigate('PersonaSelection');
+  const emailValid = email.includes('@');
+  const canSubmit =
+    emailValid && password.length >= 8 && (!isSignup || password === confirmPassword);
 
-  if (showEmailStep) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.bg }]}>
-        <Text style={[type.articleHeadline, { color: theme.ink }]}>
-          {isSignup ? "What's your email?" : 'Enter your email'}
-        </Text>
-        <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm }]}>
-          We'll send a secure sign-in link — no password to create or remember.
-        </Text>
+  const submit = async () => {
+    if (!canSubmit || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      // register/login only return a token pair (verified — no user payload); the profile comes
+      // from a separate GET /me once the tokens are stored.
+      if (isSignup) {
+        await register({ email, password });
+      } else {
+        await login({ email, password });
+      }
+      const me = await getMe();
+      setAuthUser(me);
+      navigation.navigate('PersonaSelection');
+    } catch (e) {
+      setError(
+        e instanceof ApiError ? e.message || 'Something went wrong. Try again.' : 'Could not reach the server. Check your connection.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        <View style={{ marginTop: space.xl }}>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={theme.inkFaint}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoFocus
-            style={[styles.input, { borderColor: theme.rule, color: theme.ink }]}
-          />
-          <View style={{ marginTop: space.lg }}>
-            <Button label="Send sign-in link" disabled={!email.includes('@')} onPress={proceed} fullWidth />
-          </View>
-        </View>
-
-        <Text
-          style={[type.bodyUI, { color: theme.inkMuted, textAlign: 'center', marginTop: space.xxl }]}
-          onPress={() => setShowEmailStep(false)}
-        >
-          Back
-        </Text>
-      </View>
-    );
-  }
+  const socialComingSoon = (provider: string) =>
+    Alert.alert(`Continue with ${provider}`, "This sign-in method isn't available in this preview build yet.");
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -59,19 +60,59 @@ export function AuthScreen({ navigation, route }: Props) {
       </Text>
       <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm }]}>
         {isSignup
-          ? 'Already subscribed on our website? We’ll find your account automatically.'
+          ? 'Already subscribed on our website? Log in with the same email instead.'
           : 'Log in to pick up where you left off.'}
       </Text>
 
-      <View style={{ marginTop: space.xxl, gap: space.md }}>
-        <SocialButton icon="chrome" label="Continue with Google" onPress={proceed} theme={theme} />
-        <SocialButton icon="smartphone" label="Continue with Apple" onPress={proceed} theme={theme} />
-        <SocialButton icon="mail" label="Continue with Email" onPress={() => setShowEmailStep(true)} theme={theme} />
-      </View>
+      <View style={{ marginTop: space.xl, gap: space.md }}>
+        <TextInput
+          value={email}
+          onChangeText={setEmail}
+          placeholder="you@example.com"
+          placeholderTextColor={theme.inkFaint}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          textContentType="emailAddress"
+          style={[styles.input, { borderColor: theme.rule, color: theme.ink }]}
+        />
+        <TextInput
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Password"
+          placeholderTextColor={theme.inkFaint}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          textContentType={isSignup ? 'newPassword' : 'password'}
+          style={[styles.input, { borderColor: theme.rule, color: theme.ink }]}
+        />
+        {isSignup && (
+          <TextInput
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Confirm password"
+            placeholderTextColor={theme.inkFaint}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="newPassword"
+            style={[styles.input, { borderColor: theme.rule, color: theme.ink }]}
+          />
+        )}
 
-      <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.xl, textAlign: 'center' }]}>
-        NO PASSWORDS TO REMEMBER
-      </Text>
+        {error && <Text style={[type.bodyUI, { color: theme.marketDown }]}>{error}</Text>}
+
+        <View style={{ marginTop: space.sm }}>
+          <Button
+            label={isSignup ? 'Create account' : 'Log in'}
+            disabled={!canSubmit}
+            loading={loading}
+            onPress={submit}
+            fullWidth
+          />
+        </View>
+      </View>
 
       {!isSignup && (
         <Text
@@ -81,6 +122,17 @@ export function AuthScreen({ navigation, route }: Props) {
           Trouble signing in?
         </Text>
       )}
+
+      <View style={styles.divider}>
+        <View style={[styles.dividerLine, { backgroundColor: theme.rule }]} />
+        <Text style={[type.caption, { color: theme.inkFaint, marginHorizontal: space.sm }]}>OR</Text>
+        <View style={[styles.dividerLine, { backgroundColor: theme.rule }]} />
+      </View>
+
+      <View style={{ gap: space.md }}>
+        <SocialButton icon="chrome" label="Continue with Google" onPress={() => socialComingSoon('Google')} theme={theme} />
+        <SocialButton icon="smartphone" label="Continue with Apple" onPress={() => socialComingSoon('Apple')} theme={theme} />
+      </View>
 
       <View style={{ marginTop: space.xxxl }}>
         <Button
@@ -124,6 +176,9 @@ function SocialButton({
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: space.xl, paddingTop: space.huge },
+  input: { borderWidth: 1, borderRadius: radius.button, paddingVertical: space.md, paddingHorizontal: space.lg },
+  divider: { flexDirection: 'row', alignItems: 'center', marginTop: space.xl, marginBottom: space.lg },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -134,5 +189,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     minHeight: 44,
   },
-  input: { borderWidth: 1, borderRadius: radius.button, paddingVertical: space.md, paddingHorizontal: space.lg },
 });

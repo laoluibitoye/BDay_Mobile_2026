@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,30 +8,50 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { Button } from '../../components/Button';
-import { games, quizQuestions } from '../../data/mock';
+import { games as mockGames, quizQuestions as mockQuizQuestions } from '../../data/mock';
+import { QuizQuestion } from '../../data/types';
+import { useRemoteGames } from '../../hooks/useRemoteGames';
+import { recordResult, STREAK_BADGES } from '../../lib/games/localStats';
 import { radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GamePlay'>;
 
 export function GamePlayScreen({ route }: Props) {
   const { theme } = useTheme();
-  const game = games.find((g) => g.id === route.params.gameId) ?? games[0];
+  const remoteGames = useRemoteGames();
+  const remoteGame = remoteGames?.find((g) => g.id === route.params.gameId);
+  const mockGame = mockGames.find((g) => g.id === route.params.gameId);
+  const kind = remoteGame?.kind ?? mockGame?.kind ?? 'quiz';
+  const title = remoteGame?.title ?? mockGame?.title ?? 'Game';
+
+  const questions: QuizQuestion[] =
+    remoteGame && remoteGame.questions.length > 0
+      ? remoteGame.questions.map((q, i) => ({ id: `${remoteGame.id}-${i}`, ...q }))
+      : mockQuizQuestions;
 
   return (
-    <Screen header={<AppHeader variant="compact" title={game.title} showBack />}>
-      {game.kind === 'quiz' ? <QuizPlay /> : <CrosswordPreview />}
+    <Screen header={<AppHeader variant="compact" title={title} showBack />}>
+      {kind === 'quiz' ? <QuizPlay gameId={route.params.gameId} questions={questions} /> : <CrosswordPreview />}
     </Screen>
   );
 }
 
-function QuizPlay() {
+function QuizPlay({ gameId, questions }: { gameId: string; questions: QuizQuestion[] }) {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [pickedIndex, setPickedIndex] = useState<number | null>(null);
-  const finished = index >= quizQuestions.length;
-  const question = quizQuestions[index];
+  const [newBadges, setNewBadges] = useState<string[]>([]);
+  const finished = index >= questions.length;
+  const question = questions[index];
+
+  useEffect(() => {
+    if (!finished) return;
+    const won = score / questions.length >= 0.5;
+    recordResult(gameId, won).then(({ newBadges: earned }) => setNewBadges(earned));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished]);
 
   const pick = (i: number) => {
     if (pickedIndex !== null) return;
@@ -49,11 +69,38 @@ function QuizPlay() {
       <View style={{ padding: space.lg, alignItems: 'center', paddingTop: space.xxxl }}>
         <Feather name="award" size={40} color={theme.accent} />
         <Text style={[type.displayHeadline, { color: theme.ink, marginTop: space.lg }]}>
-          {score}/{quizQuestions.length}
+          {score}/{questions.length}
         </Text>
         <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs, textAlign: 'center' }]}>
           Nice work — come back tomorrow to keep your streak alive.
         </Text>
+        {newBadges.length > 0 && (
+          <View style={{ marginTop: space.lg, alignItems: 'center', gap: space.xs }}>
+            <Text style={[type.mono, { color: theme.accentDeep }]}>BADGE UNLOCKED</Text>
+            {newBadges.map((id) => {
+              const badge = STREAK_BADGES.find((b) => b.id === id);
+              return (
+                <View
+                  key={id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.xs,
+                    borderWidth: 1,
+                    borderColor: theme.accent,
+                    backgroundColor: theme.accentTint,
+                    borderRadius: radius.pill,
+                    paddingVertical: space.xs,
+                    paddingHorizontal: space.md,
+                  }}
+                >
+                  <Feather name="award" size={14} color={theme.accentDeep} />
+                  <Text style={[type.label, { color: theme.accentDeep }]}>{badge?.label ?? id}</Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
         <View style={{ marginTop: space.xl, alignSelf: 'stretch', gap: space.sm }}>
           <Button label="Back to Games" onPress={() => navigation.goBack()} fullWidth />
         </View>
@@ -64,7 +111,7 @@ function QuizPlay() {
   return (
     <View style={{ padding: space.lg }}>
       <Text style={[type.mono, { color: theme.inkFaint }]}>
-        QUESTION {index + 1} OF {quizQuestions.length}
+        QUESTION {index + 1} OF {questions.length}
       </Text>
       <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.sm }]}>{question.prompt}</Text>
 
@@ -115,7 +162,7 @@ function QuizPlay() {
 
       {pickedIndex !== null && (
         <View style={{ marginTop: space.xl }}>
-          <Button label={index === quizQuestions.length - 1 ? 'See results' : 'Next question'} onPress={next} fullWidth />
+          <Button label={index === questions.length - 1 ? 'See results' : 'Next question'} onPress={next} fullWidth />
         </View>
       )}
     </View>

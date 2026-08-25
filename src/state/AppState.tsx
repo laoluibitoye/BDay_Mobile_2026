@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { freeArticlesLimit, newsletters } from '../data/mock';
+import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import { newsletters } from '../data/mock';
 import { LanguageCode } from '../data/languages';
+import { clearTokens, getAccessToken } from '../lib/api/client';
+import { getMe } from '../lib/api/auth';
+import type { MeResponse } from '../lib/api/types';
 
 export type AccessibilityPrefs = {
   largeTouchTargets: boolean;
@@ -26,11 +29,16 @@ export type ProfileInfo = {
 export type TaxonomyUsage = Record<string, { count: number; lastUsedAt: number }>;
 
 type AppStateValue = {
+  // Real session from AeroPaywall auth (IMPLEMENTATION_PLAN.md §16.3 Step 1/2). `isSubscribed` is
+  // derived from `authUser.subscription?.status`, never stored separately — the server is the
+  // only source of truth for subscription state, per §17. There is no client-computed
+  // free-article counter anymore: per-article gating comes from the real `stage` in
+  // ArticleEntitlement.
+  authUser: MeResponse | null;
+  setAuthUser: (u: MeResponse | null) => void;
+  refreshSession: () => Promise<void>;
+  logout: () => void;
   isSubscribed: boolean;
-  setSubscribed: (v: boolean) => void;
-  freeArticlesUsed: number;
-  useFreeArticle: () => void;
-  freeArticlesLimit: number;
   savedArticleIds: string[];
   toggleSaved: (id: string) => void;
   language: LanguageCode;
@@ -89,8 +97,20 @@ const DEFAULT_PROFILE: ProfileInfo = {
 // for the real Entitlement Service / Saved-articles API — see IMPLEMENTATION_PLAN.md §13 Phase 3.
 // `language` similarly stands in for a real i18n/translation pipeline — see LanguageScreen.
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [isSubscribed, setSubscribed] = useState(false);
-  const [freeArticlesUsed, setFreeArticlesUsed] = useState(freeArticlesLimit); // starts "used up" to demo the paywall
+  const [authUser, setAuthUser] = useState<MeResponse | null>(null);
+  const isSubscribed = authUser?.subscription?.status === 'active';
+  const refreshSession = useCallback(async () => {
+    const token = await getAccessToken();
+    if (!token) {
+      setAuthUser(null);
+      return;
+    }
+    try {
+      setAuthUser(await getMe());
+    } catch {
+      // leave the last-known session in place on a transient failure
+    }
+  }, []);
   const [savedArticleIds, setSavedArticleIds] = useState<string[]>([]);
   const [language, setLanguage] = useState<LanguageCode>('en');
   const [readingHistoryIds, setReadingHistoryIds] = useState<string[]>([]);
@@ -106,13 +126,20 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProfileInfo>(DEFAULT_PROFILE);
   const [taxonomyUsage, setTaxonomyUsage] = useState<TaxonomyUsage>({});
 
+  React.useEffect(() => {
+    void refreshSession();
+  }, [refreshSession]);
+
   const value = useMemo(
     () => ({
+      authUser,
+      setAuthUser,
+      refreshSession,
+      logout: () => {
+        setAuthUser(null);
+        void clearTokens();
+      },
       isSubscribed,
-      setSubscribed,
-      freeArticlesUsed,
-      useFreeArticle: () => setFreeArticlesUsed((n) => Math.min(n + 1, freeArticlesLimit)),
-      freeArticlesLimit,
       savedArticleIds,
       toggleSaved: (id: string) =>
         setSavedArticleIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
@@ -160,8 +187,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         })),
     }),
     [
+      authUser,
+      refreshSession,
       isSubscribed,
-      freeArticlesUsed,
       savedArticleIds,
       language,
       readingHistoryIds,

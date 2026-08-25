@@ -24,6 +24,7 @@ export type Article = {
   isBrief?: boolean;
   commentCount?: number;
   tags?: string[]; // secondary taxonomy tags, in addition to `section` — powers the Explore tag cloud
+  sourceUrl?: string; // real WordPress permalink — present only for articles sourced from a live feed, used for gifting/sharing a canonical link
 };
 
 export type MarketQuote = {

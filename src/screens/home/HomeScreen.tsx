@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Platform, Pressable, Text, View } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
+import { AppBannerSlot } from '../../components/AppBannerSlot';
 import { MarketTickerStrip } from '../../components/MarketTickerStrip';
 import { SectionTabStrip } from '../../components/SectionTabStrip';
 import { HeroArticleCard } from '../../components/HeroArticleCard';
@@ -15,19 +16,27 @@ import { SectionLabel } from '../../components/SectionLabel';
 import { TileGridRow } from '../../components/TileGridRow';
 import { TextListItem } from '../../components/TextListItem';
 import { ArticleCard } from '../../components/ArticleCard';
-import { TodayModule } from '../../data/types';
+import { Article, TodayModule } from '../../data/types';
 import { articles, breakingArticle, sections, todayModuleSequence } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
+import { getHomeFeed, getRegisteredArticle, HomeSection } from '../../lib/api/content';
 import { radius, layout, space, type, useTheme } from '../../theme';
 
+// Today is WP-admin-editable (wp-admin → BusinessDay App → Home Sections — title/category-or-tag
+// source/order/post-count-offset per section) when WordPress is reachable, and silently degrades
+// to the hand-curated mock magazine layout below when it's not. Either way the layout runs through
+// the same `buildMixedModules` engine used for category tabs, so the result is always "magazine
+// style" — never the flat per-section list an earlier attempt at this produced.
+const HERO_COUNT = 5;
+
 const allArticles = [...articles, breakingArticle];
-const findArticle = (id: string) => allArticles.find((a) => a.id === id) ?? articles[0];
+const findArticle = (id: string) => getRegisteredArticle(id) ?? allArticles.find((a) => a.id === id) ?? articles[0];
 
 // The lead story is a 5-slide carousel, not a single static hero — editors would pick these five
 // from WP-admin the same way `todayModuleSequence` is hand-sequenced; the breaking story anchors
 // slide one so live news still leads.
 const HERO_SLIDE_IDS = ['art-breaking', 'art-1', 'art-4', 'art-2', 'art-6'];
-const heroSlideArticles = HERO_SLIDE_IDS.map(findArticle);
+const heroSlideArticlesFallback = HERO_SLIDE_IDS.map(findArticle);
 
 // The Home sub-tab strip (`HOME_TABS`) is exactly the kind of config IMPLEMENTATION_PLAN.md §9.5
 // plans to move into the WP-admin "App content curation" plugin — an editor should be able to
@@ -56,6 +65,56 @@ export function HomeScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState<string>('Today');
+  const [wpSections, setWpSections] = useState<HomeSection[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getHomeFeed()
+      .then((sections) => {
+        if (!cancelled) setWpSections(sections);
+      })
+      .catch(() => {
+        // Silent — Today just stays on the mock magazine layout below.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const heroSlideArticles: Article[] = useMemo(() => {
+    if (wpSections && wpSections.length > 0 && wpSections[0].articles.length > 0) {
+      return wpSections.flatMap((s) => s.articles).slice(0, HERO_COUNT);
+    }
+    return heroSlideArticlesFallback;
+  }, [wpSections]);
+
+  // Each WP section becomes a labeled run of modules, shaped by the editor's chosen display type
+  // (wp-admin → BusinessDay App → Home Sections): `mixed` cycles the same variety-generating
+  // function category tabs use, the rest force the whole section into one module shape. The first
+  // section's hero-consumed articles are sliced out so the top stories aren't shown twice in a row.
+  const todaySequence: TodayModule[] = useMemo(() => {
+    if (!wpSections || wpSections.length === 0) return fullTodaySequence;
+    return wpSections.flatMap((section, idx) => {
+      const pool = idx === 0 ? section.articles.slice(HERO_COUNT) : section.articles;
+      const ids = pool.map((a) => a.id);
+      const label = { type: 'sectionLabel', label: section.label } as TodayModule;
+      switch (section.displayType) {
+        case 'hero':
+          return [label, ...pool.map((a): TodayModule => ({ type: 'hero', articleId: a.id }))];
+        case 'cardList':
+          return ids.length > 0 ? [label, { type: 'cardList', articleIds: ids } as TodayModule] : [label];
+        case 'briefRail':
+          return ids.length > 0 ? [{ type: 'briefRail', label: section.label, articleIds: ids } as TodayModule] : [];
+        case 'tileGrid':
+          return ids.length > 0 ? [{ type: 'tileGrid', label: section.label, articleIds: ids } as TodayModule] : [];
+        case 'textList':
+          return ids.length > 0 ? [{ type: 'textList', label: section.label, articleIds: ids } as TodayModule] : [];
+        case 'mixed':
+        default:
+          return [label, ...buildMixedModules(pool, section.label).filter((m) => m.type !== 'hero')];
+      }
+    });
+  }, [wpSections]);
 
   const openArticle = (id: string) => {
     const article = findArticle(id);
@@ -145,11 +204,12 @@ export function HomeScreen() {
       <View style={{ marginTop: space.sm, borderBottomWidth: 1, borderColor: theme.rule, paddingBottom: space.xs }}>
         <SectionTabStrip items={HOME_TABS} active={activeTab} onSelect={setActiveTab} />
       </View>
+      <AppBannerSlot placement="home_top" />
 
       {activeTab === 'Today' ? (
-        <FlatList
+        <FlatList<TodayModule>
           {...listPerfProps}
-          data={fullTodaySequence}
+          data={todaySequence}
           keyExtractor={(_, i) => `module-${i}`}
           contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
           ListHeaderComponent={

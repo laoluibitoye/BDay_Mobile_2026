@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Platform, Pressable, TextInput, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, TextInput, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,19 +7,22 @@ import { useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { ArticleCard } from '../../components/ArticleCard';
+import { HeroArticleCard } from '../../components/HeroArticleCard';
+import { BriefCarouselRail } from '../../components/BriefCarouselRail';
+import { TileGridRow } from '../../components/TileGridRow';
 import { SectionLabel } from '../../components/SectionLabel';
 import { TextListItem } from '../../components/TextListItem';
 import { articles, articlesForTaxonomy, breakingArticle, taxonomies, taxonomyFreshnessMinutes } from '../../data/mock';
-import { Article } from '../../data/types';
+import { Article, TodayModule } from '../../data/types';
 import { minutesAgo } from '../../lib/relativeTime';
+import { getTagFeed } from '../../lib/api/content';
+import { buildMixedModules } from '../../lib/buildMixedModules';
 import { useAppState } from '../../state/AppState';
-import { radius, space, type, useTheme } from '../../theme';
+import { layout, radius, space, type, useTheme } from '../../theme';
 
 const fullPool = [...articles, breakingArticle];
 const TABS = ['Recent', 'Explore'] as const;
 type Tab = (typeof TABS)[number];
-
-const NEW_POST_INTERVAL_MS = 20000;
 
 export function LatestScreen() {
   const { theme } = useTheme();
@@ -57,6 +60,14 @@ export function LatestScreen() {
   );
 }
 
+// Recent is one continuous chronological stream, not editorially grouped like Today — it reuses
+// the same magazine-variety module engine (buildMixedModules) so the scroll still reads as a
+// magazine, but with the module label headers stripped ("More from Recent" would be misleading
+// noise here) and no `label` argument that would otherwise show up in a header.
+function stripModuleLabel(module: TodayModule): TodayModule {
+  return 'label' in module ? { ...module, label: '' } : module;
+}
+
 function RecentTab() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -64,39 +75,123 @@ function RecentTab() {
     () => [...fullPool].sort((a, b) => minutesAgo(a.publishedAt) - minutesAgo(b.publishedAt)),
     []
   );
-  const [feed, setFeed] = useState(initial);
-  const shuffledPool = useRef([...fullPool].sort(() => 0.5 - Math.random()));
-  const cursor = useRef(0);
+  const [pool, setPool] = useState<Article[]>(initial);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLive, setIsLive] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const loadFirstPage = async () => {
+    try {
+      const { articles: real, hasMore: more } = await getTagFeed('bdrecent', 1);
+      if (real.length > 0) {
+        setPool(real);
+        setIsLive(true);
+        setPage(1);
+        setHasMore(more);
+      }
+    } catch {
+      // no configured/reachable WordPress backend — keep showing the mock pool, which is finite
+      setHasMore(false);
+    }
+  };
 
   useEffect(() => {
-    const id = setInterval(() => {
-      const source = shuffledPool.current[cursor.current % shuffledPool.current.length];
-      cursor.current += 1;
-      setFeed((prev) => [{ ...source, id: `live-${Date.now()}-${cursor.current}`, publishedAt: 'Just now' }, ...prev].slice(0, 400));
-    }, NEW_POST_INTERVAL_MS);
-    return () => clearInterval(id);
+    void loadFirstPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadFirstPage();
+    setRefreshing(false);
+  };
+
+  const loadMore = async () => {
+    if (!isLive || !hasMore || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const { articles: real, hasMore: more } = await getTagFeed('bdrecent', nextPage);
+      setPool((prev) => [...prev, ...real]);
+      setPage(nextPage);
+      setHasMore(more);
+    } catch {
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const poolById = useMemo(() => new Map(pool.map((a) => [a.id, a] as const)), [pool]);
+  const findArticle = (id: string) => poolById.get(id) ?? pool[0];
+
+  const openArticle = (id: string) => {
+    const article = findArticle(id);
+    if (article.isLive) navigation.navigate('BreakingNews');
+    else navigation.navigate('ArticleReader', { articleId: id });
+  };
+
+  // Rebuilding from the full accumulated pool on every page load is safe here: buildMixedModules
+  // is a greedy front-to-back cycle, so earlier items' module boundaries never change — appending
+  // a new page only ever adds trailing modules.
+  const modules = useMemo(() => buildMixedModules(pool, 'Recent').map(stripModuleLabel), [pool]);
+
+  const renderModule = (module: TodayModule) => {
+    switch (module.type) {
+      case 'hero':
+        return <HeroArticleCard article={findArticle(module.articleId)} onPress={() => openArticle(module.articleId)} />;
+      case 'briefRail':
+        return <BriefCarouselRail articles={module.articleIds.map(findArticle)} onPressArticle={openArticle} />;
+      case 'sectionLabel':
+        return null; // buildMixedModules never emits this type — kept for TodayModule exhaustiveness
+      case 'cardList':
+        return (
+          <View style={{ marginBottom: layout.sectionGap - space.lg }}>
+            {module.articleIds.map((id) => (
+              <ArticleCard key={id} article={findArticle(id)} onPress={() => openArticle(id)} />
+            ))}
+          </View>
+        );
+      case 'tileGrid':
+        return <TileGridRow articles={module.articleIds.map(findArticle)} onPressArticle={openArticle} />;
+      case 'textList':
+        return (
+          <View style={{ marginBottom: layout.sectionGap }}>
+            {module.articleIds.map((id, i) => (
+              <TextListItem
+                key={id}
+                article={findArticle(id)}
+                onPress={() => openArticle(id)}
+                showDivider={i < module.articleIds.length - 1}
+              />
+            ))}
+          </View>
+        );
+    }
+  };
 
   return (
     <>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingHorizontal: space.lg, paddingTop: space.md }}>
-        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.marketUp }} />
-        <Text style={[type.caption, { color: theme.inkMuted }]}>Live — updates automatically as new stories publish</Text>
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isLive ? theme.marketUp : theme.inkFaint }} />
+        <Text style={[type.caption, { color: theme.inkMuted }]}>
+          {isLive ? 'Live from businessday.ng — pull to refresh' : 'Preview content — pull to refresh'}
+        </Text>
       </View>
-      <FlatList
+      <FlatList<TodayModule>
         {...(Platform.OS === 'android'
           ? { removeClippedSubviews: true, windowSize: 7, maxToRenderPerBatch: 6, updateCellsBatchingPeriod: 50, initialNumToRender: 6 }
           : {})}
-        data={feed}
-        keyExtractor={(item, i) => `${item.id}-${i}`}
+        data={modules}
+        keyExtractor={(_, i) => `recent-module-${i}`}
         contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
-        renderItem={({ item, index }) =>
-          index % 4 === 3 ? (
-            <TextListItem article={item} onPress={() => navigation.navigate('ArticleReader', { articleId: item.id })} />
-          ) : (
-            <ArticleCard article={item} onPress={() => navigation.navigate('ArticleReader', { articleId: item.id })} />
-          )
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
+        onEndReachedThreshold={0.5}
+        onEndReached={loadMore}
+        ListFooterComponent={loadingMore ? <ActivityIndicator style={{ marginTop: space.lg }} color={theme.accent} /> : null}
+        renderItem={({ item }) => <>{renderModule(item)}</>}
       />
     </>
   );
