@@ -12,6 +12,7 @@ import { SectionLabel } from '../../components/SectionLabel';
 import { useAppState } from '../../state/AppState';
 import { LANGUAGES } from '../../data/languages';
 import { notifications } from '../../data/mock';
+import { useUnreadCommentNotificationCount } from '../../hooks/useCommentNotifications';
 import { layout, radius, space, type, useTheme } from '../../theme';
 
 // Account/profile/preferences only — "what you've engaged with" (saved articles, downloads,
@@ -22,6 +23,7 @@ export function SettingsScreen() {
   const { isSubscribed, language, readNotificationIds, profile } = useAppState();
   const languageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
   const unreadCount = notifications.filter((n) => !readNotificationIds.includes(n.id)).length;
+  const unreadCommentReplies = useUnreadCommentNotificationCount();
 
   const signOut = () => {
     Alert.alert('Sign out?', "You'll need to sign back in to access your saved articles and subscription.", [
@@ -106,6 +108,12 @@ export function SettingsScreen() {
           onPress={() => navigation.navigate('NotificationPreferences')}
         />
         <MenuRow icon="tag" label="Your interests" onPress={() => navigation.navigate('Interests')} />
+        <MenuRow
+          icon="message-circle"
+          label="Comment replies"
+          value={unreadCommentReplies ? String(unreadCommentReplies) : undefined}
+          onPress={() => navigation.navigate('CommentNotifications')}
+        />
 
         <View style={{ marginTop: space.xl }}>
           <SectionLabel label="Settings & support" />

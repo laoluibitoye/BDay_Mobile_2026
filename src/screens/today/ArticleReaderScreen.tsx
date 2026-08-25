@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Alert,
   NativeScrollEvent,
@@ -22,8 +22,7 @@ import { PremiumBadge } from '../../components/Badge';
 import { ReaderControls } from '../../components/ReaderControls';
 import { SiaPanel } from '../../components/SiaPanel';
 import { AdSlot } from '../../components/AdSlot';
-import { articles, authors, breakingArticle, commentsForArticle } from '../../data/mock';
-import { Comment } from '../../data/types';
+import { articles, authors, breakingArticle } from '../../data/mock';
 import { LANGUAGES } from '../../data/languages';
 import { useAppState } from '../../state/AppState';
 import { useAppConfig } from '../../hooks/useAppConfig';
@@ -31,6 +30,7 @@ import { useIsSpeaking } from '../../hooks/useIsSpeaking';
 import { getArticleEntitlement } from '../../lib/api/entitlement';
 import { getRegisteredArticle } from '../../lib/api/content';
 import { createGiftLink, giftUrl } from '../../lib/api/gift';
+import { getComments, postComment, deleteComment, type CommentView } from '../../lib/api/comments';
 import { ApiError } from '../../lib/api/client';
 import type { ArticleEntitlement, EntitlementStage } from '../../lib/api/types';
 import { htmlToParagraphs } from '../../lib/htmlToText';
@@ -44,7 +44,7 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
   const [fontScale, setFontScale] = useState(0);
   const [isTranslated, setIsTranslated] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const { isSubscribed, savedArticleIds, toggleSaved, language, recordView, profile } = useAppState();
+  const { authUser, isSubscribed, savedArticleIds, toggleSaved, language, recordView } = useAppState();
   const appConfig = useAppConfig();
   const languageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
 
@@ -60,8 +60,16 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
   const author = authors.find((a) => a.id === article.authorId);
   const isSaved = savedArticleIds.includes(article.id);
 
-  const [threadComments, setThreadComments] = useState<Comment[]>(() => commentsForArticle(article.id));
+  const [comments, setComments] = useState<CommentView[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [nextCommentsCursor, setNextCommentsCursor] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState('');
+  const [replyingTo, setReplyingTo] = useState<{ id: string; authorName: string } | null>(null);
+  const [postingComment, setPostingComment] = useState(false);
+  // Session-only "did I post this" tracking — the server never exposes a userId/ownership
+  // marker on a comment (CommentView.author is display-name-only), so this mirrors the web SDK's
+  // comments.ts `mineIds` Set exactly: only a comment posted this session shows a delete button.
+  const mineIds = useRef<Set<string>>(new Set());
   const [entitlement, setEntitlement] = useState<ArticleEntitlement | null>(null);
   const [readProgress, setReadProgress] = useState(0);
   const [gifting, setGifting] = useState(false);
@@ -76,6 +84,72 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article.id]);
+
+  useEffect(() => {
+    setCommentsLoading(true);
+    mineIds.current = new Set();
+    getComments(article.id)
+      .then((page) => {
+        setComments(page.comments);
+        setNextCommentsCursor(page.nextCursor);
+      })
+      .catch(() => {
+        setComments([]);
+        setNextCommentsCursor(null);
+      })
+      .finally(() => setCommentsLoading(false));
+  }, [article.id]);
+
+  const totalCommentCount = comments.reduce((sum, c) => sum + 1 + c.replies.length, 0);
+
+  const loadMoreComments = useCallback(() => {
+    if (!nextCommentsCursor) return;
+    getComments(article.id, nextCommentsCursor)
+      .then((page) => {
+        setComments((prev) => [...prev, ...page.comments]);
+        setNextCommentsCursor(page.nextCursor);
+      })
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [article.id, nextCommentsCursor]);
+
+  const submitComment = async () => {
+    const body = commentDraft.trim();
+    if (!body || postingComment) return;
+    setPostingComment(true);
+    const parentId = replyingTo?.id;
+    try {
+      const created = await postComment({ postId: article.id, body, parentId });
+      mineIds.current.add(created.id);
+      setComments((prev) =>
+        parentId
+          ? prev.map((c) => (c.id === parentId ? { ...c, replies: [...c.replies, created] } : c))
+          : [created, ...prev]
+      );
+      setCommentDraft('');
+      setReplyingTo(null);
+    } catch (e) {
+      Alert.alert(
+        'Could not post comment',
+        e instanceof ApiError && e.status === 401 ? 'Log in to comment.' : 'Something went wrong. Try again.'
+      );
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
+  const removeComment = async (id: string, parentId: string | null) => {
+    try {
+      await deleteComment(id);
+      setComments((prev) =>
+        parentId
+          ? prev.map((c) => (c.id === parentId ? { ...c, replies: c.replies.filter((r) => r.id !== id) } : c))
+          : prev.filter((c) => c.id !== id)
+      );
+    } catch {
+      Alert.alert('Could not remove comment', 'Something went wrong. Try again.');
+    }
+  };
 
   const stage: EntitlementStage = entitlement?.stage ?? (article.isPremium && !isSubscribed ? 'paid_lock' : 'open');
   const isLocked = stage !== 'open';
@@ -126,22 +200,6 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
     }
   };
 
-  const postComment = () => {
-    if (!commentDraft.trim()) return;
-    setThreadComments((prev) => [
-      ...prev,
-      {
-        id: `local-${Date.now()}`,
-        articleId: article.id,
-        author: profile.name,
-        avatarColor: theme.accent,
-        body: commentDraft.trim(),
-        postedAt: 'Just now',
-      },
-    ]);
-    setCommentDraft('');
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <Screen
@@ -167,13 +225,13 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
           </Pressable>
           <Pressable
             hitSlop={8}
-            accessibilityLabel={`${threadComments.length} comments, jump to comments`}
+            accessibilityLabel={`${totalCommentCount} comments, jump to comments`}
             onPress={jumpToComments}
             style={styles.commentAction}
           >
             <Feather name="message-circle" size={20} color={theme.inkMuted} />
-            {threadComments.length > 0 && (
-              <Text style={[type.caption, { color: theme.inkMuted, marginLeft: 4 }]}>{threadComments.length}</Text>
+            {totalCommentCount > 0 && (
+              <Text style={[type.caption, { color: theme.inkMuted, marginLeft: 4 }]}>{totalCommentCount}</Text>
             )}
           </Pressable>
           <Pressable
@@ -284,47 +342,126 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
 
           {!isLocked && <AdSlot placement="article_body" />}
 
-          {/* Mirrors the WordPress site's own comment thread for this post — posting here is
-              local-only until a real WP REST `comments` integration lands (IMPLEMENTATION_PLAN.md §9). */}
+          {/* Real subscription-service comment thread for this post (comments.ts) — public to
+              read, signed-in to post/reply/delete. One reply level deep, matching the backend's
+              own cap. */}
           <View style={styles.commentsSection}>
             <Text style={[type.sectionHeadline, { color: theme.ink }]}>
-              Comments {threadComments.length > 0 ? `(${threadComments.length})` : ''}
+              Comments {totalCommentCount > 0 ? `(${totalCommentCount})` : ''}
             </Text>
 
-            {threadComments.length === 0 ? (
+            {commentsLoading ? (
+              <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm }]}>Loading comments…</Text>
+            ) : comments.length === 0 ? (
               <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm }]}>
                 No comments yet — be the first to share your thoughts.
               </Text>
             ) : (
               <View style={{ marginTop: space.md, gap: space.lg }}>
-                {threadComments.map((c) => (
-                  <View key={c.id} style={styles.commentRow}>
-                    <View style={[styles.commentAvatar, { backgroundColor: c.avatarColor }]}>
-                      <Text style={[type.caption, { color: '#fff' }]}>{c.author.charAt(0).toUpperCase()}</Text>
+                {comments.map((c) => (
+                  <View key={c.id}>
+                    <View style={styles.commentRow}>
+                      <View style={[styles.commentAvatar, { backgroundColor: theme.accent }]}>
+                        <Text style={[type.caption, { color: '#fff' }]}>
+                          {c.author.displayName.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[type.label, { color: theme.ink }]}>
+                          {c.author.displayName}{' '}
+                          <Text style={[type.caption, { color: theme.inkFaint }]}>
+                            · {new Date(c.createdAt).toLocaleDateString()}
+                          </Text>
+                        </Text>
+                        <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: 2 }]}>{c.body}</Text>
+                        <View style={{ flexDirection: 'row', gap: space.lg, marginTop: space.xs }}>
+                          <Pressable
+                            onPress={() => setReplyingTo({ id: c.id, authorName: c.author.displayName })}
+                            hitSlop={8}
+                            accessibilityRole="button"
+                          >
+                            <Text style={[type.caption, { color: theme.accentDeep }]}>Reply</Text>
+                          </Pressable>
+                          {mineIds.current.has(c.id) && (
+                            <Pressable onPress={() => removeComment(c.id, null)} hitSlop={8} accessibilityRole="button">
+                              <Text style={[type.caption, { color: theme.marketDown }]}>Delete</Text>
+                            </Pressable>
+                          )}
+                        </View>
+                      </View>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[type.label, { color: theme.ink }]}>
-                        {c.author} <Text style={[type.caption, { color: theme.inkFaint }]}>· {c.postedAt}</Text>
-                      </Text>
-                      <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: 2 }]}>{c.body}</Text>
-                    </View>
+
+                    {c.replies.length > 0 && (
+                      <View style={{ marginTop: space.md, marginLeft: 44, gap: space.md }}>
+                        {c.replies.map((r) => (
+                          <View key={r.id} style={styles.commentRow}>
+                            <View style={[styles.commentAvatar, { backgroundColor: theme.inkMuted, width: 26, height: 26, borderRadius: 13 }]}>
+                              <Text style={[type.caption, { color: '#fff' }]}>
+                                {r.author.displayName.charAt(0).toUpperCase()}
+                              </Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[type.label, { color: theme.ink }]}>
+                                {r.author.displayName}{' '}
+                                <Text style={[type.caption, { color: theme.inkFaint }]}>
+                                  · {new Date(r.createdAt).toLocaleDateString()}
+                                </Text>
+                              </Text>
+                              <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: 2 }]}>{r.body}</Text>
+                              {mineIds.current.has(r.id) && (
+                                <Pressable
+                                  onPress={() => removeComment(r.id, c.id)}
+                                  hitSlop={8}
+                                  accessibilityRole="button"
+                                  style={{ marginTop: space.xs, alignSelf: 'flex-start' }}
+                                >
+                                  <Text style={[type.caption, { color: theme.marketDown }]}>Delete</Text>
+                                </Pressable>
+                              )}
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
                 ))}
+
+                {nextCommentsCursor && (
+                  <Pressable onPress={loadMoreComments} hitSlop={8} accessibilityRole="button" style={{ alignSelf: 'center' }}>
+                    <Text style={[type.label, { color: theme.accentDeep }]}>Load more comments</Text>
+                  </Pressable>
+                )}
               </View>
             )}
 
-            <View style={[styles.commentInputRow, { borderColor: theme.rule }]}>
+            {replyingTo && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: space.lg }}>
+                <Text style={[type.caption, { color: theme.inkMuted, flex: 1 }]}>
+                  Replying to {replyingTo.authorName}
+                </Text>
+                <Pressable onPress={() => setReplyingTo(null)} hitSlop={8} accessibilityRole="button">
+                  <Text style={[type.caption, { color: theme.accentDeep }]}>Cancel</Text>
+                </Pressable>
+              </View>
+            )}
+            <View style={[styles.commentInputRow, { borderColor: theme.rule, marginTop: replyingTo ? space.sm : space.lg }]}>
               <TextInput
                 value={commentDraft}
                 onChangeText={setCommentDraft}
-                placeholder="Add a comment..."
+                placeholder={authUser ? 'Add a comment...' : 'Log in to comment'}
                 placeholderTextColor={theme.inkFaint}
+                editable={!!authUser && !postingComment}
                 style={[type.bodyUI, { flex: 1, color: theme.ink }]}
                 multiline
-                onSubmitEditing={postComment}
+                onSubmitEditing={submitComment}
               />
-              <Pressable onPress={postComment} accessibilityRole="button" accessibilityLabel="Post comment">
-                <Feather name="send" size={20} color={theme.accent} />
+              <Pressable
+                onPress={submitComment}
+                disabled={!authUser || postingComment}
+                accessibilityRole="button"
+                accessibilityLabel="Post comment"
+              >
+                <Feather name="send" size={20} color={authUser ? theme.accent : theme.inkFaint} />
               </Pressable>
             </View>
           </View>
