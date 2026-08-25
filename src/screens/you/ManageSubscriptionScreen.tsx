@@ -6,7 +6,6 @@ import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { MenuRow } from '../../components/MenuRow';
 import { Button } from '../../components/Button';
-import { subscriptionPlans } from '../../data/mock';
 import { useAppState } from '../../state/AppState';
 import { confirmCancelSubscription } from '../../lib/confirmCancelSubscription';
 import { cancelSubscription } from '../../lib/api/auth';
@@ -17,10 +16,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ManageSubscription'>;
 export function ManageSubscriptionScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { authUser, isSubscribed, refreshSession } = useAppState();
-  const mockPlan = subscriptionPlans.find((p) => p.highlight) ?? subscriptionPlans[0];
-  const currentPlan = authUser?.subscription
-    ? { name: authUser.subscription.planName, price: `expires ${new Date(authUser.subscription.expiresAt).toLocaleDateString()}` }
-    : { name: mockPlan.name, price: mockPlan.price };
+  // isSubscribed is derived from authUser.subscription?.status === 'active', so
+  // authUser.subscription is guaranteed non-null whenever this branch renders below.
+  const subscription = authUser?.subscription ?? null;
 
   const cancel = () => {
     confirmCancelSubscription(async () => {
@@ -49,8 +47,14 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
               }}
             >
               <Text style={[type.mono, { color: theme.accentDeep }]}>CURRENT PLAN</Text>
-              <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.xs }]}>{currentPlan.name}</Text>
-              <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: 2 }]}>{currentPlan.price}</Text>
+              <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.xs }]}>{subscription?.planName}</Text>
+              <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: 2 }]}>
+                {subscription?.autoRenew ? 'Renews' : 'Expires'}{' '}
+                {subscription ? new Date(subscription.expiresAt).toLocaleDateString() : ''}
+              </Text>
+              {subscription && !subscription.autoRenew && (
+                <Text style={[type.caption, { color: theme.marketDown, marginTop: 2 }]}>Auto-renew is off</Text>
+              )}
             </View>
 
             <View style={{ marginTop: space.xl }}>

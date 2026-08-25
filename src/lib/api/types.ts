@@ -89,6 +89,30 @@ export type Plan = {
   createdAt: string;
 };
 
+// GET /api/v1/me/subscriptions — a reader's full subscription+payment history, most recent
+// first. `amount` here is already a real number (UsersService.getSubscriptionHistory maps
+// Prisma's Decimal payment.amount via Number(...) server-side) — unlike Plan's price fields,
+// this one does NOT need a client-side Number() conversion.
+export type PaymentRow = {
+  id: string;
+  gateway: Gateway;
+  gatewayRef: string;
+  amount: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+};
+
+export type SubscriptionHistoryRow = {
+  id: string;
+  planName: string;
+  status: SubscriptionStatus;
+  startsAt: string | null;
+  expiresAt: string;
+  autoRenew: boolean;
+  payments: PaymentRow[];
+};
+
 export type Gateway = 'stripe' | 'paypal' | 'paystack' | 'flutterwave';
 
 export type CheckoutInitRequest = {
