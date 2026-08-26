@@ -12,7 +12,7 @@
 
 export type AuthTokens = { accessToken: string; refreshToken: string };
 
-export type RegisterRequest = { email: string; password: string; firstName?: string; captchaToken?: string };
+export type RegisterRequest = { email: string; password: string; firstName?: string };
 export type LoginRequest = { email: string; password: string };
 export type RefreshRequest = { refreshToken: string };
 
