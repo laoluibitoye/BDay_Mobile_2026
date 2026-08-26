@@ -16,6 +16,7 @@ export function AuthScreen({ navigation, route }: Props) {
   const { setAuthUser } = useAppState();
   const isSignup = route.params.mode === 'signup';
 
+  const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,7 +25,9 @@ export function AuthScreen({ navigation, route }: Props) {
 
   const emailValid = email.includes('@');
   const canSubmit =
-    emailValid && password.length >= 8 && (!isSignup || password === confirmPassword);
+    emailValid &&
+    password.length >= 8 &&
+    (!isSignup || (password === confirmPassword && firstName.trim().length > 0));
 
   const submit = async () => {
     if (!canSubmit || loading) return;
@@ -36,7 +39,7 @@ export function AuthScreen({ navigation, route }: Props) {
       // app is exempted server-side (see api/auth.ts's register()) since Cloudflare Turnstile
       // can't complete inside this app's embedded WebView.
       if (isSignup) {
-        await register({ email, password });
+        await register({ email, password, firstName: firstName.trim() });
       } else {
         await login({ email, password });
       }
@@ -67,6 +70,18 @@ export function AuthScreen({ navigation, route }: Props) {
       </Text>
 
       <View style={{ marginTop: space.xl, gap: space.md }}>
+        {isSignup && (
+          <TextInput
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="First name"
+            placeholderTextColor={theme.inkFaint}
+            autoCapitalize="words"
+            autoCorrect={false}
+            textContentType="givenName"
+            style={[styles.input, { borderColor: theme.rule, color: theme.ink }]}
+          />
+        )}
         <TextInput
           value={email}
           onChangeText={setEmail}
