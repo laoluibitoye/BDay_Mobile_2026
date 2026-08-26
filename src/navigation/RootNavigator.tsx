@@ -51,6 +51,8 @@ import { MarketsScreen } from '../screens/markets/MarketsScreen';
 import { MarketDetailScreen } from '../screens/markets/MarketDetailScreen';
 import { WatchlistScreen } from '../screens/markets/WatchlistScreen';
 import { MediaPlayerScreen } from '../screens/watchlisten/MediaPlayerScreen';
+import { ToonArchiveScreen } from '../screens/home/ToonArchiveScreen';
+import { EventsScreen } from '../screens/home/EventsScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -114,6 +116,8 @@ export function RootNavigator() {
       <Stack.Screen name="MarketDetail" component={MarketDetailScreen} />
       <Stack.Screen name="Watchlist" component={WatchlistScreen} />
       <Stack.Screen name="MediaPlayer" component={MediaPlayerScreen} />
+      <Stack.Screen name="ToonArchive" component={ToonArchiveScreen} />
+      <Stack.Screen name="Events" component={EventsScreen} />
     </Stack.Navigator>
     </BlurTargetView>
     <GlobalTabBar />

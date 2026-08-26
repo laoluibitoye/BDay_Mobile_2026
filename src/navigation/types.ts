@@ -40,6 +40,8 @@ export type RootStackParamList = {
   NewsletterIssue: { newsletterId: string };
   Watchlist: undefined;
   MediaPlayer: { kind: 'podcast' | 'video'; id: number };
+  ToonArchive: undefined;
+  Events: undefined;
   Settings: undefined;
   Language: undefined;
 };

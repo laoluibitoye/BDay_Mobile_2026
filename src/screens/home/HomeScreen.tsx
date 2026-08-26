@@ -17,6 +17,8 @@ import { TileGridRow } from '../../components/TileGridRow';
 import { TextListItem } from '../../components/TextListItem';
 import { ArticleCard } from '../../components/ArticleCard';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { ToonOfTheDayCard } from '../../components/ToonOfTheDayCard';
+import { EventsPreviewRow } from '../../components/EventsPreviewRow';
 import { Article, TodayModule } from '../../data/types';
 import { sections } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
@@ -233,6 +235,8 @@ export function HomeScreen() {
                     </View>
                     <Feather name="chevron-right" size={18} color={theme.bg} />
                   </Pressable>
+                  <ToonOfTheDayCard />
+                  <EventsPreviewRow />
                 </>
               ) : null
             }
