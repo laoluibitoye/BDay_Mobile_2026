@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { Button } from '../../components/Button';
+import { CaptchaWidget } from '../../components/CaptchaWidget';
 import { radius, space, type, useTheme } from '../../theme';
 import { useAppState } from '../../state/AppState';
 import { getMe, login, register } from '../../lib/api/auth';
 import { ApiError } from '../../lib/api/client';
+import { getCaptchaConfig, type CaptchaConfig } from '../../lib/api/publicConfig';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
@@ -22,9 +24,47 @@ export function AuthScreen({ navigation, route }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Distinct from "captcha off" (server has no secret key configured, e.g. local dev — 'off') so
+  // a transient network failure while fetching this config ('error') fails CLOSED rather than
+  // silently behaving as if captcha were off. An earlier version of this collapsed "off" and
+  // "fetch failed" into the same null state, which meant one flaky request let signup through
+  // with no token at all — reproducing the exact "Captcha verification failed" bug this screen
+  // exists to fix.
+  const [captchaStatus, setCaptchaStatus] = useState<'loading' | 'off' | 'ready' | 'error'>('loading');
+  const [captchaConfig, setCaptchaConfig] = useState<CaptchaConfig | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaRetryTick, setCaptchaRetryTick] = useState(0);
+
+  useEffect(() => {
+    if (!isSignup) return;
+    let cancelled = false;
+    setCaptchaStatus('loading');
+    getCaptchaConfig()
+      .then((config) => {
+        if (cancelled) return;
+        if (config) {
+          setCaptchaConfig(config);
+          setCaptchaStatus('ready');
+        } else {
+          setCaptchaStatus('off');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCaptchaStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignup, captchaRetryTick]);
+
   const emailValid = email.includes('@');
+  const captchaSatisfied =
+    captchaStatus === 'off' || (captchaStatus === 'ready' && Boolean(captchaToken));
   const canSubmit =
-    emailValid && password.length >= 8 && (!isSignup || password === confirmPassword);
+    emailValid &&
+    password.length >= 8 &&
+    (!isSignup || password === confirmPassword) &&
+    (!isSignup || captchaSatisfied);
 
   const submit = async () => {
     if (!canSubmit || loading) return;
@@ -34,7 +74,7 @@ export function AuthScreen({ navigation, route }: Props) {
       // register/login only return a token pair (verified — no user payload); the profile comes
       // from a separate GET /me once the tokens are stored.
       if (isSignup) {
-        await register({ email, password });
+        await register({ email, password, captchaToken: captchaToken ?? undefined });
       } else {
         await login({ email, password });
       }
@@ -98,6 +138,31 @@ export function AuthScreen({ navigation, route }: Props) {
             autoCorrect={false}
             textContentType="newPassword"
             style={[styles.input, { borderColor: theme.rule, color: theme.ink }]}
+          />
+        )}
+
+        {isSignup && captchaStatus === 'loading' && (
+          <Text style={[type.bodyUI, { color: theme.inkMuted }]}>Checking verification requirements…</Text>
+        )}
+        {isSignup && captchaStatus === 'error' && (
+          <View style={{ gap: space.xs }}>
+            <Text style={[type.bodyUI, { color: theme.marketDown }]}>
+              Couldn't reach the verification service. Check your connection.
+            </Text>
+            <Text
+              style={[type.bodyUI, { color: theme.accentDeep }]}
+              onPress={() => setCaptchaRetryTick((t) => t + 1)}
+            >
+              Try again
+            </Text>
+          </View>
+        )}
+        {isSignup && captchaStatus === 'ready' && captchaConfig && (
+          <CaptchaWidget
+            provider={captchaConfig.provider}
+            siteKey={captchaConfig.siteKey}
+            onToken={setCaptchaToken}
+            onExpire={() => setCaptchaToken(null)}
           />
         )}
 
