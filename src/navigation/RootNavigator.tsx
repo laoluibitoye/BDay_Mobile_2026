@@ -50,6 +50,7 @@ import { GamePlayScreen } from '../screens/games/GamePlayScreen';
 import { MarketsScreen } from '../screens/markets/MarketsScreen';
 import { MarketDetailScreen } from '../screens/markets/MarketDetailScreen';
 import { WatchlistScreen } from '../screens/markets/WatchlistScreen';
+import { MediaPlayerScreen } from '../screens/watchlisten/MediaPlayerScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -112,6 +113,7 @@ export function RootNavigator() {
       <Stack.Screen name="Markets" component={MarketsScreen} />
       <Stack.Screen name="MarketDetail" component={MarketDetailScreen} />
       <Stack.Screen name="Watchlist" component={WatchlistScreen} />
+      <Stack.Screen name="MediaPlayer" component={MediaPlayerScreen} />
     </Stack.Navigator>
     </BlurTargetView>
     <GlobalTabBar />

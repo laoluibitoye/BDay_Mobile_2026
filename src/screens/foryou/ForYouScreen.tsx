@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, Switch, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,8 +9,10 @@ import { AppHeader } from '../../components/AppHeader';
 import { ArticleCard } from '../../components/ArticleCard';
 import { ListRow } from '../../components/ListRow';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { Button } from '../../components/Button';
 import type { Article } from '../../data/types';
 import { getRegisteredArticle, registerArticle } from '../../lib/api/content';
+import { getNewsletterLists, subscribeToNewsletters, type NewsletterList } from '../../lib/api/newsletters';
 import { useAppState } from '../../state/AppState';
 import { useBookmarks } from '../../hooks/useBookmarks';
 import { useReadingHistory } from '../../hooks/useReadingHistory';
@@ -52,10 +54,44 @@ export function ForYouScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [tab, setTab] = useState<Tab>('Saved');
-  const { downloadedArticleIds, toggleDownload } = useAppState();
+  const { downloadedArticleIds, toggleDownload, authUser } = useAppState();
 
   const bookmarkRows = useBookmarks();
   const historyRows = useReadingHistory();
+
+  const [lists, setLists] = useState<NewsletterList[] | null>(null);
+  const [listsFailed, setListsFailed] = useState(false);
+  const [email, setEmail] = useState(authUser?.email ?? '');
+  const [selected, setSelected] = useState<string[]>([]);
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
+
+  const loadLists = () => {
+    setListsFailed(false);
+    getNewsletterLists()
+      .then((res) => setLists(res.lists))
+      .catch(() => setListsFailed(true));
+  };
+
+  useEffect(loadLists, []);
+
+  const toggleList = (id: string) => {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const handleSubscribe = async () => {
+    setSubscribeError(null);
+    setSubscribing(true);
+    try {
+      await subscribeToNewsletters(email.trim(), selected, authUser?.firstName ?? undefined);
+      setSubscribed(true);
+    } catch (err) {
+      setSubscribeError(err instanceof Error ? err.message : "Couldn't complete signup.");
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   const saved = useMemo(() => {
     const rows = bookmarkRows ?? [];
@@ -187,11 +223,86 @@ export function ForYouScreen() {
         />
       )}
 
-      {tab === 'Newsletters' && (
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <FeedEmptyState title="Newsletters coming soon" message="Managing newsletter subscriptions isn't available yet." />
-        </View>
-      )}
+      {tab === 'Newsletters' &&
+        (listsFailed ? (
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <FeedEmptyState title="Couldn't load Newsletters" message="Check your connection and try again." onRetry={loadLists} />
+          </View>
+        ) : lists === null ? (
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <ActivityIndicator color={theme.inkMuted} />
+          </View>
+        ) : lists.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <FeedEmptyState title="No newsletters yet" message="No newsletters have been published for signup yet." />
+          </View>
+        ) : subscribed ? (
+          <View style={{ flex: 1, justifyContent: 'center', padding: space.lg }}>
+            <FeedEmptyState title="You're subscribed" message="Check your inbox — a confirmation is on its way." />
+          </View>
+        ) : (
+          <View style={{ padding: space.lg, gap: space.md }}>
+            <Text style={[type.bodyUI, { color: theme.inkMuted }]}>
+              Choose which BusinessDay newsletters to receive by email.
+            </Text>
+            {lists.map((list) => {
+              const on = selected.includes(list.id);
+              return (
+                <View
+                  key={list.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.md,
+                    paddingVertical: space.sm,
+                    borderBottomWidth: 1,
+                    borderColor: theme.rule,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[type.label, { color: theme.ink }]}>{list.title}</Text>
+                    {!!list.description && (
+                      <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>{list.description}</Text>
+                    )}
+                  </View>
+                  <Switch value={on} onValueChange={() => toggleList(list.id)} />
+                </View>
+              );
+            })}
+
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email address"
+              placeholderTextColor={theme.inkFaint}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              style={[
+                type.bodyUI,
+                {
+                  color: theme.ink,
+                  borderWidth: 1,
+                  borderColor: theme.rule,
+                  borderRadius: radius.card,
+                  paddingHorizontal: space.md,
+                  paddingVertical: space.sm,
+                  marginTop: space.sm,
+                },
+              ]}
+            />
+            {!!subscribeError && (
+              <Text style={[type.caption, { color: theme.marketDown }]}>{subscribeError}</Text>
+            )}
+            <Button
+              label="Subscribe"
+              onPress={handleSubscribe}
+              loading={subscribing}
+              disabled={selected.length === 0 || !email.trim()}
+            />
+          </View>
+        ))}
     </SafeAreaView>
   );
 }

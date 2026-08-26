@@ -39,6 +39,7 @@ export type RootStackParamList = {
   MarketDetail: { symbol: string };
   NewsletterIssue: { newsletterId: string };
   Watchlist: undefined;
+  MediaPlayer: { kind: 'podcast' | 'video'; id: number };
   Settings: undefined;
   Language: undefined;
 };
