@@ -4,7 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Button } from '../../components/Button';
 import { GlassSheet } from '../../components/GlassSheet';
-import { subscriptionPlans } from '../../data/mock';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { useAppState } from '../../state/AppState';
 import { useCheckout } from '../../hooks/useCheckout';
 import { getPlans } from '../../lib/api/checkout';
@@ -18,15 +18,16 @@ export function PaywallScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { authUser } = useAppState();
   const { startCheckout, loading } = useCheckout();
-  const mockPlan = subscriptionPlans.find((p) => p.highlight) ?? subscriptionPlans[0];
 
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [plansLoaded, setPlansLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getPlans()
       .then((plans) => setPlan(plans[0] ?? null))
-      .catch(() => setPlan(null));
+      .catch(() => setPlan(null))
+      .finally(() => setPlansLoaded(true));
   }, []);
 
   const upgrade = async () => {
@@ -53,10 +54,6 @@ export function PaywallScreen({ navigation }: Props) {
     }
   };
 
-  const displayName = plan?.name ?? mockPlan.name;
-  const displayPrice = plan ? `₦${Number(plan.priceNgn).toLocaleString()}` : mockPlan.price;
-  const displayFeatures = plan?.featureBullets.length ? plan.featureBullets : mockPlan.features;
-
   return (
     <View style={styles.container}>
       <Pressable style={StyleSheet.absoluteFill} onPress={() => navigation.goBack()} />
@@ -66,15 +63,21 @@ export function PaywallScreen({ navigation }: Props) {
           Unlock unlimited reading, anytime, on any device.
         </Text>
 
-        <View style={[styles.planCard, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
-          <Text style={[type.label, { color: theme.ink }]}>{displayName}</Text>
-          <Text style={[type.sectionHeadline, { color: theme.accent, marginTop: space.xs }]}>{displayPrice}</Text>
-          {displayFeatures.map((f) => (
-            <Text key={f} style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]}>
-              · {f}
+        {plan ? (
+          <View style={[styles.planCard, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
+            <Text style={[type.label, { color: theme.ink }]}>{plan.name}</Text>
+            <Text style={[type.sectionHeadline, { color: theme.accent, marginTop: space.xs }]}>
+              ₦{Number(plan.priceNgn).toLocaleString()}
             </Text>
-          ))}
-        </View>
+            {plan.featureBullets.map((f) => (
+              <Text key={f} style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]}>
+                · {f}
+              </Text>
+            ))}
+          </View>
+        ) : plansLoaded ? (
+          <FeedEmptyState title="Plans unavailable" message="Subscriptions aren't available right now. Try again shortly." />
+        ) : null}
 
         {error && <Text style={[type.bodyUI, { color: theme.marketDown, marginTop: space.md }]}>{error}</Text>}
 

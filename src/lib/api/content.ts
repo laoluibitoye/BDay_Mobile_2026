@@ -36,6 +36,7 @@ export function toArticle(item: FeedItem): Article {
     dek: item.dek,
     section: item.section,
     authorId: String(item.author.id),
+    authorName: item.author.name,
     publishedAt: formatRelativeTime(item.publishedAt),
     contentType: 'news',
     isPremium: item.isPremium,

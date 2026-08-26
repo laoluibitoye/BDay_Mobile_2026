@@ -13,6 +13,7 @@ export type Article = {
   dek: string;
   section: string;
   authorId: string;
+  authorName: string;
   publishedAt: string; // relative label, e.g. "2h ago"
   contentType: ContentType;
   isPremium: boolean;

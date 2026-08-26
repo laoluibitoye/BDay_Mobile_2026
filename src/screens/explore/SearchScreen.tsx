@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { ArticleCard } from '../../components/ArticleCard';
-import { articles } from '../../data/mock';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { Article } from '../../data/types';
 import { searchArticles } from '../../lib/api/content';
 import { radius, space, type, useTheme } from '../../theme';
@@ -17,27 +17,23 @@ const SEARCH_DEBOUNCE_MS = 300;
 export function SearchScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const [query, setQuery] = useState('');
-  const [remoteResults, setRemoteResults] = useState<Article[]>([]);
-
-  const mockResults = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return articles.filter((a) => a.headline.toLowerCase().includes(q) || a.section.toLowerCase().includes(q));
-  }, [query]);
+  const [results, setResults] = useState<Article[]>([]);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    setFailed(false);
     if (!query.trim()) {
-      setRemoteResults([]);
+      setResults([]);
       return;
     }
     let cancelled = false;
     const timer = setTimeout(() => {
       searchArticles(query.trim())
-        .then((results) => {
-          if (!cancelled) setRemoteResults(results);
+        .then((found) => {
+          if (!cancelled) setResults(found);
         })
         .catch(() => {
-          if (!cancelled) setRemoteResults([]);
+          if (!cancelled) setFailed(true);
         });
     }, SEARCH_DEBOUNCE_MS);
     return () => {
@@ -45,13 +41,6 @@ export function SearchScreen({ navigation }: Props) {
       clearTimeout(timer);
     };
   }, [query]);
-
-  // Real results first, then mock ones not already covered — keeps the screen useful even
-  // against a sparsely-populated or unconfigured WordPress site.
-  const results = useMemo(() => {
-    const seen = new Set(remoteResults.map((a) => a.id));
-    return [...remoteResults, ...mockResults.filter((a) => !seen.has(a.id))];
-  }, [remoteResults, mockResults]);
 
   return (
     <Screen scroll={false}>
@@ -76,11 +65,11 @@ export function SearchScreen({ navigation }: Props) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: space.lg }}
         ListEmptyComponent={
-          query ? (
+          failed ? (
+            <FeedEmptyState title="Search unavailable" message="Check your connection and try again." />
+          ) : query ? (
             <Text style={[type.bodyUI, { color: theme.inkMuted }]}>No results for "{query}"</Text>
-          ) : (
-            <Text style={[type.mono, { color: theme.inkFaint }]}>TRENDING: BANKING · NAIRA · CBN · FINTECH</Text>
-          )
+          ) : null
         }
         renderItem={({ item }) => (
           <ArticleCard article={item} onPress={() => navigation.navigate('ArticleReader', { articleId: item.id })} />

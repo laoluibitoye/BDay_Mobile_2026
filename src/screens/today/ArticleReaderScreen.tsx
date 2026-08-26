@@ -22,8 +22,9 @@ import { PremiumBadge } from '../../components/Badge';
 import { ReaderControls } from '../../components/ReaderControls';
 import { SiaPanel } from '../../components/SiaPanel';
 import { AdSlot } from '../../components/AdSlot';
-import { articles, authors, breakingArticle } from '../../data/mock';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { LANGUAGES } from '../../data/languages';
+import type { Article } from '../../data/types';
 import { useAppState } from '../../state/AppState';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import { useIsSpeaking } from '../../hooks/useIsSpeaking';
@@ -39,7 +40,24 @@ import { layout, radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ArticleReader'>;
 
+// Every article shown here was registered by a real feed fetch before the reader navigated to it
+// (Home/SectionFeed/Search/etc. all call registerArticles()/registerArticle() on real results) —
+// an unregistered id means a stale/broken deep link, not a legitimate article to fabricate a
+// stand-in for.
 export function ArticleReaderScreen({ route, navigation }: Props) {
+  const article = getRegisteredArticle(route.params.articleId);
+  if (!article) {
+    return (
+      <Screen>
+        <AppHeader variant="compact" showBack />
+        <FeedEmptyState title="Article not found" message="This article may have been removed or the link is out of date." />
+      </Screen>
+    );
+  }
+  return <ArticleReaderView article={article} navigation={navigation} />;
+}
+
+function ArticleReaderView({ article, navigation }: { article: Article; navigation: Props['navigation'] }) {
   const { theme } = useTheme();
   const [fontScale, setFontScale] = useState(0);
   const [isTranslated, setIsTranslated] = useState(false);
@@ -47,17 +65,6 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
   const { authUser, isSubscribed, savedArticleIds, toggleSaved, language, recordView } = useAppState();
   const appConfig = useAppConfig();
   const languageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
-
-  // Real, WordPress-sourced articles (id populated via a feed fetch) get live entitlement from
-  // AeroPaywall directly — see api/entitlement.ts. Mock articles (no numeric id registered) fall
-  // back to the old simple isPremium heuristic, since there's no real backend to ask.
-  const registeredArticle = getRegisteredArticle(route.params.articleId);
-  const article =
-    registeredArticle ??
-    [...articles, breakingArticle].find((a) => a.id === route.params.articleId) ??
-    articles[0];
-  const isRealArticle = !!registeredArticle;
-  const author = authors.find((a) => a.id === article.authorId);
   const isSaved = savedArticleIds.includes(article.id);
 
   const [comments, setComments] = useState<CommentView[]>([]);
@@ -77,11 +84,9 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     recordView(article);
-    if (isRealArticle) {
-      getArticleEntitlement(article.id)
-        .then(setEntitlement)
-        .catch(() => setEntitlement(null));
-    }
+    getArticleEntitlement(article.id)
+      .then(setEntitlement)
+      .catch(() => setEntitlement(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article.id]);
 
@@ -154,11 +159,7 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
   const stage: EntitlementStage = entitlement?.stage ?? (article.isPremium && !isSubscribed ? 'paid_lock' : 'open');
   const isLocked = stage !== 'open';
 
-  const visibleParagraphs = isRealArticle
-    ? htmlToParagraphs((isLocked ? entitlement?.preview : entitlement?.content) ?? '')
-    : isLocked
-      ? article.body.slice(0, 1)
-      : article.body;
+  const visibleParagraphs = htmlToParagraphs((isLocked ? entitlement?.preview : entitlement?.content) ?? '');
 
   const jumpToComments = () => scrollRef.current?.scrollToEnd({ animated: true });
 
@@ -180,7 +181,7 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
   };
 
   const giftArticle = async () => {
-    if (!isRealArticle || !article.sourceUrl) {
+    if (!article.sourceUrl) {
       Alert.alert('Gift this article', "Gifting isn't available for this article yet.");
       return;
     }
@@ -272,13 +273,13 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
           <Text style={[type.displayHeadline, { color: theme.ink, marginTop: space.xs }]}>{article.headline}</Text>
           <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.md }]}>{article.dek}</Text>
           <Pressable
-            onPress={() => author && navigation.navigate('ColumnistPage', { authorId: author.id })}
+            onPress={() => navigation.navigate('ColumnistPage', { authorId: article.authorId })}
             accessibilityRole="button"
-            accessibilityLabel={author ? `View ${author.name}'s columnist page` : undefined}
+            accessibilityLabel={`View ${article.authorName}'s columnist page`}
             hitSlop={8}
           >
             <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.md }]}>
-              BY <Text style={{ color: theme.accentDeep }}>{author?.name.toUpperCase()}</Text> · {article.publishedAt} ·{' '}
+              BY <Text style={{ color: theme.accentDeep }}>{article.authorName.toUpperCase()}</Text> · {article.publishedAt} ·{' '}
               {article.readTime}
             </Text>
           </Pressable>

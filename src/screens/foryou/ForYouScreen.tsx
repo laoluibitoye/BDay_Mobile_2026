@@ -8,9 +8,9 @@ import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { ArticleCard } from '../../components/ArticleCard';
 import { ListRow } from '../../components/ListRow';
-import { articles, breakingArticle, newsletters } from '../../data/mock';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import type { Article } from '../../data/types';
-import { registerArticle } from '../../lib/api/content';
+import { getRegisteredArticle, registerArticle } from '../../lib/api/content';
 import { useAppState } from '../../state/AppState';
 import { useBookmarks } from '../../hooks/useBookmarks';
 import { useReadingHistory } from '../../hooks/useReadingHistory';
@@ -18,7 +18,6 @@ import type { BookmarkRow } from '../../lib/api/bookmarks';
 import type { ReadingHistoryRow } from '../../lib/api/readingHistory';
 import { layout, radius, space, type, useTheme } from '../../theme';
 
-const allArticles = [...articles, breakingArticle];
 const TABS = ['Saved', 'History', 'Downloads', 'Newsletters'] as const;
 type Tab = (typeof TABS)[number];
 
@@ -34,6 +33,7 @@ function rowToArticle(row: BookmarkRow | ReadingHistoryRow, section: string): Ar
     dek: '',
     section,
     authorId: '',
+    authorName: '',
     publishedAt: '',
     contentType: 'news',
     isPremium: false,
@@ -52,8 +52,7 @@ export function ForYouScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [tab, setTab] = useState<Tab>('Saved');
-  const { downloadedArticleIds, toggleDownload, subscribedNewsletterIds, toggleNewsletterSubscription } =
-    useAppState();
+  const { downloadedArticleIds, toggleDownload } = useAppState();
 
   const bookmarkRows = useBookmarks();
   const historyRows = useReadingHistory();
@@ -72,7 +71,7 @@ export function ForYouScreen() {
     return mapped;
   }, [historyRows]);
 
-  const downloaded = downloadedArticleIds.map((id) => allArticles.find((a) => a.id === id)).filter((a): a is (typeof allArticles)[number] => !!a);
+  const downloaded = downloadedArticleIds.map(getRegisteredArticle).filter((a): a is Article => !!a);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
@@ -189,51 +188,9 @@ export function ForYouScreen() {
       )}
 
       {tab === 'Newsletters' && (
-        <FlatList
-          data={newsletters}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
-          renderItem={({ item }) => {
-            const subscribed = subscribedNewsletterIds.includes(item.id);
-            return (
-              <View
-                style={{
-                  padding: space.lg,
-                  borderRadius: radius.card,
-                  borderWidth: 1,
-                  borderColor: theme.rule,
-                  backgroundColor: theme.bgCard,
-                  marginBottom: space.md,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[type.label, { color: theme.ink }]}>{item.title}</Text>
-                    <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: 2 }]}>{item.summary}</Text>
-                    <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.sm }]}>
-                      {item.sentAt.toUpperCase()}
-                    </Text>
-                  </View>
-                  <Switch
-                    value={subscribed}
-                    onValueChange={() => toggleNewsletterSubscription(item.id)}
-                    trackColor={{ true: theme.accent, false: theme.rule }}
-                    accessibilityLabel={subscribed ? `Unsubscribe from ${item.title}` : `Subscribe to ${item.title}`}
-                  />
-                </View>
-                <Pressable
-                  onPress={() => navigation.navigate('NewsletterIssue', { newsletterId: item.id })}
-                  hitSlop={8}
-                  accessibilityRole="button"
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, marginTop: space.md }}
-                >
-                  <Text style={[type.label, { color: theme.accentDeep }]}>View latest edition</Text>
-                  <Feather name="arrow-right" size={14} color={theme.accentDeep} />
-                </Pressable>
-              </View>
-            );
-          }}
-        />
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <FeedEmptyState title="Newsletters coming soon" message="Managing newsletter subscriptions isn't available yet." />
+        </View>
       )}
     </SafeAreaView>
   );

@@ -8,7 +8,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { Button } from '../../components/Button';
-import { games as mockGames, quizQuestions as mockQuizQuestions } from '../../data/mock';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { QuizQuestion } from '../../data/types';
 import { useRemoteGames } from '../../hooks/useRemoteGames';
 import { recordResult, STREAK_BADGES } from '../../lib/games/localStats';
@@ -17,21 +17,23 @@ import { radius, space, type, useTheme } from '../../theme';
 type Props = NativeStackScreenProps<RootStackParamList, 'GamePlay'>;
 
 export function GamePlayScreen({ route }: Props) {
-  const { theme } = useTheme();
   const remoteGames = useRemoteGames();
   const remoteGame = remoteGames?.find((g) => g.id === route.params.gameId);
-  const mockGame = mockGames.find((g) => g.id === route.params.gameId);
-  const kind = remoteGame?.kind ?? mockGame?.kind ?? 'quiz';
-  const title = remoteGame?.title ?? mockGame?.title ?? 'Game';
+  const title = remoteGame?.title ?? 'Game';
 
-  const questions: QuizQuestion[] =
-    remoteGame && remoteGame.questions.length > 0
-      ? remoteGame.questions.map((q, i) => ({ id: `${remoteGame.id}-${i}`, ...q }))
-      : mockQuizQuestions;
+  const questions: QuizQuestion[] = remoteGame
+    ? remoteGame.questions.map((q, i) => ({ id: `${remoteGame.id}-${i}`, ...q }))
+    : [];
 
   return (
     <Screen header={<AppHeader variant="compact" title={title} showBack />}>
-      {kind === 'quiz' ? <QuizPlay gameId={route.params.gameId} questions={questions} /> : <CrosswordPreview />}
+      {!remoteGame ? (
+        <FeedEmptyState title="Game not available" message="This game couldn't be loaded — check your connection." />
+      ) : remoteGame.kind === 'quiz' ? (
+        <QuizPlay gameId={route.params.gameId} questions={questions} />
+      ) : (
+        <CrosswordPreview />
+      )}
     </Screen>
   );
 }

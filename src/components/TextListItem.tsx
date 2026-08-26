@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { Article } from '../data/types';
-import { authors } from '../data/mock';
 import { space, type, useTheme } from '../theme';
 
 type Props = {
@@ -13,7 +12,6 @@ type Props = {
 // design.md §6 "Text list item" — WSJ-style text-only row: headline + dek, no thumbnail, no card chrome.
 export function TextListItem({ article, onPress, showDivider = true }: Props) {
   const { theme } = useTheme();
-  const author = authors.find((a) => a.id === article.authorId);
 
   return (
     <Pressable
@@ -27,7 +25,7 @@ export function TextListItem({ article, onPress, showDivider = true }: Props) {
         {article.dek}
       </Text>
       <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.sm }]}>
-        {author?.name.toUpperCase()} · {article.publishedAt}
+        {article.authorName.toUpperCase()} · {article.publishedAt}
       </Text>
     </Pressable>
   );

@@ -2,7 +2,6 @@ import React from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Article } from '../data/types';
-import { authors } from '../data/mock';
 import { useAppState } from '../state/AppState';
 import { useIsSpeaking } from '../hooks/useIsSpeaking';
 import { toggleSpeak } from '../lib/tts';
@@ -20,7 +19,6 @@ type Props = {
 export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
   const { theme } = useTheme();
   const { savedArticleIds, toggleSaved, language } = useAppState();
-  const author = authors.find((a) => a.id === article.authorId);
   const isSaved = savedArticleIds.includes(article.id);
   const isSpeaking = useIsSpeaking(article.id);
 
@@ -39,7 +37,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
           {article.dek}
         </Text>
         <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.sm }]}>
-          {author?.name.toUpperCase()} · {article.publishedAt} · {article.readTime}
+          {article.authorName.toUpperCase()} · {article.publishedAt} · {article.readTime}
         </Text>
         <View style={styles.toolbar}>
           <Pressable

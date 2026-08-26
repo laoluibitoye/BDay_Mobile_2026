@@ -2,7 +2,6 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Article } from '../data/types';
-import { authors } from '../data/mock';
 import { useAppState } from '../state/AppState';
 import { elevation, layout, radius, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
@@ -19,7 +18,6 @@ type Props = {
 export function HeroArticleCard({ article, onPress }: Props) {
   const { theme } = useTheme();
   const { savedArticleIds, toggleSaved } = useAppState();
-  const author = authors.find((a) => a.id === article.authorId);
   const isSaved = savedArticleIds.includes(article.id);
 
   return (
@@ -35,7 +33,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
             {article.dek}
           </Text>
           <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.md }]}>
-            {author?.name.toUpperCase()} · {article.publishedAt} · {article.readTime}
+            {article.authorName.toUpperCase()} · {article.publishedAt} · {article.readTime}
           </Text>
           <View style={styles.toolbar}>
             <Pressable hitSlop={(layout.touchTarget - 20) / 2} accessibilityLabel="Listen to this article">

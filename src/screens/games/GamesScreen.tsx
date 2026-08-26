@@ -6,7 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
-import { games as mockGames } from '../../data/mock';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { useRemoteGames } from '../../hooks/useRemoteGames';
 import { getStats, STREAK_BADGES } from '../../lib/games/localStats';
 import { radius, space, type, useTheme } from '../../theme';
@@ -28,23 +28,20 @@ export function GamesScreen() {
   const [displayGames, setDisplayGames] = useState<DisplayGame[]>([]);
 
   useEffect(() => {
-    const source =
-      remoteGames && remoteGames.length > 0
-        ? remoteGames.map((g) => ({ id: g.id, title: g.title, kind: g.kind, icon: (g.icon || 'zap') as DisplayGame['icon'] }))
-        : mockGames.map((g) => ({ id: g.id, title: g.title, kind: g.kind, icon: (g.kind === 'crossword' ? 'hash' : 'zap') as DisplayGame['icon'] }));
+    if (!remoteGames || remoteGames.length === 0) {
+      setDisplayGames([]);
+      return;
+    }
+    const source = remoteGames.map((g) => ({ id: g.id, title: g.title, kind: g.kind, icon: (g.icon || 'zap') as DisplayGame['icon'] }));
 
     let cancelled = false;
     Promise.all(
       source.map(async (g) => {
         const stats = await getStats(g.id);
-        const mockFallback = mockGames.find((m) => m.id === g.id);
-        const hasLocalHistory = stats.totalPlays > 0;
         return {
           ...g,
-          streak: hasLocalHistory ? stats.streak : mockFallback?.streak ?? 0,
-          playedToday: hasLocalHistory
-            ? stats.lastPlayedDate === new Date().toISOString().slice(0, 10)
-            : mockFallback?.playedToday ?? false,
+          streak: stats.streak,
+          playedToday: stats.lastPlayedDate === new Date().toISOString().slice(0, 10),
           badges: stats.badges,
         };
       })
@@ -63,6 +60,12 @@ export function GamesScreen() {
         <Text style={[type.bodyUI, { color: theme.inkMuted }]}>
           A daily puzzle, one tap from anywhere in the app.
         </Text>
+
+        {remoteGames !== null && remoteGames.length === 0 && (
+          <View style={{ marginTop: space.xl }}>
+            <FeedEmptyState title="No games yet" message="Check back soon for daily puzzles and quizzes." />
+          </View>
+        )}
 
         <View style={{ marginTop: space.xl, gap: space.md }}>
           {displayGames.map((game) => (

@@ -6,7 +6,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { Button } from '../../components/Button';
-import { subscriptionPlans } from '../../data/mock';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { useAppState } from '../../state/AppState';
 import { useCheckout } from '../../hooks/useCheckout';
 import { confirmCancelSubscription } from '../../lib/confirmCancelSubscription';
@@ -21,13 +21,17 @@ export function SubscriptionPlansScreen() {
   const { authUser, isSubscribed, refreshSession } = useAppState();
   const { startCheckout, loading } = useCheckout();
   const [plans, setPlans] = useState<Plan[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadPlans = () => {
+    setLoadFailed(false);
     getPlans()
       .then(setPlans)
-      .catch(() => setPlans(null));
-  }, []);
+      .catch(() => setLoadFailed(true));
+  };
+
+  useEffect(loadPlans, []);
 
   const subscribe = async (planId: string) => {
     if (!authUser) {
@@ -63,60 +67,42 @@ export function SubscriptionPlansScreen() {
         </Text>
 
         <View style={{ marginTop: space.xl, gap: space.md }}>
-          {(plans ?? []).length > 0
-            ? plans!.map((plan, i) => (
-                <View
-                  key={plan.id}
-                  style={{
-                    borderWidth: i === 0 ? 2 : 1,
-                    borderColor: i === 0 ? theme.accent : theme.rule,
-                    borderRadius: radius.card,
-                    padding: space.lg,
-                    backgroundColor: theme.bgCard,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={[type.label, { color: theme.ink }]}>{plan.name}</Text>
-                    {i === 0 && <Text style={[type.mono, { color: theme.accentDeep }]}>BEST VALUE</Text>}
-                  </View>
-                  <Text style={[type.sectionHeadline, { color: theme.accent, marginTop: space.xs }]}>
-                    ₦{Number(plan.priceNgn).toLocaleString()}
+          {loadFailed ? (
+            <FeedEmptyState title="Couldn't load plans" message="Check your connection and try again." onRetry={loadPlans} />
+          ) : plans !== null && plans.length === 0 ? (
+            <FeedEmptyState title="No plans available" message="Check back shortly." />
+          ) : (
+            (plans ?? []).map((plan, i) => (
+              <View
+                key={plan.id}
+                style={{
+                  borderWidth: i === 0 ? 2 : 1,
+                  borderColor: i === 0 ? theme.accent : theme.rule,
+                  borderRadius: radius.card,
+                  padding: space.lg,
+                  backgroundColor: theme.bgCard,
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={[type.label, { color: theme.ink }]}>{plan.name}</Text>
+                  {i === 0 && <Text style={[type.mono, { color: theme.accentDeep }]}>BEST VALUE</Text>}
+                </View>
+                <Text style={[type.sectionHeadline, { color: theme.accent, marginTop: space.xs }]}>
+                  ₦{Number(plan.priceNgn).toLocaleString()}
+                </Text>
+                {plan.featureBullets.map((f) => (
+                  <Text key={f} style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]}>
+                    · {f}
                   </Text>
-                  {plan.featureBullets.map((f) => (
-                    <Text key={f} style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]}>
-                      · {f}
-                    </Text>
-                  ))}
-                  {!isSubscribed && (
-                    <View style={{ marginTop: space.md }}>
-                      <Button label="Subscribe" onPress={() => subscribe(plan.id)} loading={loading} fullWidth />
-                    </View>
-                  )}
-                </View>
-              ))
-            : subscriptionPlans.map((plan) => (
-                <View
-                  key={plan.id}
-                  style={{
-                    borderWidth: plan.highlight ? 2 : 1,
-                    borderColor: plan.highlight ? theme.accent : theme.rule,
-                    borderRadius: radius.card,
-                    padding: space.lg,
-                    backgroundColor: theme.bgCard,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={[type.label, { color: theme.ink }]}>{plan.name}</Text>
-                    {plan.highlight && <Text style={[type.mono, { color: theme.accentDeep }]}>BEST VALUE</Text>}
+                ))}
+                {!isSubscribed && (
+                  <View style={{ marginTop: space.md }}>
+                    <Button label="Subscribe" onPress={() => subscribe(plan.id)} loading={loading} fullWidth />
                   </View>
-                  <Text style={[type.sectionHeadline, { color: theme.accent, marginTop: space.xs }]}>{plan.price}</Text>
-                  {plan.features.map((f) => (
-                    <Text key={f} style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]}>
-                      · {f}
-                    </Text>
-                  ))}
-                </View>
-              ))}
+                )}
+              </View>
+            ))
+          )}
         </View>
 
         {error && <Text style={[type.bodyUI, { color: theme.marketDown, marginTop: space.md }]}>{error}</Text>}

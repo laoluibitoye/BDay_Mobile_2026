@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
-import { newsletters } from '../data/mock';
 import { LanguageCode } from '../data/languages';
 import { clearTokens, getAccessToken } from '../lib/api/client';
 import { getMe } from '../lib/api/auth';
@@ -65,8 +64,6 @@ type AppStateValue = {
   setEdition: (e: Edition) => void;
   followedTopics: string[];
   toggleFollowedTopic: (topic: string) => void;
-  subscribedNewsletterIds: string[];
-  toggleNewsletterSubscription: (id: string) => void;
   readNotificationIds: string[];
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (ids: string[]) => void;
@@ -145,7 +142,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [dataOfflinePrefs, setDataOfflinePrefs] = useState<DataOfflinePrefs>(DEFAULT_DATA_OFFLINE_PREFS);
   const [edition, setEdition] = useState<Edition>('nigeria');
   const [followedTopics, setFollowedTopics] = useState<string[]>(['Banking', 'Markets']);
-  const [subscribedNewsletterIds, setSubscribedNewsletterIds] = useState<string[]>(newsletters.map((n) => n.id));
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [biometricReEntry, setBiometricReEntry] = useState(false);
   const [profile, setProfile] = useState<ProfileInfo>(DEFAULT_PROFILE);
@@ -228,9 +224,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           : followRequest({ taxonomy: 'category', termId: topic, termLabel: topic });
         request.catch(() => undefined);
       },
-      subscribedNewsletterIds,
-      toggleNewsletterSubscription: (id: string) =>
-        setSubscribedNewsletterIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
       readNotificationIds,
       markNotificationRead: (id: string) =>
         setReadNotificationIds((prev) => (prev.includes(id) ? prev : [...prev, id])),
@@ -260,7 +253,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       dataOfflinePrefs,
       edition,
       followedTopics,
-      subscribedNewsletterIds,
       readNotificationIds,
       biometricReEntry,
       profile,

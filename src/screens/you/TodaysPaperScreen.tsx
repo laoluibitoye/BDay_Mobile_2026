@@ -6,7 +6,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { TextListItem } from '../../components/TextListItem';
-import { articles, sections, todaysPaperPdfUrl } from '../../data/mock';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { Article } from '../../data/types';
 import { getTodaysPaper } from '../../lib/api/todaysPaper';
 import { registerArticle } from '../../lib/api/content';
@@ -30,16 +30,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'TodaysPaper'>;
 
 const TODAY_LABEL = new Date().toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long' });
 
-const mockEditionSections = sections
-  .filter((s) => s !== 'Top Stories')
-  .map((section) => ({ title: section, data: articles.filter((a) => a.section === section) }))
-  .filter((s) => s.data.length > 0);
-
 export function TodaysPaperScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const [downloading, setDownloading] = useState(false);
-  const [editionSections, setEditionSections] = useState<{ title: string; data: Article[] }[]>(mockEditionSections);
-  const [pdfUrl, setPdfUrl] = useState(todaysPaperPdfUrl);
+  const [editionSections, setEditionSections] = useState<{ title: string; data: Article[] }[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [editionLabel, setEditionLabel] = useState(TODAY_LABEL);
   const [archiveAccessDays, setArchiveAccessDays] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(isoDate(new Date()));
@@ -57,10 +53,10 @@ export function TodaysPaperScreen({ navigation }: Props) {
       .catch(() => setArchiveAccessDays(0));
   }, []);
 
-  useEffect(() => {
+  const loadPaper = () => {
+    setLoadFailed(false);
     getTodaysPaper()
       .then((paper) => {
-        if (paper.sections.length === 0) return; // nothing curated yet — keep the mock edition
         setEditionSections(
           paper.sections.map((s) => ({
             title: s.title,
@@ -71,6 +67,7 @@ export function TodaysPaperScreen({ navigation }: Props) {
                 dek: item.dek,
                 section: s.title,
                 authorId: '',
+                authorName: '',
                 publishedAt: '',
                 contentType: 'news' as const,
                 isPremium: item.isPremium,
@@ -90,9 +87,12 @@ export function TodaysPaperScreen({ navigation }: Props) {
         }
       })
       .catch(() => {
-        // no configured/reachable WordPress backend — keep the mock edition
+        setEditionSections([]);
+        setLoadFailed(true);
       });
-  }, []);
+  };
+
+  useEffect(loadPaper, []);
 
   const isToday = selectedDate === isoDate(new Date());
   const daysBack = Math.round((Date.now() - new Date(selectedDate).getTime()) / (24 * 60 * 60 * 1000));
@@ -148,9 +148,16 @@ export function TodaysPaperScreen({ navigation }: Props) {
     >
       <SectionList
         style={{ flex: 1 }}
-        sections={editionSections}
+        sections={editionSections ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
+        ListEmptyComponent={
+          loadFailed ? (
+            <FeedEmptyState title="Couldn't load today's paper" message="Check your connection and try again." onRetry={loadPaper} />
+          ) : editionSections !== null ? (
+            <FeedEmptyState title="Not curated yet" message="Today's edition hasn't been put together yet — check back shortly." />
+          ) : null
+        }
         ListHeaderComponent={
           <>
             <Text style={[type.mono, { color: theme.accentDeep }]}>{isToday ? "TODAY'S EDITION" : 'BACK ISSUE'}</Text>
