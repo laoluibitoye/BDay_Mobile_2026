@@ -8,6 +8,7 @@ import { radius, space, type, useTheme } from '../../theme';
 import { useAppState } from '../../state/AppState';
 import { getMe, login, register } from '../../lib/api/auth';
 import { ApiError } from '../../lib/api/client';
+import { registerForPushNotifications } from '../../hooks/usePushNotifications';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
@@ -45,6 +46,7 @@ export function AuthScreen({ navigation, route }: Props) {
       }
       const me = await getMe();
       setAuthUser(me);
+      void registerForPushNotifications();
       navigation.navigate('PersonaSelection');
     } catch (e) {
       setError(

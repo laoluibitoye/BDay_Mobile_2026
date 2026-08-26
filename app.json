@@ -39,7 +39,14 @@
       ],
       "expo-image",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/brand/bd-icon.png",
+          "color": "#F8F9FA"
+        }
+      ]
     ]
   }
 }

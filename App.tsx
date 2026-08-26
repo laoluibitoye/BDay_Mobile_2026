@@ -8,11 +8,13 @@ import { useAppFonts } from './src/theme/useAppFonts';
 import { AppStateProvider } from './src/state/AppState';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { navigationRef } from './src/navigation/navigationRef';
+import { usePushNotifications } from './src/hooks/usePushNotifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function App() {
   const [fontsLoaded, fontError] = useAppFonts();
+  usePushNotifications();
 
   const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded || fontError) {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 import { LanguageCode } from '../data/languages';
 import { clearTokens, getAccessToken } from '../lib/api/client';
+import { unregisterPushNotifications } from '../hooks/usePushNotifications';
 import { getMe } from '../lib/api/auth';
 import type { MeResponse } from '../lib/api/types';
 import { addBookmark, getBookmarks, removeBookmark } from '../lib/api/bookmarks';
@@ -158,6 +159,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       refreshSession,
       logout: () => {
         setAuthUser(null);
+        void unregisterPushNotifications();
         void clearTokens();
       },
       isSubscribed,
