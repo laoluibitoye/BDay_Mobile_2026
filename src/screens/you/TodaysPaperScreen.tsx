@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, SectionList, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
@@ -10,7 +11,7 @@ import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { Article } from '../../data/types';
 import { getTodaysPaper } from '../../lib/api/todaysPaper';
 import { registerArticle } from '../../lib/api/content';
-import { getArchiveWindow, getEditionDownloadUrl } from '../../lib/api/editions';
+import { DEFAULT_PUBLICATION, getArchiveWindow, getEditionDownloadUrl } from '../../lib/api/editions';
 import { ApiError } from '../../lib/api/client';
 import { radius, space, type, useTheme } from '../../theme';
 
@@ -35,7 +36,8 @@ export function TodaysPaperScreen({ navigation }: Props) {
   const [downloading, setDownloading] = useState(false);
   const [editionSections, setEditionSections] = useState<{ title: string; data: Article[] }[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [publication, setPublication] = useState(DEFAULT_PUBLICATION);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [editionLabel, setEditionLabel] = useState(TODAY_LABEL);
   const [archiveAccessDays, setArchiveAccessDays] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(isoDate(new Date()));
@@ -81,7 +83,8 @@ export function TodaysPaperScreen({ navigation }: Props) {
             }),
           }))
         );
-        if (paper.pdfUrl) setPdfUrl(paper.pdfUrl);
+        setPublication(paper.publication || DEFAULT_PUBLICATION);
+        setCoverImageUrl(paper.coverImageUrl);
         if (paper.date) {
           setEditionLabel(new Date(paper.date).toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long' }));
         }
@@ -99,23 +102,7 @@ export function TodaysPaperScreen({ navigation }: Props) {
   const withinArchiveWindow = archiveAccessDays === null ? true : daysBack <= archiveAccessDays;
 
   const downloadEpaper = async () => {
-    if (isToday) {
-      if (!pdfUrl) {
-        Alert.alert("Today's Paper", "Today's e-paper hasn't been uploaded yet — check back shortly.");
-        return;
-      }
-      setDownloading(true);
-      try {
-        await Linking.openURL(pdfUrl);
-      } catch {
-        Alert.alert('Download failed', "We couldn't open today's e-paper. Please try again.");
-      } finally {
-        setDownloading(false);
-      }
-      return;
-    }
-
-    if (!withinArchiveWindow) {
+    if (!isToday && !withinArchiveWindow) {
       Alert.alert(
         'Outside your plan\'s archive window',
         `Your plan includes ${archiveAccessDays} day${archiveAccessDays === 1 ? '' : 's'} of back issues. Upgrade to go further back.`,
@@ -126,13 +113,13 @@ export function TodaysPaperScreen({ navigation }: Props) {
 
     setDownloading(true);
     try {
-      const { url } = await getEditionDownloadUrl(selectedDate);
+      const { url } = await getEditionDownloadUrl(selectedDate, publication);
       await Linking.openURL(url);
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {
         Alert.alert('Outside your plan\'s archive window', 'Upgrade to access more back issues.');
       } else if (e instanceof ApiError && e.status === 404) {
-        Alert.alert("No edition found", "No e-paper was published for that date.");
+        Alert.alert(isToday ? "Today's Paper" : 'No edition found', isToday ? "Today's e-paper hasn't been uploaded yet — check back shortly." : 'No e-paper was published for that date.');
       } else {
         Alert.alert('Download failed', "We couldn't open that edition. Please try again.");
       }
@@ -164,6 +151,14 @@ export function TodaysPaperScreen({ navigation }: Props) {
             <Text style={[type.displayHeadline, { color: theme.ink, marginTop: space.xs, marginBottom: space.lg }]}>
               {isToday ? editionLabel : new Date(selectedDate).toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
+            {isToday && coverImageUrl && (
+              <Image
+                source={{ uri: coverImageUrl }}
+                style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: radius.card, marginBottom: space.lg }}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+            )}
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: space.lg }}>
               <View style={{ flexDirection: 'row', gap: space.sm }}>
