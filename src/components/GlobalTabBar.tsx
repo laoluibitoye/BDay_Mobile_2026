@@ -38,7 +38,6 @@ const HIDDEN_ON_ROUTES = new Set([
   'Onboarding',
   'Auth',
   'AccountRecovery',
-  'PersonaSelection',
   'InterestPicker',
   'Search',
   'Paywall',

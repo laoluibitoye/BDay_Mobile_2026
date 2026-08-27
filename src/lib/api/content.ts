@@ -123,6 +123,19 @@ export async function getTagFeed(slug: string, page = 1): Promise<FeedResponse &
   return { ...res, articles: registerArticles(res.items) };
 }
 
+export type InterestCategory = { id: string; name: string };
+
+// WordPress's own default REST API, not businessday-app-connector — mirrors the web reader SDK's
+// interest-picker.ts exactly (same endpoint, same query params, same count>0 filter, same
+// id-as-termId convention) so a followed category means the same thing on both platforms and a
+// reader's picks actually match real, published content instead of a fixed made-up topic list.
+export async function getInterestCategories(): Promise<InterestCategory[]> {
+  const res = await wpPublicGet<Array<{ id: number; name: string; count: number }>>(
+    '/wp-json/wp/v2/categories?per_page=100&orderby=name&order=asc&_fields=id,name,count'
+  );
+  return res.filter((c) => c.count > 0).map((c) => ({ id: String(c.id), name: c.name }));
+}
+
 export async function searchArticles(query: string): Promise<Article[]> {
   const res = await wpPublicGet<FeedResponse>(`/wp-json/businessday-app/v1/search?q=${encodeURIComponent(query)}`);
   return registerArticles(res.items);

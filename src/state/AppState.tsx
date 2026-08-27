@@ -63,8 +63,12 @@ type AppStateValue = {
   setDataOfflinePref: (key: keyof DataOfflinePrefs, value: boolean) => void;
   edition: Edition;
   setEdition: (e: Edition) => void;
+  // Real WP category ids (as strings) — matches follows.ts's FollowRow.termId, not display labels.
   followedTopics: string[];
-  toggleFollowedTopic: (topic: string) => void;
+  toggleFollowedTopic: (categoryId: string, categoryName: string) => void;
+  // False until the mount-time session-restore attempt (below) has settled — SplashScreen waits
+  // on this before deciding whether a stored session means skip straight to Main.
+  sessionRestored: boolean;
   readNotificationIds: string[];
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (ids: string[]) => void;
@@ -102,6 +106,7 @@ const DEFAULT_PROFILE: ProfileInfo = {
 // `language` similarly stands in for a real i18n/translation pipeline — see LanguageScreen.
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<MeResponse | null>(null);
+  const [sessionRestored, setSessionRestored] = useState(false);
   const isSubscribed = authUser?.subscription?.status === 'active';
   const [savedArticleIds, setSavedArticleIds] = useState<string[]>([]);
   const [readingHistoryIds, setReadingHistoryIds] = useState<string[]>([]);
@@ -142,14 +147,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [accessibilityPrefs, setAccessibilityPrefs] = useState<AccessibilityPrefs>(DEFAULT_ACCESSIBILITY_PREFS);
   const [dataOfflinePrefs, setDataOfflinePrefs] = useState<DataOfflinePrefs>(DEFAULT_DATA_OFFLINE_PREFS);
   const [edition, setEdition] = useState<Edition>('nigeria');
-  const [followedTopics, setFollowedTopics] = useState<string[]>(['Banking', 'Markets']);
+  const [followedTopics, setFollowedTopics] = useState<string[]>([]);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [biometricReEntry, setBiometricReEntry] = useState(false);
   const [profile, setProfile] = useState<ProfileInfo>(DEFAULT_PROFILE);
   const [taxonomyUsage, setTaxonomyUsage] = useState<TaxonomyUsage>({});
 
   React.useEffect(() => {
-    void refreshSession();
+    void refreshSession().finally(() => setSessionRestored(true));
   }, [refreshSession]);
 
   const value = useMemo(
@@ -157,6 +162,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       authUser,
       setAuthUser,
       refreshSession,
+      sessionRestored,
       logout: () => {
         setAuthUser(null);
         void unregisterPushNotifications();
@@ -215,15 +221,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       edition,
       setEdition,
       followedTopics,
-      // Mock topics carry no real WP taxonomy term id — the topic label doubles as termId and
-      // termLabel, same stand-in every other mock-data call site in this app uses until a real
-      // taxonomy feed exists. Optimistic, same posture as toggleSaved above.
-      toggleFollowedTopic: (topic: string) => {
-        const isFollowed = followedTopics.includes(topic);
-        setFollowedTopics((prev) => (isFollowed ? prev.filter((t) => t !== topic) : [...prev, topic]));
+      // categoryId is the real WP category id (string form) — matches useInterestCategories'
+      // InterestChipGrid data and follows.ts's FollowRow.termId. Optimistic, same posture as
+      // toggleSaved above.
+      toggleFollowedTopic: (categoryId: string, categoryName: string) => {
+        const isFollowed = followedTopics.includes(categoryId);
+        setFollowedTopics((prev) => (isFollowed ? prev.filter((id) => id !== categoryId) : [...prev, categoryId]));
         const request = isFollowed
-          ? unfollowRequest('category', topic)
-          : followRequest({ taxonomy: 'category', termId: topic, termLabel: topic });
+          ? unfollowRequest('category', categoryId)
+          : followRequest({ taxonomy: 'category', termId: categoryId, termLabel: categoryName });
         request.catch(() => undefined);
       },
       readNotificationIds,
@@ -245,6 +251,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     [
       authUser,
       refreshSession,
+      sessionRestored,
       isSubscribed,
       savedArticleIds,
       language,

@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, FlatList, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Button } from '../../components/Button';
+import { markOnboardingSeen } from '../../lib/onboardingSeen';
 import { space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
@@ -31,6 +32,13 @@ export function OnboardingScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const [index, setIndex] = useState(0);
   const listRef = useRef<FlatList>(null);
+
+  // Marked as soon as the carousel is shown, not on completion — a reader who bails partway
+  // through has still seen the value prop; SplashScreen shouldn't force them through it again on
+  // their next launch.
+  useEffect(() => {
+    void markOnboardingSeen();
+  }, []);
 
   const next = () => {
     if (index < SLIDES.length - 1) {

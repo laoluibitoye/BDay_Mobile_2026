@@ -116,6 +116,7 @@ export function SettingsScreen() {
           value={unreadCommentReplies ? String(unreadCommentReplies) : undefined}
           onPress={() => navigation.navigate('CommentNotifications')}
         />
+        <MenuRow icon="message-square" label="My comments" onPress={() => navigation.navigate('MyComments')} />
 
         <View style={{ marginTop: space.xl }}>
           <SectionLabel label="Settings & support" />

@@ -47,7 +47,14 @@ export function AuthScreen({ navigation, route }: Props) {
       const me = await getMe();
       setAuthUser(me);
       void registerForPushNotifications();
-      navigation.navigate('PersonaSelection');
+      if (isSignup) {
+        navigation.navigate('InterestPicker');
+      } else {
+        // A returning reader logging back in has already been through onboarding/interests —
+        // straight to Main, and reset (not navigate) so Auth/Onboarding/Splash drop off the
+        // back stack instead of being one back-swipe away from a signed-in screen.
+        navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      }
     } catch (e) {
       setError(
         e instanceof ApiError ? e.message || 'Something went wrong. Try again.' : 'Could not reach the server. Check your connection.'

@@ -77,6 +77,7 @@ export function AccountSecurityScreen() {
           />
         </View>
         <MenuRow icon="mail" label="Change email" value={profile.email} disabled />
+        <MenuRow icon="lock" label="Change password" onPress={() => navigation.navigate('ChangePassword')} />
         <MenuRow icon="log-out" label="Sign out of all devices" onPress={signOutAllDevices} />
 
         <View style={{ marginTop: space.xl }}>

@@ -5,7 +5,6 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Auth: { mode: 'signup' | 'login' };
   AccountRecovery: undefined;
-  PersonaSelection: undefined;
   InterestPicker: undefined;
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
   ArticleReader: { articleId: string };
@@ -21,6 +20,8 @@ export type RootStackParamList = {
   BillingHistory: undefined;
   Profile: undefined;
   AccountSecurity: undefined;
+  ChangePassword: undefined;
+  MyComments: undefined;
   FeedSettings: undefined;
   Accessibility: undefined;
   DataOffline: undefined;

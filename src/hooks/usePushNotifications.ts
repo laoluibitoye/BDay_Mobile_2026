@@ -26,18 +26,26 @@ function loadNotifications(): NotificationsModule | null {
   }
 }
 
+// `Notifications` being a real module object (loadNotifications() didn't return null) only means
+// the JS package resolved — expo-modules-core's native bindings are resolved lazily per-call, so
+// this first actual call is where an un-rebuilt install's missing native module throws. Guarded
+// here, once, rather than relying on every caller to wrap its own call to this function.
 let handlerInstalled = false;
 function ensureHandlerInstalled(Notifications: NotificationsModule) {
   if (handlerInstalled) return;
   handlerInstalled = true;
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+  } catch {
+    // native module not built into this install yet — notifications just stay unavailable
+  }
 }
 
 // Registers this device for push and wires a tap on a delivered notification straight to the

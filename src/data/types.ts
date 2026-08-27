@@ -109,11 +109,6 @@ export type SubscriptionPlan = {
   features: string[];
 };
 
-export type Persona = {
-  id: 'investor' | 'entrepreneur' | 'policy' | 'student' | 'general';
-  label: string;
-  description: string;
-};
 
 export type CorrectionEntry = {
   id: string;

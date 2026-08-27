@@ -11,7 +11,6 @@ import { SplashScreen } from '../screens/onboarding/SplashScreen';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { AuthScreen } from '../screens/onboarding/AuthScreen';
 import { AccountRecoveryScreen } from '../screens/onboarding/AccountRecoveryScreen';
-import { PersonaSelectionScreen } from '../screens/onboarding/PersonaSelectionScreen';
 import { InterestPickerScreen } from '../screens/onboarding/InterestPickerScreen';
 
 import { ArticleReaderScreen } from '../screens/today/ArticleReaderScreen';
@@ -40,6 +39,8 @@ import { CorrectionsScreen } from '../screens/you/CorrectionsScreen';
 import { SettingsScreen } from '../screens/you/SettingsScreen';
 import { LanguageScreen } from '../screens/you/LanguageScreen';
 import { AccountSecurityScreen } from '../screens/you/AccountSecurityScreen';
+import { ChangePasswordScreen } from '../screens/you/ChangePasswordScreen';
+import { MyCommentsScreen } from '../screens/you/MyCommentsScreen';
 import { HelpCenterScreen } from '../screens/you/HelpCenterScreen';
 import { PrivacyTermsScreen } from '../screens/you/PrivacyTermsScreen';
 import { AboutScreen } from '../screens/you/AboutScreen';
@@ -73,7 +74,6 @@ export function RootNavigator() {
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Auth" component={AuthScreen} />
       <Stack.Screen name="AccountRecovery" component={AccountRecoveryScreen} />
-      <Stack.Screen name="PersonaSelection" component={PersonaSelectionScreen} />
       <Stack.Screen name="InterestPicker" component={InterestPickerScreen} />
 
       <Stack.Screen name="Main" component={MainTabs} />
@@ -96,6 +96,8 @@ export function RootNavigator() {
       <Stack.Screen name="BillingHistory" component={BillingHistoryScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="AccountSecurity" component={AccountSecurityScreen} />
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <Stack.Screen name="MyComments" component={MyCommentsScreen} />
       <Stack.Screen name="FeedSettings" component={FeedSettingsScreen} />
       <Stack.Screen name="Accessibility" component={AccessibilityScreen} />
       <Stack.Screen name="DataOffline" component={DataOfflineScreen} />
