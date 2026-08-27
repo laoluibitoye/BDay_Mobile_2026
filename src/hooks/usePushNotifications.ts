@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
@@ -8,62 +7,100 @@ import { registerPushTokenWithServer, unregisterPushTokenWithServer } from '../l
 
 const LAST_TOKEN_KEY = 'bd_push_token';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// expo-notifications' own module graph calls `requireNativeModule('ExpoPushTokenManager')` at
+// import time (not inside any function) — so a plain `import * as Notifications from
+// 'expo-notifications'` at the top of this file throws immediately on any install that hasn't
+// been through `expo prebuild` + a native rebuild since the package was added, before a single
+// line of this file's own code runs. A `try {...} catch` around that code can't help; the crash
+// happens during module evaluation, earlier than any try/catch here would run. Loading it lazily
+// with `require(...)` inside a try/catch, only when actually needed, is the only way to keep an
+// un-rebuilt install from crashing on launch.
+type NotificationsModule = typeof import('expo-notifications');
+
+function loadNotifications(): NotificationsModule | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- must stay a lazy require, see comment above
+    return require('expo-notifications') as NotificationsModule;
+  } catch {
+    return null;
+  }
+}
+
+let handlerInstalled = false;
+function ensureHandlerInstalled(Notifications: NotificationsModule) {
+  if (handlerInstalled) return;
+  handlerInstalled = true;
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 // Registers this device for push and wires a tap on a delivered notification straight to the
 // relevant article — mirrors NotificationsScreen.tsx's own `articleId: item.postId` mapping so a
 // push and an in-app notification row behave identically. Called once from App.tsx on mount (for
 // the tap-listener) and again after login (to associate a fresh token with the now-known user).
+// No-op on an install where the native module isn't built yet (see comment above).
 export function usePushNotifications() {
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const postId = response.notification.request.content.data?.postId;
-      if (typeof postId === 'string' && navigationRef.isReady()) {
-        navigationRef.navigate('ArticleReader', { articleId: postId });
-      }
-    });
-    return () => sub.remove();
+    const Notifications = loadNotifications();
+    if (!Notifications) return undefined;
+
+    ensureHandlerInstalled(Notifications);
+
+    try {
+      const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+        const postId = response.notification.request.content.data?.postId;
+        if (typeof postId === 'string' && navigationRef.isReady()) {
+          navigationRef.navigate('ArticleReader', { articleId: postId });
+        }
+      });
+      return () => sub.remove();
+    } catch {
+      return undefined;
+    }
   }, []);
 }
 
 // Call after a successful login/register — a token requested while logged out has no user to
-// attach to server-side. No-op (not an error) when EAS project id isn't configured yet, or on a
-// simulator, or if the reader declines the permission prompt.
+// attach to server-side. No-op (not an error) when EAS project id isn't configured yet, when the
+// native module isn't built into this install yet, on a simulator, or if the reader declines the
+// permission prompt.
 export async function registerForPushNotifications(): Promise<void> {
   const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
   if (!projectId) return;
 
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.DEFAULT,
-    });
-  }
+  const Notifications = loadNotifications();
+  if (!Notifications) return;
 
-  const existing = await Notifications.getPermissionsAsync();
-  let status = existing.status;
-  if (status !== 'granted') {
-    const requested = await Notifications.requestPermissionsAsync();
-    status = requested.status;
-  }
-  if (status !== 'granted') return;
-
-  let token: string;
   try {
-    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-  } catch {
-    return;
-  }
+    ensureHandlerInstalled(Notifications);
 
-  await registerPushTokenWithServer(token, Platform.OS === 'ios' ? 'ios' : 'android');
-  await SecureStore.setItemAsync(LAST_TOKEN_KEY, token);
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.DEFAULT,
+      });
+    }
+
+    const existing = await Notifications.getPermissionsAsync();
+    let status = existing.status;
+    if (status !== 'granted') {
+      const requested = await Notifications.requestPermissionsAsync();
+      status = requested.status;
+    }
+    if (status !== 'granted') return;
+
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    await registerPushTokenWithServer(token, Platform.OS === 'ios' ? 'ios' : 'android');
+    await SecureStore.setItemAsync(LAST_TOKEN_KEY, token);
+  } catch {
+    // native module not built yet, or the platform/user declined — push just stays unavailable
+  }
 }
 
 // Call on logout — drops server-side association so a signed-out device stops receiving another

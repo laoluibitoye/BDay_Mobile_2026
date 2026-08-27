@@ -99,14 +99,18 @@ export async function getHomeFeed(): Promise<HomeSection[]> {
   }));
 }
 
+// Query param is `pg`, not `page` — a bare `page=` query parameter reliably trips a Cloudflare
+// WAF rule on the live site (returns an HTML JS-challenge page instead of JSON, which this app
+// can never solve). Confirmed live against stg18326.businessday.ng: `?page=1` -> 403
+// `cf-mitigated: challenge` on every route below, `?pg=1` -> 200. Must match class-bd-feed-api.php.
 export async function getLatestFeed(page = 1): Promise<FeedResponse & { articles: Article[] }> {
-  const res = await wpPublicGet<FeedResponse>(`/wp-json/businessday-app/v1/feed/latest?page=${page}`);
+  const res = await wpPublicGet<FeedResponse>(`/wp-json/businessday-app/v1/feed/latest?pg=${page}`);
   return { ...res, articles: registerArticles(res.items) };
 }
 
 export async function getSectionFeed(slug: string, page = 1): Promise<FeedResponse & { articles: Article[] }> {
   const res = await wpPublicGet<FeedResponse>(
-    `/wp-json/businessday-app/v1/feed/section/${encodeURIComponent(slug)}?page=${page}`
+    `/wp-json/businessday-app/v1/feed/section/${encodeURIComponent(slug)}?pg=${page}`
   );
   return { ...res, articles: registerArticles(res.items) };
 }
@@ -115,7 +119,7 @@ export async function getSectionFeed(slug: string, page = 1): Promise<FeedRespon
 // plain date-ordered query across every category. See handleTag() in
 // wordpress-plugin/businessday-app-connector's class-bd-feed-api.php.
 export async function getTagFeed(slug: string, page = 1): Promise<FeedResponse & { articles: Article[] }> {
-  const res = await wpPublicGet<FeedResponse>(`/wp-json/businessday-app/v1/feed/tag/${encodeURIComponent(slug)}?page=${page}`);
+  const res = await wpPublicGet<FeedResponse>(`/wp-json/businessday-app/v1/feed/tag/${encodeURIComponent(slug)}?pg=${page}`);
   return { ...res, articles: registerArticles(res.items) };
 }
 
