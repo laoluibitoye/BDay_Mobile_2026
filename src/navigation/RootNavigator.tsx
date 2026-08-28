@@ -9,7 +9,6 @@ import { GlobalAudioPlayer } from '../components/GlobalAudioPlayer';
 import { BlurTargetProvider } from '../components/BlurTargetContext';
 
 import { SplashScreen } from '../screens/onboarding/SplashScreen';
-import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { AuthScreen } from '../screens/onboarding/AuthScreen';
 import { AccountRecoveryScreen } from '../screens/onboarding/AccountRecoveryScreen';
 import { InterestPickerScreen } from '../screens/onboarding/InterestPickerScreen';
@@ -72,7 +71,6 @@ export function RootNavigator() {
     <BlurTargetView ref={blurTarget} style={{ flex: 1 }}>
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Splash" component={SplashScreen} />
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Auth" component={AuthScreen} />
       <Stack.Screen name="AccountRecovery" component={AccountRecoveryScreen} />
       <Stack.Screen name="InterestPicker" component={InterestPickerScreen} />

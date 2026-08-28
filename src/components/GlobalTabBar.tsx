@@ -30,14 +30,13 @@ const TABS: { name: keyof MainTabParamList; title: string }[] = [
   { name: 'ForYou', title: 'For You' },
 ];
 
-// Screens where a persistent bottom tab bar doesn't belong: the pre-auth onboarding funnel
-// (nothing to navigate to yet) and focused modal takeovers (Search, Paywall, Breaking News) that
-// are meant to be a self-contained overlay, not a browsing surface.
+// Screens where a persistent bottom tab bar doesn't belong: the splash/auth funnel (nothing to
+// navigate to yet) and focused modal takeovers (Search, Paywall, Breaking News) that are meant
+// to be a self-contained overlay, not a browsing surface.
 // Exported so GlobalAudioPlayer (stacked directly above this bar) hides on the same routes —
 // keeps the two persistent overlays' visibility rules from drifting independently.
 export const HIDDEN_ON_ROUTES = new Set([
   'Splash',
-  'Onboarding',
   'Auth',
   'AccountRecovery',
   'InterestPicker',

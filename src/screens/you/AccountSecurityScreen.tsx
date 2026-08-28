@@ -16,7 +16,7 @@ import { space, type, useTheme } from '../../theme';
 export function AccountSecurityScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { profile, biometricReEntry, setBiometricReEntry, clearHistory, clearDownloads } = useAppState();
+  const { profile, biometricReEntry, setBiometricReEntry, clearHistory, clearDownloads, logout } = useAppState();
 
   const signOutAllDevices = () => {
     Alert.alert('Sign out of all devices?', 'This will end every active session, including this one.', [
@@ -24,7 +24,10 @@ export function AccountSecurityScreen() {
       {
         text: 'Sign out everywhere',
         style: 'destructive',
-        onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] }),
+        onPress: () => {
+          logout();
+          navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+        },
       },
     ]);
   };
@@ -41,7 +44,8 @@ export function AccountSecurityScreen() {
           onPress: () => {
             clearHistory();
             clearDownloads();
-            navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+            logout();
+            navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
           },
         },
       ]

@@ -50,9 +50,9 @@ export function AuthScreen({ navigation, route }: Props) {
       if (isSignup) {
         navigation.navigate('InterestPicker');
       } else {
-        // A returning reader logging back in has already been through onboarding/interests —
-        // straight to Main, and reset (not navigate) so Auth/Onboarding/Splash drop off the
-        // back stack instead of being one back-swipe away from a signed-in screen.
+        // A returning reader logging back in has already picked interests at signup — straight
+        // to Main, and reset (not navigate) so Auth/Splash drop off the back stack instead of
+        // being one back-swipe away from a signed-in screen.
         navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
       }
     } catch (e) {
