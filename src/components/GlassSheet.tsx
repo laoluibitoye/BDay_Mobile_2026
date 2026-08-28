@@ -25,9 +25,19 @@ export function GlassSheet({ children, variant = 'sheet', style }: Props) {
       : { borderRadius: cornerRadius };
 
   // See `GlobalTabBar` for why Android needs `blurMethod` + `blurTarget` for a real blur instead
-  // of the flat-tint fallback `BlurView` otherwise renders there.
+  // of the flat-tint fallback `BlurView` otherwise renders there. That real-time sampling reads a
+  // live snapshot of the whole app root behind it every frame — fine for a fixed overlay (`sheet`:
+  // Paywall/Gift-article bottom sheets, the tab bar) that sits outside any scrolling content, but
+  // a genuine native-crash trigger (SIGSEGV stack overflow deep in libhwui — confirmed via
+  // Crashlytics from a field tester's device) for `card`, which per this component's own
+  // original doc comment is "an inline card sitting in a scroll view": the live sampler and the
+  // actively-scrolling ancestor it's sampling re-invalidate each other continuously, and on some
+  // devices that feedback loop recurses until the native stack overflows. `card` instead falls
+  // back to the flat-tint BlurView already renders when no blurTarget is given — visually a flat
+  // tinted glass rather than a true live blur, but nothing here scrolls fast enough for the
+  // difference to be noticeable, and it can't recurse into an ancestor it isn't sampling.
   const wrapperProps =
-    Platform.OS === 'android'
+    Platform.OS === 'android' && variant === 'sheet'
       ? {
           blurMethod: 'dimezisBlurViewSdk31Plus' as const,
           blurTarget,
