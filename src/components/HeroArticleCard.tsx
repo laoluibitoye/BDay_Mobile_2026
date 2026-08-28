@@ -1,8 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { Article } from '../data/types';
 import { useAppState } from '../state/AppState';
+import { useIsSpeaking } from '../hooks/useIsSpeaking';
+import { toggleSpeak } from '../lib/tts';
 import { elevation, layout, radius, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
 import { LiveBadge, PremiumBadge } from './Badge';
@@ -17,8 +19,18 @@ type Props = {
 // View owns the rounded corners + overflow:hidden for the hero image.
 export function HeroArticleCard({ article, onPress }: Props) {
   const { theme } = useTheme();
-  const { savedArticleIds, toggleSaved } = useAppState();
+  const { savedArticleIds, toggleSaved, language } = useAppState();
   const isSaved = savedArticleIds.includes(article.id);
+  const isSpeaking = useIsSpeaking(article.id);
+
+  // Bug found live: these two toolbar buttons had no onPress at all, so the tap fell through to
+  // the card's own onPress (navigate into the article) instead of doing anything — see
+  // ArticleCard.tsx for the pattern these now match exactly.
+  const listen = () => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, article.headline, language);
+  const share = () =>
+    Share.share({
+      message: article.sourceUrl ? `${article.headline}\n\n${article.sourceUrl}` : `${article.headline}\n\n${article.dek}`,
+    });
 
   return (
     <Pressable onPress={onPress} style={[styles.shadowWrap, elevation.raised]}>
@@ -36,8 +48,12 @@ export function HeroArticleCard({ article, onPress }: Props) {
             {article.authorName.toUpperCase()} · {article.publishedAt} · {article.readTime}
           </Text>
           <View style={styles.toolbar}>
-            <Pressable hitSlop={(layout.touchTarget - 20) / 2} accessibilityLabel="Listen to this article">
-              <Feather name="headphones" size={20} color={theme.inkMuted} />
+            <Pressable
+              hitSlop={(layout.touchTarget - 20) / 2}
+              onPress={listen}
+              accessibilityLabel={isSpeaking ? 'Stop listening' : 'Listen to this article'}
+            >
+              <Feather name={isSpeaking ? 'pause-circle' : 'headphones'} size={20} color={isSpeaking ? theme.accent : theme.inkMuted} />
             </Pressable>
             <Pressable hitSlop={(layout.touchTarget - 20) / 2} style={styles.toolbarItem} accessibilityLabel="Comments">
               <Feather name="message-circle" size={20} color={theme.inkMuted} />
@@ -52,7 +68,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
             >
               <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={isSaved ? theme.accent : theme.inkMuted} />
             </Pressable>
-            <Pressable hitSlop={(layout.touchTarget - 20) / 2} accessibilityLabel="Share article">
+            <Pressable hitSlop={(layout.touchTarget - 20) / 2} onPress={share} accessibilityLabel="Share article">
               <Feather name="share" size={20} color={theme.inkMuted} />
             </Pressable>
           </View>

@@ -12,14 +12,13 @@ import type {
 } from './types';
 
 export async function register(payload: RegisterRequest): Promise<AuthResponse> {
-  // Cloudflare Turnstile can't complete inside this app's embedded WebView (confirmed on both
-  // simulator and a real device — its bot-detection heuristics reject in-app browsers outright
-  // regardless of a genuine same-domain page load), so the mobile app identifies itself and
-  // subscription-service skips the captcha requirement web still enforces (see
-  // AuthController.isMobileClient in subscription-service).
+  // X-Client-Platform: mobile-app (sent on every request by apiRequest in client.ts) is what
+  // gets subscription-service to skip the captcha requirement web still enforces — Turnstile
+  // can't complete inside this app's embedded browser at all (confirmed on both simulator and a
+  // real device, its bot-detection heuristics reject in-app browsers outright regardless of a
+  // genuine same-domain page load). See AuthController.isMobileClient / mobile-client.util.ts.
   const res = await apiRequest<AuthResponse>('/api/v1/auth/register', {
     method: 'POST',
-    headers: { 'X-Client-Platform': 'mobile-app' },
     body: JSON.stringify(payload),
   });
   await setTokens(res);

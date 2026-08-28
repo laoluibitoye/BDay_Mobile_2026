@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import { AppState as RNAppState } from 'react-native';
 import { LanguageCode } from '../data/languages';
 import { clearTokens, getAccessToken } from '../lib/api/client';
 import { unregisterPushNotifications } from '../hooks/usePushNotifications';
@@ -9,6 +10,7 @@ import { invalidateBookmarksCache } from '../hooks/useBookmarks';
 import { getReadingHistory, recordReadingHistoryView } from '../lib/api/readingHistory';
 import { invalidateReadingHistoryCache } from '../hooks/useReadingHistory';
 import { follow as followRequest, getFollows, unfollow as unfollowRequest } from '../lib/api/follows';
+import { removeArticleOffline } from '../lib/offlineArticles';
 import type { Article } from '../data/types';
 
 export type AccessibilityPrefs = {
@@ -157,6 +159,19 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     void refreshSession().finally(() => setSessionRestored(true));
   }, [refreshSession]);
 
+  // A subscription bought on the website (or cancelled/renewed from either side) must show up
+  // here without the reader having to force-quit and reopen the app — subscriptionStatus is one
+  // shared claim off one shared backend, so "same account, same status, from either platform" is
+  // really just "don't let the app's copy of it go stale while merely backgrounded." Re-checks on
+  // every foreground, not on an interval, since that's the moment it's actually likely to have
+  // changed underneath the app (came back from the browser/App Store/another device).
+  React.useEffect(() => {
+    const subscription = RNAppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') void refreshSession();
+    });
+    return () => subscription.remove();
+  }, [refreshSession]);
+
   // profile.name/email must track the real session, not the Phase 1 mock default below —
   // `role` has no server equivalent yet, so it stays local-only.
   React.useEffect(() => {
@@ -220,7 +235,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       downloadedArticleIds,
       toggleDownload: (id: string) =>
         setDownloadedArticleIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
-      clearDownloads: () => setDownloadedArticleIds([]),
+      clearDownloads: () => {
+        const ids = downloadedArticleIds;
+        setDownloadedArticleIds([]);
+        void Promise.all(ids.map(removeArticleOffline));
+      },
       accessibilityPrefs,
       setAccessibilityPref: (key: keyof AccessibilityPrefs, val: boolean) =>
         setAccessibilityPrefs((prev) => ({ ...prev, [key]: val })),

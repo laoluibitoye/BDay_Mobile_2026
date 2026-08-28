@@ -36,6 +36,7 @@ import { ApiError } from '../../lib/api/client';
 import type { ArticleEntitlement, EntitlementStage } from '../../lib/api/types';
 import { htmlToParagraphs } from '../../lib/htmlToText';
 import { toggleSpeak } from '../../lib/tts';
+import { getOfflineArticle, removeArticleOffline, saveArticleOffline } from '../../lib/offlineArticles';
 import { layout, radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ArticleReader'>;
@@ -62,10 +63,20 @@ function ArticleReaderView({ article, navigation }: { article: Article; navigati
   const [fontScale, setFontScale] = useState(0);
   const [isTranslated, setIsTranslated] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const { authUser, isSubscribed, savedArticleIds, toggleSaved, language, recordView } = useAppState();
+  const {
+    authUser,
+    isSubscribed,
+    savedArticleIds,
+    toggleSaved,
+    language,
+    recordView,
+    downloadedArticleIds,
+    toggleDownload,
+  } = useAppState();
   const appConfig = useAppConfig();
   const languageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
   const isSaved = savedArticleIds.includes(article.id);
+  const isDownloaded = downloadedArticleIds.includes(article.id);
 
   const [comments, setComments] = useState<CommentView[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
@@ -80,13 +91,21 @@ function ArticleReaderView({ article, navigation }: { article: Article; navigati
   const [entitlement, setEntitlement] = useState<ArticleEntitlement | null>(null);
   const [readProgress, setReadProgress] = useState(0);
   const [gifting, setGifting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  // Populated only when the live entitlement fetch fails (no connection) and this article was
+  // previously downloaded — the offline copy is otherwise never consulted, since the live
+  // endpoint is always the freshest, authoritative source when it's reachable.
+  const [offlineParagraphs, setOfflineParagraphs] = useState<string[] | null>(null);
   const isSpeaking = useIsSpeaking(article.id);
 
   useEffect(() => {
     recordView(article);
     getArticleEntitlement(article.id)
       .then(setEntitlement)
-      .catch(() => setEntitlement(null));
+      .catch(() => {
+        setEntitlement(null);
+        getOfflineArticle(article.id).then((cached) => setOfflineParagraphs(cached?.paragraphs ?? null));
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article.id]);
 
@@ -159,7 +178,30 @@ function ArticleReaderView({ article, navigation }: { article: Article; navigati
   const stage: EntitlementStage = entitlement?.stage ?? (article.isPremium && !isSubscribed ? 'paid_lock' : 'open');
   const isLocked = stage !== 'open';
 
-  const visibleParagraphs = htmlToParagraphs((isLocked ? entitlement?.preview : entitlement?.content) ?? '');
+  // Offline fallback only ever applies to the unlocked, full-content case — a downloaded article
+  // was only ever cached while genuinely open (see toggleDownloaded below), so there's nothing to
+  // fall back to for a locked one, and no reason to: the paywall/register/profile prompt itself
+  // needs no network to render.
+  const visibleParagraphs =
+    !entitlement && !isLocked && offlineParagraphs
+      ? offlineParagraphs
+      : htmlToParagraphs((isLocked ? entitlement?.preview : entitlement?.content) ?? '');
+
+  const toggleDownloaded = async () => {
+    if (isDownloaded) {
+      await removeArticleOffline(article.id);
+      toggleDownload(article.id);
+      return;
+    }
+    if (isLocked || visibleParagraphs.length === 0) return;
+    setDownloading(true);
+    try {
+      await saveArticleOffline(article, visibleParagraphs);
+      toggleDownload(article.id);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const jumpToComments = () => scrollRef.current?.scrollToEnd({ animated: true });
 
@@ -171,7 +213,7 @@ function ArticleReaderView({ article, navigation }: { article: Article; navigati
 
   const listen = () => {
     const text = `${article.headline}. ${visibleParagraphs.join(' ')}`;
-    toggleSpeak(article.id, text, language);
+    toggleSpeak(article.id, text, article.headline, language);
   };
 
   const shareArticle = () => {
@@ -247,6 +289,18 @@ function ArticleReaderView({ article, navigation }: { article: Article; navigati
           </Pressable>
           <Pressable hitSlop={8} accessibilityLabel="Gift this article" onPress={giftArticle} disabled={gifting}>
             <Feather name="gift" size={20} color={gifting ? theme.inkFaint : theme.inkMuted} />
+          </Pressable>
+          <Pressable
+            hitSlop={8}
+            accessibilityLabel={isDownloaded ? 'Remove downloaded copy' : 'Download for offline'}
+            onPress={toggleDownloaded}
+            disabled={downloading || (!isDownloaded && (isLocked || visibleParagraphs.length === 0))}
+          >
+            <Feather
+              name={isDownloaded ? 'check-circle' : 'download'}
+              size={20}
+              color={isDownloaded ? theme.accent : downloading ? theme.inkFaint : theme.inkMuted}
+            />
           </Pressable>
           <Pressable
             onPress={() => (language === 'en' ? navigation.navigate('Language') : setIsTranslated((v) => !v))}

@@ -22,7 +22,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
   const isSaved = savedArticleIds.includes(article.id);
   const isSpeaking = useIsSpeaking(article.id);
 
-  const listen = onListen ?? (() => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, language));
+  const listen = onListen ?? (() => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, article.headline, language));
   const share = onShare ?? (() => Share.share({ message: article.sourceUrl ? `${article.headline}\n\n${article.sourceUrl}` : `${article.headline}\n\n${article.dek}` }));
 
   return (

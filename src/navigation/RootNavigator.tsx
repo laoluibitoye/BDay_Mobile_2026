@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './types';
 import { MainTabs } from './MainTabs';
 import { GlobalTabBar } from '../components/GlobalTabBar';
+import { GlobalAudioPlayer } from '../components/GlobalAudioPlayer';
 import { BlurTargetProvider } from '../components/BlurTargetContext';
 
 import { SplashScreen } from '../screens/onboarding/SplashScreen';
@@ -122,6 +123,7 @@ export function RootNavigator() {
       <Stack.Screen name="Events" component={EventsScreen} />
     </Stack.Navigator>
     </BlurTargetView>
+    <GlobalAudioPlayer />
     <GlobalTabBar />
     </View>
     </BlurTargetProvider>

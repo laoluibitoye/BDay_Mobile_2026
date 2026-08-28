@@ -106,6 +106,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    // Tells the server to skip any Turnstile/reCAPTCHA-gated check (comments, and previously
+    // only auth/register on its own) — the app has no captcha widget at all; Turnstile can't
+    // even complete inside its embedded browser. See mobile-client.util.ts on the server.
+    'X-Client-Platform': 'mobile-app',
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     ...options.headers,
   };

@@ -121,6 +121,7 @@ export type CheckoutInitRequest = {
   couponCode?: string;
   seats?: number;
   channel?: 'mobile';
+  returnUrl?: string;
 };
 
 // The server branches checkout into one of three shapes — the client must switch on `mode`,

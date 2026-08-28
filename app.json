@@ -2,6 +2,7 @@
   "expo": {
     "name": "BusinessDay",
     "slug": "app",
+    "scheme": "businessday",
     "owner": "businessday-technology",
     "version": "1.0.0",
     "orientation": "portrait",

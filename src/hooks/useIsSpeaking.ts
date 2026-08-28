@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { getSpeakingId, subscribeSpeaking } from '../lib/tts';
+import { getSpeakingState, subscribeSpeaking } from '../lib/tts';
 
 export function useIsSpeaking(id: string): boolean {
-  const [speakingId, setSpeakingId] = useState(getSpeakingId());
+  const [state, setState] = useState(getSpeakingState());
 
-  useEffect(() => subscribeSpeaking(setSpeakingId), []);
+  useEffect(() => subscribeSpeaking(setState), []);
 
-  return speakingId === id;
+  return state?.id === id;
 }
