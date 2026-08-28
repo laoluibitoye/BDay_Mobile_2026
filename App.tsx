@@ -9,6 +9,7 @@ import { AppStateProvider } from './src/state/AppState';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { navigationRef } from './src/navigation/navigationRef';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -31,15 +32,17 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AppStateProvider>
-          <NavigationContainer ref={navigationRef}>
-            <StatusBar style="auto" />
-            <RootNavigator />
-          </NavigationContainer>
-        </AppStateProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AppStateProvider>
+            <NavigationContainer ref={navigationRef}>
+              <StatusBar style="auto" />
+              <RootNavigator />
+            </NavigationContainer>
+          </AppStateProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

@@ -120,6 +120,7 @@ export type CheckoutInitRequest = {
   gateway: Gateway;
   couponCode?: string;
   seats?: number;
+  channel?: 'mobile';
 };
 
 // The server branches checkout into one of three shapes — the client must switch on `mode`,

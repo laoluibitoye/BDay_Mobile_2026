@@ -2,13 +2,17 @@
   "expo": {
     "name": "BusinessDay",
     "slug": "app",
+    "owner": "businessday-technology",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/brand/bd-icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "bdnews.businessday.bdtech"
+      "bundleIdentifier": "bdnews.businessday.bdtech",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "bdnews.businessday.bdtech",
@@ -47,6 +51,11 @@
           "color": "#F8F9FA"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "828b4896-f29b-4401-a259-9bea46bffc30"
+      }
+    }
   }
 }

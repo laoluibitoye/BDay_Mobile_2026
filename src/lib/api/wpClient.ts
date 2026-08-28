@@ -36,7 +36,13 @@ export function wpPublicGet<T>(path: string): Promise<T> {
 // security boundary.
 export async function wpEntitledGet<T>(path: string, giftToken?: string): Promise<T> {
   const [deviceId, accessToken] = await Promise.all([getDeviceId(), getAccessToken()]);
-  const headers: Record<string, string> = { 'X-Device-Id': deviceId };
+  // X-App-Channel: mobile tells resolve_entitlement() this is the native app, not the web SDK,
+  // so it can skip register_prompt/profile_prompt entirely (both meaningless here: registering
+  // *is* signing up for the app, and there's no in-app "complete your profile" surface —
+  // lastName/phone/company are never collected — so profileComplete can never become true for a
+  // mobile account; without this header a mobile reader gets permanently stuck at "Complete your
+  // profile" once their free-article count crosses the stage-3 threshold).
+  const headers: Record<string, string> = { 'X-Device-Id': deviceId, 'X-App-Channel': 'mobile' };
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   if (giftToken) headers['X-Gift-Token'] = giftToken;
   return wpFetch<T>(path, headers);

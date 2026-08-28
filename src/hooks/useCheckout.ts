@@ -16,7 +16,11 @@ export function useCheckout() {
   const startCheckout = async (planId: string): Promise<Result> => {
     setLoading(true);
     try {
-      const { checkout } = await checkoutInit({ planId, gateway: 'paystack' });
+      // channel: 'mobile' tells the server to skip Paystack's inline JS
+      // widget (a browser-DOM-only primitive the app has no way to render)
+      // and return a real hosted-checkout URL instead — see the
+      // subscription-service gateway.interface.ts channel doc comment.
+      const { checkout } = await checkoutInit({ planId, gateway: 'paystack', channel: 'mobile' });
 
       let reference: string;
       if (checkout.mode === 'redirect') {

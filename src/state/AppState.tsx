@@ -157,6 +157,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     void refreshSession().finally(() => setSessionRestored(true));
   }, [refreshSession]);
 
+  // profile.name/email must track the real session, not the Phase 1 mock default below —
+  // `role` has no server equivalent yet, so it stays local-only.
+  React.useEffect(() => {
+    if (!authUser) return;
+    const name = [authUser.firstName, authUser.lastName].filter(Boolean).join(' ').trim();
+    setProfile((prev) => ({ ...prev, name: name || authUser.email, email: authUser.email }));
+  }, [authUser]);
+
   const value = useMemo(
     () => ({
       authUser,
@@ -165,6 +173,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       sessionRestored,
       logout: () => {
         setAuthUser(null);
+        setProfile(DEFAULT_PROFILE);
         void unregisterPushNotifications();
         void clearTokens();
       },
