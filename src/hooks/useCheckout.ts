@@ -17,22 +17,30 @@ export function useCheckout() {
   const startCheckout = async (planId: string): Promise<Result> => {
     setLoading(true);
     try {
-      // returnUrl (businessday://checkout-complete, from app.json's "scheme") is what makes the
-      // in-app browser close itself the instant Paystack's hosted checkout finishes, Netflix/
-      // Spotify-style — Paystack redirects here as its callback_url, openAuthSessionAsync below
-      // recognizes the app's own scheme and dismisses automatically, instead of leaving the
-      // reader stranded on Paystack's success page needing to manually tap "Done".
-      const returnUrl = Linking.createURL('checkout-complete');
+      // appReturnUrl (businessday://checkout-complete, from app.json's "scheme") is the actual
+      // deep link openAuthSessionAsync watches for — the instant navigation reaches it, the
+      // in-app browser closes itself, Netflix/Spotify-style, instead of leaving the reader
+      // stranded on Paystack's success page. But Paystack's callback_url (confirmed live) will
+      // not navigate to a custom app scheme directly — it needs a real http(s) URL. So the
+      // *server* gets a tiny HTTPS bounce page instead (mobile-checkout-return.controller.ts),
+      // whose only job is to hand off to appReturnUrl client-side the instant Paystack loads it.
+      const appReturnUrl = Linking.createURL('checkout-complete');
+      const bounceUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/v1/checkout/mobile-return`;
       // channel: 'mobile' tells the server to skip Paystack's inline JS
       // widget (a browser-DOM-only primitive the app has no way to render)
       // and return a real hosted-checkout URL instead — see the
       // subscription-service gateway.interface.ts channel doc comment.
-      const { checkout } = await checkoutInit({ planId, gateway: 'paystack', channel: 'mobile', returnUrl });
+      const { checkout } = await checkoutInit({
+        planId,
+        gateway: 'paystack',
+        channel: 'mobile',
+        returnUrl: bounceUrl,
+      });
 
       let reference: string;
       if (checkout.mode === 'redirect') {
         reference = checkout.reference;
-        await WebBrowser.openAuthSessionAsync(checkout.url, returnUrl);
+        await WebBrowser.openAuthSessionAsync(checkout.url, appReturnUrl);
       } else if (checkout.mode === 'mock') {
         reference = checkout.reference;
       } else {

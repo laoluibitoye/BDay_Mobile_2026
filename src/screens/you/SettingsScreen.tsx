@@ -20,7 +20,11 @@ import { layout, radius, space, type, useTheme } from '../../theme';
 export function SettingsScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { isSubscribed, language, readNotificationIds, profile } = useAppState();
+  const { authUser, isSubscribed, language, readNotificationIds, profile } = useAppState();
+  const subscription = authUser?.subscription;
+  const daysRemaining = subscription
+    ? Math.max(0, Math.ceil((new Date(subscription.expiresAt).getTime() - Date.now()) / 86_400_000))
+    : null;
   const languageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
   const notifications = useNotifications();
   const unreadCount = (notifications ?? []).filter((n) => !readNotificationIds.includes(n.id)).length;
@@ -74,15 +78,26 @@ export function SettingsScreen() {
               {isSubscribed ? 'Premium subscriber' : 'Free reader'}
             </Text>
           </View>
-          {!isSubscribed && (
-            <Pressable
-              onPress={() => navigation.navigate('Paywall')}
-              hitSlop={(layout.touchTarget - 20) / 2}
-              accessibilityRole="button"
-              accessibilityLabel="Upgrade to Premium"
-            >
-              <Text style={[type.label, { color: theme.accent }]}>Upgrade</Text>
-            </Pressable>
+          {isSubscribed && subscription && daysRemaining !== null ? (
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={[type.label, { color: theme.ink }]}>
+                {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} left
+              </Text>
+              <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>
+                Expires {new Date(subscription.expiresAt).toLocaleDateString()}
+              </Text>
+            </View>
+          ) : (
+            !isSubscribed && (
+              <Pressable
+                onPress={() => navigation.navigate('Paywall')}
+                hitSlop={(layout.touchTarget - 20) / 2}
+                accessibilityRole="button"
+                accessibilityLabel="Upgrade to Premium"
+              >
+                <Text style={[type.label, { color: theme.accent }]}>Upgrade</Text>
+              </Pressable>
+            )
           )}
         </View>
 
