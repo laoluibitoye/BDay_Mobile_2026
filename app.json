@@ -10,12 +10,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "bdnews.businessday.bdtech",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "bdnews.businessday.bdtech",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#F8F9FA",
         "foregroundImage": "./assets/brand/bd-icon.png",
@@ -50,7 +52,9 @@
           "icon": "./assets/brand/bd-icon.png",
           "color": "#F8F9FA"
         }
-      ]
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics"
     ],
     "extra": {
       "eas": {

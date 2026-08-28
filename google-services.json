@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "1022017686333",
+    "firebase_url": "https://bdmobile-c3e6c.firebaseio.com",
+    "project_id": "bdmobile-c3e6c",
+    "storage_bucket": "bdmobile-c3e6c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1022017686333:android:7da097cd98fc73bcac1354",
+        "android_client_info": {
+          "package_name": "bdnews.businessday.bdmedia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFAfGV0RysPsZFUVGmxjz8kcptyHWyU-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1022017686333:android:3f91cfb52299bbf9ac1354",
+        "android_client_info": {
+          "package_name": "bdnews.businessday.bdtech"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFAfGV0RysPsZFUVGmxjz8kcptyHWyU-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

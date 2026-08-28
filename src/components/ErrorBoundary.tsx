@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { getCrashlytics, log, recordError } from '@react-native-firebase/crashlytics';
 
 type Props = { children: React.ReactNode };
 type State = { error: Error | null };
@@ -17,6 +18,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('Unhandled render error:', error, info.componentStack);
+    const instance = getCrashlytics();
+    if (info.componentStack) log(instance, info.componentStack);
+    recordError(instance, error);
   }
 
   render() {

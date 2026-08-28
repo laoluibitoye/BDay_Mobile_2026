@@ -10,8 +10,10 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { navigationRef } from './src/navigation/navigationRef';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { installCrashReporting } from './src/lib/crashReporting';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+installCrashReporting();
 
 export default function App() {
   const [fontsLoaded, fontError] = useAppFonts();
