@@ -55,10 +55,18 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
       </Screen>
     );
   }
-  return <ArticleReaderView article={article} navigation={navigation} />;
+  return <ArticleReaderView article={article} navigation={navigation} scrollToComments={route.params.scrollToComments} />;
 }
 
-function ArticleReaderView({ article, navigation }: { article: Article; navigation: Props['navigation'] }) {
+function ArticleReaderView({
+  article,
+  navigation,
+  scrollToComments,
+}: {
+  article: Article;
+  navigation: Props['navigation'];
+  scrollToComments?: boolean;
+}) {
   const { theme } = useTheme();
   const [fontScale, setFontScale] = useState(0);
   const [isTranslated, setIsTranslated] = useState(false);
@@ -204,6 +212,17 @@ function ArticleReaderView({ article, navigation }: { article: Article; navigati
   };
 
   const jumpToComments = () => scrollRef.current?.scrollToEnd({ animated: true });
+
+  // Bug found live: the "Comments" toolbar icon on ArticleCard/HeroArticleCard (every feed, plus
+  // the Today hero slot) had no onPress at all, so the tap fell through to the card's own
+  // onPress and just opened the article like any other tap — never actually reaching the
+  // comments section. Those now navigate here with scrollToComments: true instead. Waits for
+  // comments to finish loading (not just article mount) since scrollToEnd before the comments
+  // section has rendered its real height would undershoot.
+  useEffect(() => {
+    if (scrollToComments && !commentsLoading) jumpToComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollToComments, commentsLoading]);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;

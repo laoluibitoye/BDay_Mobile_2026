@@ -7,7 +7,7 @@ export type RootStackParamList = {
   AccountRecovery: undefined;
   InterestPicker: undefined;
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
-  ArticleReader: { articleId: string };
+  ArticleReader: { articleId: string; scrollToComments?: boolean };
   Paywall: undefined;
   Search: undefined;
   Notifications: undefined;

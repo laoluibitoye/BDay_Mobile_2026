@@ -1,6 +1,9 @@
 import React from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
 import { Article } from '../data/types';
 import { useAppState } from '../state/AppState';
 import { useIsSpeaking } from '../hooks/useIsSpeaking';
@@ -21,9 +24,13 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
   const { savedArticleIds, toggleSaved, language } = useAppState();
   const isSaved = savedArticleIds.includes(article.id);
   const isSpeaking = useIsSpeaking(article.id);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const listen = onListen ?? (() => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, article.headline, language));
   const share = onShare ?? (() => Share.share({ message: article.sourceUrl ? `${article.headline}\n\n${article.sourceUrl}` : `${article.headline}\n\n${article.dek}` }));
+  // Bug found live: this icon had no onPress at all, so the tap fell through to the card's own
+  // onPress and just opened the article — never actually reaching the comments section.
+  const openComments = () => navigation.navigate('ArticleReader', { articleId: article.id, scrollToComments: true });
 
   return (
     <Pressable onPress={onPress} style={[styles.card, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
@@ -48,7 +55,12 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
           >
             <Feather name={isSpeaking ? 'pause-circle' : 'headphones'} size={20} color={isSpeaking ? theme.accent : theme.inkMuted} />
           </Pressable>
-          <Pressable hitSlop={(layout.touchTarget - 20) / 2} style={styles.toolbarItem} accessibilityLabel="Comments">
+          <Pressable
+            hitSlop={(layout.touchTarget - 20) / 2}
+            style={styles.toolbarItem}
+            onPress={openComments}
+            accessibilityLabel="Comments"
+          >
             <Feather name="message-circle" size={20} color={theme.inkMuted} />
             {typeof article.commentCount === 'number' && (
               <Text style={[type.caption, { color: theme.inkMuted, marginLeft: 4 }]}>{article.commentCount}</Text>
