@@ -1,20 +1,24 @@
 import React, { useEffect, useReducer, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigationRef } from '../navigation/navigationRef';
 import { getRegisteredArticle } from '../lib/api/content';
-import { canPauseSpeech, getSpeakingState, pauseSpeaking, resumeSpeaking, stopSpeaking, subscribeSpeaking } from '../lib/tts';
+import { getSpeakingState, pauseSpeaking, resumeSpeaking, stopSpeaking, subscribeSpeaking } from '../lib/tts';
 import { space, type, useTheme } from '../theme';
+import { useBlurTarget } from './BlurTargetContext';
 import { HIDDEN_ON_ROUTES } from './GlobalTabBar';
 
 // Reader-reported: starting "Listen to this article" had no pause/stop reachable from anywhere
 // except scrolling back to the top of that exact article, and leaving the screen entirely left it
 // playing with no way back to the controls at all. This is the fix — one persistent bar, mounted
 // once at the root (RootNavigator.tsx) next to GlobalTabBar, visible from any screen for as long
-// as something is speaking, gone the moment nothing is.
+// as something is speaking, gone the moment nothing is (and only from tapping the X — pausing
+// keeps it visible; see tts.ts's pauseSpeaking on why that used to look like it vanished).
 export function GlobalAudioPlayer() {
-  const { theme } = useTheme();
+  const { theme, mode } = useTheme();
+  const blurTarget = useBlurTarget();
   const insets = useSafeAreaInsets();
   const [state, setState] = useState(getSpeakingState());
   useEffect(() => subscribeSpeaking(setState), []);
@@ -37,17 +41,31 @@ export function GlobalAudioPlayer() {
     }
   };
 
+  // Same real-blur treatment as GlobalTabBar (a fixed overlay, never embedded in scrolling
+  // content — the live-sampling blur that crashed on Android was specifically GlassSheet's
+  // "card" variant sitting *inside* a ScrollView; this bar has the same safe shape as the tab bar
+  // it's stacked above, so it gets the same glass rather than a flat fallback fill).
+  const wrapperProps =
+    Platform.OS === 'android'
+      ? {
+          blurMethod: 'dimezisBlurViewSdk31Plus' as const,
+          blurTarget,
+          intensity: 65,
+          tint: (mode === 'dark' ? 'dark' : 'light') as 'dark' | 'light',
+        }
+      : { intensity: 65, tint: (mode === 'dark' ? 'dark' : 'light') as 'dark' | 'light' };
+  const fill = mode === 'dark' ? 'rgba(51,51,51,0.55)' : 'rgba(248,249,250,0.55)';
+
   return (
     <View
-      style={[
-        styles.container,
-        { bottom: insets.bottom + space.lg + TAB_BAR_HEIGHT + space.sm },
-      ]}
+      style={[styles.container, { bottom: insets.bottom + space.lg + TAB_BAR_HEIGHT + space.sm }]}
       pointerEvents="box-none"
     >
-      <View style={[styles.bar, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
+      <BlurView {...wrapperProps} style={[styles.bar, { borderColor: theme.glassChromeBorder, backgroundColor: fill }]}>
         <Pressable onPress={openArticle} style={styles.titleArea} hitSlop={8}>
-          <Feather name="headphones" size={16} color={theme.accent} />
+          <View style={[styles.iconBackdrop, { backgroundColor: theme.accentTint }]}>
+            <Feather name="headphones" size={16} color={theme.ink} />
+          </View>
           <Text style={[type.label, { color: theme.ink, marginLeft: space.sm, flex: 1 }]} numberOfLines={1}>
             {state.title}
           </Text>
@@ -56,14 +74,14 @@ export function GlobalAudioPlayer() {
           onPress={() => (state.isPaused ? resumeSpeaking() : pauseSpeaking())}
           hitSlop={8}
           style={styles.control}
-          accessibilityLabel={state.isPaused ? 'Resume' : canPauseSpeech ? 'Pause' : 'Stop'}
+          accessibilityLabel={state.isPaused ? 'Resume' : 'Pause'}
         >
-          <Feather name={state.isPaused ? 'play' : canPauseSpeech ? 'pause' : 'square'} size={18} color={theme.ink} />
+          <Feather name={state.isPaused ? 'play' : 'pause'} size={18} color={theme.ink} />
         </Pressable>
         <Pressable onPress={stopSpeaking} hitSlop={8} style={styles.control} accessibilityLabel="Stop listening">
           <Feather name="x" size={18} color={theme.inkMuted} />
         </Pressable>
-      </View>
+      </BlurView>
     </View>
   );
 }
@@ -81,10 +99,12 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 999,
     borderWidth: 1,
+    overflow: 'hidden',
     paddingVertical: space.sm,
-    paddingHorizontal: space.md,
+    paddingHorizontal: space.sm,
     gap: space.sm,
   },
   titleArea: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  iconBackdrop: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   control: { paddingHorizontal: space.xs },
 });
