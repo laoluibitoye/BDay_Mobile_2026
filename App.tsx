@@ -9,6 +9,7 @@ import { AppStateProvider } from './src/state/AppState';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { navigationRef } from './src/navigation/navigationRef';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
+import { useDeepLinking } from './src/hooks/useDeepLinking';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { installCrashReporting } from './src/lib/crashReporting';
 
@@ -18,6 +19,7 @@ installCrashReporting();
 export default function App() {
   const [fontsLoaded, fontError] = useAppFonts();
   usePushNotifications();
+  useDeepLinking();
 
   const onLayoutRootView = useCallback(async () => {
     if (fontsLoaded || fontError) {

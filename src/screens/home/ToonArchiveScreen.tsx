@@ -50,7 +50,7 @@ export function ToonArchiveScreen() {
               ) : (
                 <View style={{ aspectRatio: 1, borderRadius: 8, backgroundColor: theme.bgCard }} />
               )}
-              <Text style={[type.caption, { color: theme.inkMuted, marginTop: space.xs }]} numberOfLines={2}>
+              <Text style={[type.cardTitle, { color: theme.ink, marginTop: space.xs }]} numberOfLines={2}>
                 {item.title}
               </Text>
             </Pressable>

@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { useAppState } from '../../state/AppState';
-import { space, type, useTheme } from '../../theme';
+import { useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
@@ -36,15 +36,21 @@ export function SplashScreen({ navigation }: Props) {
   }, [sessionRestored, navigation]);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.ink }]}>
-      <Text style={[type.displayHeadline, { color: theme.bg }]}>BusinessDay</Text>
-      <Text style={[type.mono, { color: theme.accent, marginTop: space.sm }]}>
-        AFRICA’S BUSINESS INTELLIGENCE
-      </Text>
+    // theme.white, not theme.bg — a fixed white splash regardless of light/dark mode, matching
+    // the brand palette's own explicit "white" token (design.md §2) rather than the theme's
+    // mode-dependent background.
+    <View style={[styles.container, { backgroundColor: theme.white }]}>
+      <Image
+        source={require('../../../assets/brand/bd-logo.png')}
+        style={styles.logo}
+        resizeMode="contain"
+        accessibilityLabel="BusinessDay"
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 220, height: 220 * (815 / 4097) },
 });

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
@@ -195,6 +196,13 @@ function ArticleReaderView({
       ? offlineParagraphs
       : htmlToParagraphs((isLocked ? entitlement?.preview : entitlement?.content) ?? '');
 
+  // Save/listen/download are account-backed — see ArticleCard.tsx's requireAuth for why a guest
+  // gets routed to sign in instead of the action running.
+  const requireAuth = (action: () => void) => {
+    if (authUser) action();
+    else navigation.navigate('Auth', { mode: 'login' });
+  };
+
   const toggleDownloaded = async () => {
     if (isDownloaded) {
       await removeArticleOffline(article.id);
@@ -230,10 +238,11 @@ function ArticleReaderView({
     setReadProgress(scrollable > 0 ? Math.min(1, Math.max(0, contentOffset.y / scrollable)) : 0);
   };
 
-  const listen = () => {
-    const text = `${article.headline}. ${visibleParagraphs.join(' ')}`;
-    toggleSpeak(article.id, text, article.headline, language);
-  };
+  const listen = () =>
+    requireAuth(() => {
+      const text = `${article.headline}. ${visibleParagraphs.join(' ')}`;
+      toggleSpeak(article.id, text, article.headline, language);
+    });
 
   const shareArticle = () => {
     Share.share({
@@ -297,7 +306,7 @@ function ArticleReaderView({
             )}
           </Pressable>
           <Pressable
-            onPress={() => toggleSaved(article)}
+            onPress={() => requireAuth(() => toggleSaved(article))}
             hitSlop={8}
             accessibilityLabel={isSaved ? 'Remove from saved' : 'Save article'}
           >
@@ -312,7 +321,7 @@ function ArticleReaderView({
           <Pressable
             hitSlop={8}
             accessibilityLabel={isDownloaded ? 'Remove downloaded copy' : 'Download for offline'}
-            onPress={toggleDownloaded}
+            onPress={() => requireAuth(toggleDownloaded)}
             disabled={downloading || (!isDownloaded && (isLocked || visibleParagraphs.length === 0))}
           >
             <Feather
@@ -321,13 +330,8 @@ function ArticleReaderView({
               color={isDownloaded ? theme.accent : downloading ? theme.inkFaint : theme.inkMuted}
             />
           </Pressable>
-          <Pressable
-            onPress={() => (language === 'en' ? navigation.navigate('Language') : setIsTranslated((v) => !v))}
-            hitSlop={8}
-            accessibilityLabel="Translate"
-          >
-            <Feather name="globe" size={20} color={isTranslated ? theme.accent : theme.inkMuted} />
-          </Pressable>
+          {/* Translate toolbar button removed — language/translation is deprecated for now (see
+              LanguageScreen/isTranslated, left in place but unreachable from here). */}
         </View>
 
         <View style={{ padding: space.lg }}>
@@ -357,7 +361,18 @@ function ArticleReaderView({
             </Text>
           </Pressable>
 
-          <ArticleImage article={article} style={styles.featuredImage} />
+          {article.featuredVideoId ? (
+            <View style={styles.featuredImage}>
+              <WebView
+                source={{ uri: `https://www.youtube.com/embed/${article.featuredVideoId}?playsinline=1` }}
+                allowsInlineMediaPlayback
+                mediaPlaybackRequiresUserAction={false}
+                style={{ backgroundColor: 'transparent' }}
+              />
+            </View>
+          ) : (
+            <ArticleImage article={article} style={styles.featuredImage} />
+          )}
 
           <ReaderControls fontScale={fontScale} onFontScaleChange={setFontScale} />
 
@@ -558,7 +573,7 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
   },
   commentAction: { flexDirection: 'row', alignItems: 'center' },
-  featuredImage: { height: 220, borderRadius: radius.card, marginTop: space.lg },
+  featuredImage: { height: 280, borderRadius: radius.card, marginTop: space.lg, overflow: 'hidden' },
   translateBanner: {
     flexDirection: 'row',
     alignItems: 'center',

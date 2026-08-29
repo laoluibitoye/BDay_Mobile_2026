@@ -33,7 +33,7 @@ export function ToonOfTheDayCard() {
         style={{ borderRadius: radius.card, overflow: 'hidden', backgroundColor: theme.bgCard }}
       >
         {toon.imageUrl && <Image source={{ uri: toon.imageUrl }} style={{ width: '100%', aspectRatio: 4 / 3 }} resizeMode="cover" />}
-        <Text style={[type.caption, { color: theme.inkMuted, padding: space.sm }]} numberOfLines={1}>
+        <Text style={[type.cardTitle, { color: theme.ink, padding: space.sm }]} numberOfLines={1}>
           {toon.title}
         </Text>
       </Pressable>

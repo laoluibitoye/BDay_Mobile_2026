@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Platform, Pressable, Text, View } from 'react-native';
+import { FlatList, Image, Platform, Pressable, Text, View } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,10 +19,12 @@ import { ArticleCard } from '../../components/ArticleCard';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { ToonOfTheDayCard } from '../../components/ToonOfTheDayCard';
 import { EventsPreviewRow } from '../../components/EventsPreviewRow';
+import { EditionsHomeCarousel } from '../../components/EditionsHomeCarousel';
 import { Article, TodayModule } from '../../data/types';
 import { sections } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
 import { getHomeFeed, getRegisteredArticle, getSectionFeed, HomeSection } from '../../lib/api/content';
+import { getTodaysPaper } from '../../lib/api/todaysPaper';
 import { radius, layout, space, type, useTheme } from '../../theme';
 
 // Today is WP-admin-editable (wp-admin → BusinessDay App → Home Sections — title/category-or-tag
@@ -45,6 +47,13 @@ export function HomeScreen() {
   const [todayFailed, setTodayFailed] = useState(false);
   const [categoryArticles, setCategoryArticles] = useState<Article[]>([]);
   const [categoryFailed, setCategoryFailed] = useState(false);
+  const [paperCoverUrl, setPaperCoverUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    getTodaysPaper()
+      .then((paper) => setPaperCoverUrl(paper.coverImageUrl))
+      .catch(() => setPaperCoverUrl(null));
+  }, []);
 
   const loadToday = useCallback(() => {
     setTodayFailed(false);
@@ -65,19 +74,29 @@ export function HomeScreen() {
 
   useEffect(loadCategory, [loadCategory]);
 
+  // Matched by the section's real id ('hero' = Top News), not array position — the carousel must
+  // always show the editor's actual Top News picks even if that section isn't sorted first in
+  // wp-admin's home-sections order (it previously just grabbed the first 5 articles across ALL
+  // sections concatenated, which could silently mix in a different section's content).
+  const heroSection = useMemo(() => wpSections?.find((s) => s.id === 'hero') ?? null, [wpSections]);
+
   const heroSlideArticles: Article[] = useMemo(() => {
-    if (!wpSections || wpSections.length === 0) return [];
-    return wpSections.flatMap((s) => s.articles).slice(0, HERO_COUNT);
-  }, [wpSections]);
+    return heroSection ? heroSection.articles.slice(0, HERO_COUNT) : [];
+  }, [heroSection]);
 
   // Each WP section becomes a labeled run of modules, shaped by the editor's chosen display type
   // (wp-admin → BusinessDay App → Home Sections): `mixed` cycles the same variety-generating
-  // function category tabs use, the rest force the whole section into one module shape. The first
-  // section's hero-consumed articles are sliced out so the top stories aren't shown twice in a row.
+  // function category tabs use, the rest force the whole section into one module shape. Top News
+  // (the 'hero' section) is pinned first in this scrolling list — directly after the Today's Paper
+  // banner above — regardless of where an editor has it ordered in wp-admin, since its carousel
+  // already anchors the top of the screen and the rest of its stories should follow immediately,
+  // not wherever it happens to fall in the admin-configured order. Its hero-consumed articles are
+  // sliced out here so the top stories aren't shown twice in a row.
   const todaySequence: TodayModule[] = useMemo(() => {
     if (!wpSections || wpSections.length === 0) return [];
-    return wpSections.flatMap((section, idx) => {
-      const pool = idx === 0 ? section.articles.slice(HERO_COUNT) : section.articles;
+    const ordered = [...wpSections].sort((a, b) => (a.id === 'hero' ? -1 : b.id === 'hero' ? 1 : 0));
+    return ordered.flatMap((section) => {
+      const pool = section.id === 'hero' ? section.articles.slice(HERO_COUNT) : section.articles;
       const ids = pool.map((a) => a.id);
       const label = { type: 'sectionLabel', label: section.label } as TodayModule;
       switch (section.displayType) {
@@ -85,12 +104,18 @@ export function HomeScreen() {
           return [label, ...pool.map((a): TodayModule => ({ type: 'hero', articleId: a.id }))];
         case 'cardList':
           return ids.length > 0 ? [label, { type: 'cardList', articleIds: ids } as TodayModule] : [label];
+        // briefRail/tileGrid/textList carry their own `label` field for buildMixedModules'
+        // synthetic sub-modules (e.g. "More from Economy") rendered inline with no separate
+        // header — but a real top-level WP section needs the same "See all →" header every other
+        // display type gets, which only the standalone `sectionLabel` module (case 'sectionLabel'
+        // below) renders. So the module's own label is blanked out here (falsy → its internal
+        // header is skipped) and the real header comes from the prepended `label` module instead.
         case 'briefRail':
-          return ids.length > 0 ? [{ type: 'briefRail', label: section.label, articleIds: ids } as TodayModule] : [];
+          return ids.length > 0 ? [label, { type: 'briefRail', label: '', articleIds: ids } as TodayModule] : [];
         case 'tileGrid':
-          return ids.length > 0 ? [{ type: 'tileGrid', label: section.label, articleIds: ids } as TodayModule] : [];
+          return ids.length > 0 ? [label, { type: 'tileGrid', label: '', articleIds: ids } as TodayModule] : [];
         case 'textList':
-          return ids.length > 0 ? [{ type: 'textList', label: section.label, articleIds: ids } as TodayModule] : [];
+          return ids.length > 0 ? [label, { type: 'textList', label: '', articleIds: ids } as TodayModule] : [];
         case 'mixed':
         default:
           return [label, ...buildMixedModules(pool, section.label).filter((m) => m.type !== 'hero')];
@@ -143,7 +168,7 @@ export function HomeScreen() {
       case 'textList':
         return (
           <View style={{ marginBottom: layout.sectionGap }}>
-            <SectionLabel label={module.label} />
+            {module.label && <SectionLabel label={module.label} />}
             {module.articleIds.map((id, i) => {
               const article = renderArticle(id);
               return article ? (
@@ -205,16 +230,25 @@ export function HomeScreen() {
                   <Pressable
                     onPress={() => navigation.navigate('TodaysPaper')}
                     accessibilityRole="button"
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: space.md,
-                      padding: space.lg,
-                      marginBottom: layout.sectionGap,
-                      borderRadius: radius.card,
-                      backgroundColor: theme.ink,
-                    }}
+                    style={{ marginBottom: layout.sectionGap }}
                   >
+                    {paperCoverUrl && (
+                      <Image
+                        source={{ uri: paperCoverUrl }}
+                        style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: radius.card, marginBottom: space.md }}
+                        resizeMode="cover"
+                      />
+                    )}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: space.md,
+                        padding: space.lg,
+                        borderRadius: radius.card,
+                        backgroundColor: theme.ink,
+                      }}
+                    >
                     <View
                       style={{
                         width: 40,
@@ -234,9 +268,11 @@ export function HomeScreen() {
                       </Text>
                     </View>
                     <Feather name="chevron-right" size={18} color={theme.bg} />
+                    </View>
                   </Pressable>
                   <ToonOfTheDayCard />
                   <EventsPreviewRow />
+                  <EditionsHomeCarousel />
                 </>
               ) : null
             }

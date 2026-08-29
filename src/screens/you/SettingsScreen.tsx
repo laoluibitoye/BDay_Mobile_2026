@@ -11,7 +11,6 @@ import { Button } from '../../components/Button';
 import { MenuRow } from '../../components/MenuRow';
 import { SectionLabel } from '../../components/SectionLabel';
 import { useAppState } from '../../state/AppState';
-import { LANGUAGES } from '../../data/languages';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useUnreadCommentNotificationCount } from '../../hooks/useCommentNotifications';
 import { layout, radius, space, type, useTheme } from '../../theme';
@@ -21,12 +20,11 @@ import { layout, radius, space, type, useTheme } from '../../theme';
 export function SettingsScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { authUser, isSubscribed, language, readNotificationIds, profile, logout } = useAppState();
+  const { authUser, isSubscribed, readNotificationIds, profile, logout } = useAppState();
   const subscription = authUser?.subscription;
   const daysRemaining = subscription
     ? Math.max(0, Math.ceil((new Date(subscription.expiresAt).getTime() - Date.now()) / 86_400_000))
     : null;
-  const languageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
   const notifications = useNotifications();
   const unreadCount = (notifications ?? []).filter((n) => !readNotificationIds.includes(n.id)).length;
   const unreadCommentReplies = useUnreadCommentNotificationCount();
@@ -172,7 +170,7 @@ export function SettingsScreen() {
           onPress={() => requireAuth(() => navigation.navigate('NotificationPreferences'))}
         />
         <MenuRow icon="tag" label="Your interests" onPress={() => requireAuth(() => navigation.navigate('Interests'))} />
-        <MenuRow icon="gift" label="Refer a friend" onPress={() => requireAuth(() => navigation.navigate('Referrals'))} />
+        {/* Referral system deprecated for now — ReferralsScreen/route left in place. */}
         <MenuRow
           icon="message-circle"
           label="Comment replies"
@@ -186,18 +184,11 @@ export function SettingsScreen() {
         </View>
         <AppearanceRow />
         <MenuRow icon="sliders" label="Feed settings" onPress={() => navigation.navigate('FeedSettings')} />
-        <MenuRow icon="globe" label="Language" value={languageLabel} onPress={() => navigation.navigate('Language')} />
+        {/* Language/translation deprecated for now — LanguageScreen/route left in place. */}
         <MenuRow icon="eye" label="Accessibility" onPress={() => navigation.navigate('Accessibility')} />
         <MenuRow icon="wifi" label="Data & offline" onPress={() => navigation.navigate('DataOffline')} />
-        <MenuRow icon="flag" label="Edition & region" onPress={() => navigation.navigate('EditionRegion')} />
         <MenuRow icon="help-circle" label="Help Center" onPress={() => navigation.navigate('HelpCenter')} />
         <MenuRow icon="file-text" label="Privacy & Terms" onPress={() => navigation.navigate('PrivacyTerms')} />
-        <MenuRow
-          icon="edit-3"
-          label="Editorial standards"
-          onPress={() => navigation.navigate('EditorialStandards')}
-        />
-        <MenuRow icon="alert-circle" label="Corrections" onPress={() => navigation.navigate('Corrections')} />
         <MenuRow icon="info" label="About" onPress={() => navigation.navigate('About')} />
 
         <View style={{ marginTop: space.xl }}>

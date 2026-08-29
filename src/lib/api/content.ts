@@ -14,6 +14,7 @@ export type FeedItem = {
   publishedAt: string; // ISO 8601
   isPremium: boolean;
   imageUrl: string | null;
+  featuredVideoId: string | null;
   link: string;
   tags: string[];
   commentCount: number;
@@ -44,6 +45,7 @@ export function toArticle(item: FeedItem): Article {
     body: [],
     heroColor: heroColorFor(item.id),
     imageUrl: item.imageUrl ?? undefined,
+    featuredVideoId: item.featuredVideoId ?? undefined,
     commentCount: item.commentCount,
     tags: item.tags,
     sourceUrl: item.link,
@@ -59,6 +61,29 @@ export function registerArticles(items: FeedItem[]): Article[] {
   const articles = items.map(toArticle);
   for (const article of articles) registry.set(article.id, article);
   return articles;
+}
+
+// Universal-link deep linking: the OS hands the app a tapped article URL, not an id — this
+// resolves it to a post id (via WordPress's own `url_to_postid()`, exposed by the connector
+// plugin), then fetches and registers that single article, so a cold-started app opened straight
+// into an article (never having fetched any feed yet) still has something in the registry for
+// ArticleReaderScreen's by-id lookup to find.
+export async function resolveArticleIdFromUrl(url: string): Promise<string | null> {
+  try {
+    const res = await wpPublicGet<{ id: number }>(`/wp-json/businessday-app/v1/resolve?url=${encodeURIComponent(url)}`);
+    return String(res.id);
+  } catch {
+    return null;
+  }
+}
+
+export async function getArticleById(id: string): Promise<Article | null> {
+  try {
+    const res = await wpPublicGet<{ item: FeedItem }>(`/wp-json/businessday-app/v1/article/${id}`);
+    return registerArticles([res.item])[0];
+  } catch {
+    return null;
+  }
 }
 
 // For call sites that already have an Article-shaped object from a non-feed endpoint (e.g.

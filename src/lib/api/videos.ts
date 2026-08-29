@@ -4,6 +4,10 @@ export type VideoItem = {
   id: number;
   title: string;
   youtubeId: string;
+  // Set server-side purely from URL shape — an editor marks a clip as a Short by pasting its
+  // youtube.com/shorts/ link (instead of the regular watch/embed link) into the same field, no
+  // separate admin field needed. See class-bd-videos-api.php's isShortsUrl().
+  isShort: boolean;
   section: string;
   imageUrl: string | null;
   publishedAt: string;

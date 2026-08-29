@@ -14,7 +14,8 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": ["applinks:businessday.ng", "applinks:www.businessday.ng"]
     },
     "android": {
       "package": "bdnews.businessday.bdtech",
@@ -35,13 +36,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/brand/bd-icon.png",
-          "imageWidth": 160,
+          "image": "./assets/brand/bd-logo.png",
+          "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#F8F9FA",
-          "dark": {
-            "backgroundColor": "#111111"
-          }
+          "backgroundColor": "#FFFFFF"
         }
       ],
       "expo-image",

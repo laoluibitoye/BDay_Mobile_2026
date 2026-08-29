@@ -45,6 +45,7 @@ import { HelpCenterScreen } from '../screens/you/HelpCenterScreen';
 import { PrivacyTermsScreen } from '../screens/you/PrivacyTermsScreen';
 import { AboutScreen } from '../screens/you/AboutScreen';
 import { TodaysPaperScreen } from '../screens/you/TodaysPaperScreen';
+import { EEditionsScreen } from '../screens/you/EEditionsScreen';
 import { NewsletterIssueScreen } from '../screens/foryou/NewsletterIssueScreen';
 
 import { GamePlayScreen } from '../screens/games/GamePlayScreen';
@@ -110,6 +111,7 @@ export function RootNavigator() {
       <Stack.Screen name="SectionFeed" component={SectionFeedScreen} />
       <Stack.Screen name="ColumnistPage" component={ColumnistPageScreen} />
       <Stack.Screen name="TodaysPaper" component={TodaysPaperScreen} />
+      <Stack.Screen name="EEditions" component={EEditionsScreen} />
       <Stack.Screen name="NewsletterIssue" component={NewsletterIssueScreen} />
 
       <Stack.Screen name="GamePlay" component={GamePlayScreen} />

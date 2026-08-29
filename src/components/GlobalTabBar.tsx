@@ -1,7 +1,7 @@
 import React, { useEffect, useReducer } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MainTabParamList } from '../navigation/types';
 import { navigationRef } from '../navigation/navigationRef';
@@ -10,23 +10,24 @@ import { useBlurTarget } from './BlurTargetContext';
 
 const ICONS: Record<string, React.ComponentProps<typeof Feather>['name']> = {
   Home: 'home',
-  WatchListen: 'headphones',
+  WatchListen: 'film',
+  Podcasts: 'headphones',
   Latest: 'clock',
   ForYou: 'layers',
 };
 
 function TabIcon({ routeName, size, color }: { routeName: string; size: number; color: string }) {
-  if (routeName === 'Games') {
-    return <Ionicons name="extension-puzzle-outline" size={size} color={color} />;
-  }
   return <Feather name={ICONS[routeName] ?? 'circle'} size={size} color={color} />;
 }
 
+// Games is deprecated from the visible bar for now (still reachable as a registered tab screen in
+// MainTabs.tsx, just not surfaced here) — Podcasts takes its slot, split out of the former
+// combined "Watch & Listen" tab, which is now video-only and relabeled accordingly.
 const TABS: { name: keyof MainTabParamList; title: string }[] = [
   { name: 'Home', title: 'Home' },
   { name: 'Latest', title: 'Latest' },
-  { name: 'WatchListen', title: 'Watch' },
-  { name: 'Games', title: 'Games' },
+  { name: 'WatchListen', title: 'Videos' },
+  { name: 'Podcasts', title: 'Podcasts' },
   { name: 'ForYou', title: 'For You' },
 ];
 

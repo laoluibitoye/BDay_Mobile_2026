@@ -35,7 +35,7 @@ function Tile({ article, onPress }: { article: Article; onPress: () => void }) {
     <Pressable onPress={onPress} style={styles.tile}>
       <ArticleImage article={article} style={styles.thumb} />
       <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.sm }]}>{article.section.toUpperCase()}</Text>
-      <Text style={[type.label, { color: theme.ink, marginTop: 2 }]} numberOfLines={3}>
+      <Text style={[type.cardTitle, { color: theme.ink, marginTop: 2 }]} numberOfLines={3}>
         {article.headline}
       </Text>
     </Pressable>

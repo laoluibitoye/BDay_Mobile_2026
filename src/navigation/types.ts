@@ -33,6 +33,7 @@ export type RootStackParamList = {
   SectionFeed: { section: string };
   ColumnistPage: { authorId: string };
   TodaysPaper: undefined;
+  EEditions: { publication?: string } | undefined;
   BreakingNews: undefined;
   GamePlay: { gameId: string };
   Markets: undefined;
@@ -49,6 +50,7 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   WatchListen: undefined;
+  Podcasts: undefined;
   Games: undefined;
   Latest: undefined;
   ForYou: undefined;

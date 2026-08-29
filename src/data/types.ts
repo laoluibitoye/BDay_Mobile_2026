@@ -22,6 +22,7 @@ export type Article = {
   body: string[];
   heroColor: string;
   imageUrl?: string; // real photo, when present — falls back to heroColor when absent/loading/errored
+  featuredVideoId?: string; // YouTube video id set as the article's featured media (editorial-meta metabox on the theme)
   isBrief?: boolean;
   commentCount?: number;
   tags?: string[]; // secondary taxonomy tags, in addition to `section` — powers the Explore tag cloud

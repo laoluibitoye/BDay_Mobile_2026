@@ -11,6 +11,7 @@ import { toggleSpeak } from '../lib/tts';
 import { elevation, layout, radius, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
 import { LiveBadge, PremiumBadge } from './Badge';
+import { VideoPlayBadge } from './VideoPlayBadge';
 
 type Props = {
   article: Article;
@@ -22,15 +23,22 @@ type Props = {
 // View owns the rounded corners + overflow:hidden for the hero image.
 export function HeroArticleCard({ article, onPress }: Props) {
   const { theme } = useTheme();
-  const { savedArticleIds, toggleSaved, language } = useAppState();
+  const { authUser, savedArticleIds, toggleSaved, language } = useAppState();
   const isSaved = savedArticleIds.includes(article.id);
   const isSpeaking = useIsSpeaking(article.id);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  // Save/listen/download are account-backed — see ArticleCard.tsx's requireAuth for why a guest
+  // gets routed to sign in instead of the action running.
+  const requireAuth = (action: () => void) => {
+    if (authUser) action();
+    else navigation.navigate('Auth', { mode: 'login' });
+  };
+
   // Bug found live: these three toolbar buttons had no onPress at all, so the tap fell through to
   // the card's own onPress (navigate into the article) instead of doing anything — see
   // ArticleCard.tsx for the pattern these now match exactly.
-  const listen = () => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, article.headline, language);
+  const listen = () => requireAuth(() => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, article.headline, language));
   const share = () =>
     Share.share({
       message: article.sourceUrl ? `${article.headline}\n\n${article.sourceUrl}` : `${article.headline}\n\n${article.dek}`,
@@ -40,7 +48,10 @@ export function HeroArticleCard({ article, onPress }: Props) {
   return (
     <Pressable onPress={onPress} style={[styles.shadowWrap, elevation.raised]}>
       <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
-        <ArticleImage article={article} style={styles.hero} />
+        <View style={styles.hero}>
+          <ArticleImage article={article} style={StyleSheet.absoluteFill} />
+          {!!article.featuredVideoId && <VideoPlayBadge />}
+        </View>
         <View style={styles.body}>
           {article.isLive ? <LiveBadge /> : article.isPremium ? <PremiumBadge /> : null}
           <Text style={[type.displayHeadline, { color: theme.ink, marginTop: space.sm }]} numberOfLines={4}>
@@ -73,7 +84,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
             </Pressable>
             <Pressable
               hitSlop={(layout.touchTarget - 20) / 2}
-              onPress={() => toggleSaved(article)}
+              onPress={() => requireAuth(() => toggleSaved(article))}
               accessibilityLabel={isSaved ? 'Remove from saved' : 'Save article'}
             >
               <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={isSaved ? theme.accent : theme.inkMuted} />
@@ -91,7 +102,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
 const styles = StyleSheet.create({
   shadowWrap: { marginBottom: layout.sectionGap, borderRadius: radius.card },
   card: { borderRadius: radius.card, overflow: 'hidden' },
-  hero: { height: 220 },
+  hero: { height: 270 },
   body: { padding: layout.heroCardPadding },
   toolbar: { flexDirection: 'row', gap: space.lg, marginTop: space.lg },
   toolbarItem: { flexDirection: 'row', alignItems: 'center' },

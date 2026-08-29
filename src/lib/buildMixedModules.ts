@@ -16,9 +16,11 @@ export function buildMixedModules(pool: Article[], label: string): TodayModule[]
     if (step === 0 && remaining >= 1) {
       modules.push({ type: 'hero', articleId: pool[i].id });
       i += 1;
-    } else if (step === 1 && remaining >= 3) {
-      modules.push({ type: 'briefRail', label: `More from ${label}`, articleIds: pool.slice(i, i + 3).map((a) => a.id) });
-      i += 3;
+    } else if (step === 1 && remaining >= 8) {
+      // A rail needs at least 8 items to read as a scrollable carousel rather than a handful of
+      // cards — below that it falls through to the other module shapes instead.
+      modules.push({ type: 'briefRail', label: `More from ${label}`, articleIds: pool.slice(i, i + 8).map((a) => a.id) });
+      i += 8;
     } else if (step === 2 && remaining >= 2) {
       modules.push({ type: 'tileGrid', label: `${label} highlights`, articleIds: pool.slice(i, i + 2).map((a) => a.id) });
       i += 2;

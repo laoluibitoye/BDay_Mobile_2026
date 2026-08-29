@@ -47,6 +47,22 @@ function rowToArticle(row: BookmarkRow | ReadingHistoryRow, section: string): Ar
   };
 }
 
+// Saved/History/Downloads are all account-backed (bookmarks and history sync server-side; a
+// download tied to no account would just orphan on logout) — a guest sees a sign-in prompt here
+// instead of an empty list that can never actually fill up.
+function SignInPrompt({ message, onSignIn }: { message: string; onSignIn: () => void }) {
+  const { theme } = useTheme();
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl }}>
+      <Feather name="lock" size={28} color={theme.inkFaint} />
+      <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.md, textAlign: 'center' }]}>{message}</Text>
+      <View style={{ marginTop: space.lg }}>
+        <Button label="Sign in" onPress={onSignIn} />
+      </View>
+    </View>
+  );
+}
+
 // The app's content-interaction hub — everything you've saved, read, downloaded, or
 // subscribed to, in one place. Distinct from Settings: this screen is "what you've engaged
 // with," Settings is "how the app behaves for you."
@@ -161,7 +177,13 @@ export function ForYouScreen() {
         })}
       </View>
 
-      {tab === 'Saved' && (
+      {tab === 'Saved' && !authUser && (
+        <SignInPrompt
+          message="Sign in to save articles and find them here."
+          onSignIn={() => navigation.navigate('Auth', { mode: 'login' })}
+        />
+      )}
+      {tab === 'Saved' && authUser && (
         <FlatList
           data={saved}
           keyExtractor={(item) => item.id}
@@ -177,7 +199,13 @@ export function ForYouScreen() {
         />
       )}
 
-      {tab === 'History' && (
+      {tab === 'History' && !authUser && (
+        <SignInPrompt
+          message="Sign in to keep track of articles you've read."
+          onSignIn={() => navigation.navigate('Auth', { mode: 'login' })}
+        />
+      )}
+      {tab === 'History' && authUser && (
         <FlatList
           data={history}
           keyExtractor={(item) => item.id}
@@ -193,7 +221,13 @@ export function ForYouScreen() {
         />
       )}
 
-      {tab === 'Downloads' && (
+      {tab === 'Downloads' && !authUser && (
+        <SignInPrompt
+          message="Sign in to download articles for offline reading."
+          onSignIn={() => navigation.navigate('Auth', { mode: 'login' })}
+        />
+      )}
+      {tab === 'Downloads' && authUser && (
         <FlatList
           data={downloaded}
           keyExtractor={(item) => item.id}

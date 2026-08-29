@@ -236,6 +236,15 @@ export function TodaysPaperScreen({ navigation }: Props) {
                 </Text>
               </View>
             </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate('EEditions')}
+              accessibilityRole="button"
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, marginBottom: space.lg }}
+            >
+              <Text style={[type.label, { color: theme.accentDeep }]}>Browse all E-Edition archives</Text>
+              <Feather name="chevron-right" size={16} color={theme.accentDeep} />
+            </Pressable>
           </>
         }
         renderSectionHeader={({ section }) => (
