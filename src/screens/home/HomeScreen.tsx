@@ -18,6 +18,8 @@ import { TextListItem } from '../../components/TextListItem';
 import { ArticleCard } from '../../components/ArticleCard';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { ToonOfTheDayCard } from '../../components/ToonOfTheDayCard';
+import { OffTheClockSection } from '../../components/OffTheClockSection';
+import { LatestStoriesModule } from '../../components/LatestStoriesModule';
 import { EventsPreviewRow } from '../../components/EventsPreviewRow';
 import { EditionsHomeCarousel } from '../../components/EditionsHomeCarousel';
 import { Article, TodayModule } from '../../data/types';
@@ -98,7 +100,12 @@ export function HomeScreen() {
     return ordered.flatMap((section) => {
       const pool = section.id === 'hero' ? section.articles.slice(HERO_COUNT) : section.articles;
       const ids = pool.map((a) => a.id);
-      const label = { type: 'sectionLabel', label: section.label } as TodayModule;
+      const label = {
+        type: 'sectionLabel',
+        label: section.label,
+        sourceType: section.sourceType,
+        sourceValue: section.sourceValue,
+      } as TodayModule;
       const sectionModules: TodayModule[] = (() => {
         switch (section.displayType) {
           case 'hero':
@@ -116,7 +123,13 @@ export function HomeScreen() {
           case 'tileGrid':
             return ids.length > 0 ? [label, { type: 'tileGrid', label: '', articleIds: ids } as TodayModule] : [];
           case 'textList':
-            return ids.length > 0 ? [label, { type: 'textList', label: '', articleIds: ids } as TodayModule] : [];
+            if (ids.length === 0) return [];
+            // Latest Stories additionally gets an in-place "Load more" (on top of the "See all →"
+            // header every section gets) — reader-requested, so older stories can be read without
+            // leaving Home, not just via the full archive.
+            return section.id === 'latest-stories'
+              ? [label, { type: 'latestStories', articleIds: ids } as TodayModule]
+              : [label, { type: 'textList', label: '', articleIds: ids } as TodayModule];
           case 'mixed':
           default:
             return [label, ...buildMixedModules(pool, section.label).filter((m) => m.type !== 'hero')];
@@ -157,7 +170,13 @@ export function HomeScreen() {
           <SectionLabel
             label={module.label}
             actionLabel="See all →"
-            onPressAction={() => navigation.navigate('SectionFeed', { section: module.label })}
+            onPressAction={() =>
+              navigation.navigate('SectionFeed', {
+                section: module.label,
+                sourceType: module.sourceType,
+                sourceValue: module.sourceValue,
+              })
+            }
           />
         );
       case 'cardList':
@@ -192,6 +211,8 @@ export function HomeScreen() {
         );
       case 'editionsCarousel':
         return <EditionsHomeCarousel />;
+      case 'latestStories':
+        return <LatestStoriesModule articleIds={module.articleIds} onPressArticle={openArticle} />;
     }
   };
 
@@ -283,6 +304,7 @@ export function HomeScreen() {
                   </Pressable>
                   <ToonOfTheDayCard />
                   <EventsPreviewRow />
+                  <OffTheClockSection />
                 </>
               ) : null
             }

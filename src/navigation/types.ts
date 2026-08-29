@@ -30,13 +30,12 @@ export type RootStackParamList = {
   HelpCenter: undefined;
   PrivacyTerms: undefined;
   About: undefined;
-  SectionFeed: { section: string };
+  SectionFeed: { section: string; sourceType?: 'category' | 'tag'; sourceValue?: string };
   ColumnistPage: { authorId: string };
   TodaysPaper: undefined;
   EEditions: { publication?: string } | undefined;
   FlipBook: { pdfUrl: string };
   BreakingNews: undefined;
-  GamePlay: { gameId: string };
   Markets: undefined;
   MarketDetail: { symbol: string };
   NewsletterIssue: { newsletterId: string };
@@ -52,7 +51,6 @@ export type MainTabParamList = {
   Home: undefined;
   WatchListen: undefined;
   Podcasts: undefined;
-  Games: undefined;
   Latest: undefined;
   ForYou: undefined;
 };

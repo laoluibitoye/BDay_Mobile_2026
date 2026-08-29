@@ -20,9 +20,9 @@ function TabIcon({ routeName, size, color }: { routeName: string; size: number; 
   return <Feather name={ICONS[routeName] ?? 'circle'} size={size} color={color} />;
 }
 
-// Games is deprecated from the visible bar for now (still reachable as a registered tab screen in
-// MainTabs.tsx, just not surfaced here) — Podcasts takes its slot, split out of the former
-// combined "Watch & Listen" tab, which is now video-only and relabeled accordingly.
+// Podcasts takes the slot the former Games tab used to occupy (Games was retired entirely —
+// screens, hook, and API deleted), split out of the former combined "Watch & Listen" tab, which
+// is now video-only and relabeled accordingly.
 const TABS: { name: keyof MainTabParamList; title: string }[] = [
   { name: 'Home', title: 'Home' },
   { name: 'Latest', title: 'Latest' },

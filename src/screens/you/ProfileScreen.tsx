@@ -1,26 +1,49 @@
 import React, { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Alert, Text, TextInput, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { Button } from '../../components/Button';
 import { useAppState } from '../../state/AppState';
+import { updateProfile } from '../../lib/api/auth';
+import { ApiError } from '../../lib/api/client';
 import { radius, space, type, useTheme } from '../../theme';
 
+// Name and email come straight from the account (authUser) and aren't independently editable
+// here — the real PATCH /me only accepts lastName/phone/company (see UpdateProfileRequest).
+// Editing them used to silently do nothing: the old version wrote a local-only draft that the
+// next session refresh (AppState's authUser-derived profile.name/email sync) quietly reverted,
+// with no error and no sign anything had gone wrong.
 export function ProfileScreen() {
   const { theme } = useTheme();
-  const { isSubscribed, profile, setProfile } = useAppState();
+  const { authUser, setAuthUser, isSubscribed, profile } = useAppState();
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(profile);
+  const [lastName, setLastName] = useState(authUser?.lastName ?? '');
+  const [phone, setPhone] = useState(authUser?.phone ?? '');
+  const [company, setCompany] = useState(authUser?.company ?? '');
+  const [saving, setSaving] = useState(false);
 
   const startEdit = () => {
-    setDraft(profile);
+    setLastName(authUser?.lastName ?? '');
+    setPhone(authUser?.phone ?? '');
+    setCompany(authUser?.company ?? '');
     setEditing(true);
   };
 
-  const save = () => {
-    setProfile(draft);
-    setEditing(false);
+  const save = async () => {
+    setSaving(true);
+    try {
+      const updated = await updateProfile({
+        lastName: lastName.trim() || undefined,
+        phone: phone.trim() || undefined,
+        company: company.trim() || undefined,
+      });
+      setAuthUser(updated);
+      setEditing(false);
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof ApiError ? e.message : 'Something went wrong. Try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -50,23 +73,19 @@ export function ProfileScreen() {
             gap: space.md,
           }}
         >
+          <Field label="Name" value={profile.name} theme={theme} />
+          <Field label="Email" value={profile.email} theme={theme} />
           {editing ? (
             <>
-              <EditField label="Name" value={draft.name} onChangeText={(v) => setDraft((d) => ({ ...d, name: v }))} theme={theme} />
-              <EditField
-                label="Email"
-                value={draft.email}
-                onChangeText={(v) => setDraft((d) => ({ ...d, email: v }))}
-                theme={theme}
-                keyboardType="email-address"
-              />
-              <EditField label="Role" value={draft.role} onChangeText={(v) => setDraft((d) => ({ ...d, role: v }))} theme={theme} />
+              <EditField label="Last name" value={lastName} onChangeText={setLastName} theme={theme} />
+              <EditField label="Phone" value={phone} onChangeText={setPhone} theme={theme} keyboardType="phone-pad" />
+              <EditField label="Company" value={company} onChangeText={setCompany} theme={theme} />
             </>
           ) : (
             <>
-              <Field label="Name" value={profile.name} theme={theme} />
-              <Field label="Email" value={profile.email} theme={theme} />
-              <Field label="Role" value={profile.role} theme={theme} />
+              <Field label="Last name" value={authUser?.lastName || '—'} theme={theme} />
+              <Field label="Phone" value={authUser?.phone || '—'} theme={theme} />
+              <Field label="Company" value={authUser?.company || '—'} theme={theme} />
             </>
           )}
           <Field label="Plan" value={isSubscribed ? 'Premium Annual' : 'Free'} theme={theme} />
@@ -75,10 +94,10 @@ export function ProfileScreen() {
         {editing && (
           <View style={{ marginTop: space.lg, flexDirection: 'row', gap: space.md }}>
             <View style={{ flex: 1 }}>
-              <Button label="Cancel" variant="secondary" onPress={() => setEditing(false)} fullWidth />
+              <Button label="Cancel" variant="secondary" onPress={() => setEditing(false)} fullWidth disabled={saving} />
             </View>
             <View style={{ flex: 1 }}>
-              <Button label="Save" onPress={save} fullWidth />
+              <Button label="Save" onPress={save} fullWidth loading={saving} />
             </View>
           </View>
         )}
@@ -107,7 +126,7 @@ function EditField({
   value: string;
   onChangeText: (v: string) => void;
   theme: ReturnType<typeof useTheme>['theme'];
-  keyboardType?: 'email-address';
+  keyboardType?: 'email-address' | 'phone-pad';
 }) {
   return (
     <View>
@@ -116,7 +135,7 @@ function EditField({
         value={value}
         onChangeText={onChangeText}
         keyboardType={keyboardType}
-        autoCapitalize={keyboardType === 'email-address' ? 'none' : 'words'}
+        autoCapitalize={keyboardType ? 'none' : 'words'}
         style={[type.bodyUI, { color: theme.ink, marginTop: 2, paddingVertical: 4, borderBottomWidth: 1, borderColor: theme.rule }]}
       />
     </View>

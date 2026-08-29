@@ -100,9 +100,19 @@ export function getRegisteredArticle(id: string): Article | undefined {
 // use; the rest force every article in the section into that one module shape — editor-chosen
 // per section in wp-admin → BusinessDay App → Home Sections.
 export type HomeSectionDisplayType = 'mixed' | 'hero' | 'briefRail' | 'tileGrid' | 'textList' | 'cardList';
-export type HomeSection = { id: string; label: string; displayType: HomeSectionDisplayType; articles: Article[] };
+export type HomeSection = {
+  id: string;
+  label: string;
+  displayType: HomeSectionDisplayType;
+  // Which archive endpoint "See all" for this section should hit — a tag-sourced section (e.g.
+  // "Latest Stories"/bdrecent, "In Other News"/bdothernews) has no matching category, so slugifying
+  // its display label and querying feed/section/{slug} (category-based) returns nothing.
+  sourceType: 'category' | 'tag';
+  sourceValue: string;
+  articles: Article[];
+};
 export type HomeFeedResponse = {
-  sections: { id: string; label: string; displayType?: string; items: FeedItem[] }[];
+  sections: { id: string; label: string; displayType?: string; sourceType?: string; sourceValue?: string; items: FeedItem[] }[];
   page: number;
   hasMore: boolean;
 };
@@ -120,6 +130,8 @@ export async function getHomeFeed(): Promise<HomeSection[]> {
     id: s.id,
     label: s.label,
     displayType: toDisplayType(s.displayType),
+    sourceType: s.sourceType === 'tag' ? 'tag' : 'category',
+    sourceValue: s.sourceValue ?? '',
     articles: registerArticles(s.items),
   }));
 }

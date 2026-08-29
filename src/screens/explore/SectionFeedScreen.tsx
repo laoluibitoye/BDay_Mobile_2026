@@ -7,7 +7,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { ArticleCard } from '../../components/ArticleCard';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { Article } from '../../data/types';
-import { getSectionFeed } from '../../lib/api/content';
+import { getSectionFeed, getTagFeed } from '../../lib/api/content';
 import { useAppState } from '../../state/AppState';
 import { space } from '../../theme';
 
@@ -22,7 +22,7 @@ function slugify(name: string): string {
 // Home and the Latest → Explore taxonomy cloud) — the real WordPress category archive via
 // businessday-app-connector's cached section feed.
 export function SectionFeedScreen({ route, navigation }: Props) {
-  const { section } = route.params;
+  const { section, sourceType, sourceValue } = route.params;
   const { recordTaxonomyUse } = useAppState();
   const [feed, setFeed] = useState<Article[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -30,11 +30,19 @@ export function SectionFeedScreen({ route, navigation }: Props) {
   const load = useCallback(() => {
     setFailed(false);
     recordTaxonomyUse(section);
-    getSectionFeed(slugify(section))
-      .then(({ articles }) => setFeed(articles))
-      .catch(() => setFailed(true));
+    // A caller that knows this section is tag-sourced (e.g. Home's "Latest Stories"/"In Other
+    // News", backed by bdrecent/bdothernews tags, not a real category) passes sourceType/
+    // sourceValue explicitly — slugifying the display label into a category query would just
+    // query a category that doesn't exist and silently return nothing. Every other caller (the
+    // category tab strip, the Explore taxonomy cloud) has no such override and keeps the
+    // original slugify-the-label-as-a-category behavior.
+    const request =
+      sourceType === 'tag' && sourceValue
+        ? getTagFeed(sourceValue)
+        : getSectionFeed(sourceValue || slugify(section));
+    request.then(({ articles }) => setFeed(articles)).catch(() => setFailed(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section]);
+  }, [section, sourceType, sourceValue]);
 
   useEffect(load, [load]);
 

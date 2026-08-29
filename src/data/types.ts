@@ -96,11 +96,12 @@ export type NewsletterIssue = {
 export type TodayModule =
   | { type: 'hero'; articleId: string }
   | { type: 'briefRail'; label: string; articleIds: string[] }
-  | { type: 'sectionLabel'; label: string }
+  | { type: 'sectionLabel'; label: string; sourceType?: 'category' | 'tag'; sourceValue?: string }
   | { type: 'cardList'; articleIds: string[] }
   | { type: 'tileGrid'; label: string; articleIds: string[] }
   | { type: 'textList'; label: string; articleIds: string[] }
-  | { type: 'editionsCarousel' };
+  | { type: 'editionsCarousel' }
+  | { type: 'latestStories'; articleIds: string[] };
 
 export type SubscriptionPlan = {
   id: string;

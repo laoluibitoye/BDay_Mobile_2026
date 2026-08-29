@@ -49,7 +49,6 @@ import { EEditionsScreen } from '../screens/you/EEditionsScreen';
 import { FlipBookScreen } from '../screens/you/FlipBookScreen';
 import { NewsletterIssueScreen } from '../screens/foryou/NewsletterIssueScreen';
 
-import { GamePlayScreen } from '../screens/games/GamePlayScreen';
 import { MarketsScreen } from '../screens/markets/MarketsScreen';
 import { MarketDetailScreen } from '../screens/markets/MarketDetailScreen';
 import { WatchlistScreen } from '../screens/markets/WatchlistScreen';
@@ -116,7 +115,6 @@ export function RootNavigator() {
       <Stack.Screen name="FlipBook" component={FlipBookScreen} />
       <Stack.Screen name="NewsletterIssue" component={NewsletterIssueScreen} />
 
-      <Stack.Screen name="GamePlay" component={GamePlayScreen} />
       <Stack.Screen name="Markets" component={MarketsScreen} />
       <Stack.Screen name="MarketDetail" component={MarketDetailScreen} />
       <Stack.Screen name="Watchlist" component={WatchlistScreen} />

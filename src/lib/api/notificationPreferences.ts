@@ -3,6 +3,7 @@ import { apiRequest } from './client';
 export type NotificationPreferences = {
   briefEnabled: boolean;
   commentReplyEmailEnabled: boolean;
+  pushEnabled: boolean;
 };
 
 export function getNotificationPreferences(): Promise<NotificationPreferences> {

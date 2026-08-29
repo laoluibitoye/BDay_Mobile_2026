@@ -6,32 +6,26 @@ import { SectionLabel } from '../../components/SectionLabel';
 import { getNotificationPreferences, updateNotificationPreferences } from '../../lib/api/notificationPreferences';
 import { space, type, useTheme } from '../../theme';
 
-// In-app ping categories — no per-category push-preference endpoint exists server-side yet, so
-// these stay local/prototype, same posture as the Downloads tab's offline PDFs.
-const CATEGORIES = ['Breaking News', 'Market Moves', 'Weekly Briefing', 'Game & Quiz Reminders'] as const;
-
 export function NotificationPreferencesScreen() {
   const { theme } = useTheme();
-  const [prefs, setPrefs] = useState<Record<string, boolean>>({
-    'Breaking News': true,
-    'Market Moves': true,
-    'Weekly Briefing': true,
-    'Game & Quiz Reminders': false,
-  });
 
-  // Real, account-level email preferences — GET/PATCH /me/notification-preferences.
+  // Real, account-level preferences — GET/PATCH /me/notification-preferences.
   const [briefEnabled, setBriefEnabled] = useState(false);
   const [commentReplyEmailEnabled, setCommentReplyEmailEnabled] = useState(true);
-  const [emailPrefsLoaded, setEmailPrefsLoaded] = useState(false);
+  // Push is fan-out from followed topics (see FollowsScreen), not per-category — this is the one
+  // master on/off switch that actually gates PushTokensService.sendToUsers server-side.
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   useEffect(() => {
     getNotificationPreferences()
       .then((p) => {
         setBriefEnabled(p.briefEnabled);
         setCommentReplyEmailEnabled(p.commentReplyEmailEnabled);
+        setPushEnabled(p.pushEnabled);
       })
       .catch(() => undefined)
-      .finally(() => setEmailPrefsLoaded(true));
+      .finally(() => setPrefsLoaded(true));
   }, []);
 
   const toggleBrief = (value: boolean) => {
@@ -42,6 +36,11 @@ export function NotificationPreferencesScreen() {
   const toggleCommentReplyEmail = (value: boolean) => {
     setCommentReplyEmailEnabled(value);
     updateNotificationPreferences({ commentReplyEmailEnabled: value }).catch(() => setCommentReplyEmailEnabled(!value));
+  };
+
+  const togglePush = (value: boolean) => {
+    setPushEnabled(value);
+    updateNotificationPreferences({ pushEnabled: value }).catch(() => setPushEnabled(!value));
   };
 
   return (
@@ -67,7 +66,7 @@ export function NotificationPreferencesScreen() {
           <Switch
             value={briefEnabled}
             onValueChange={toggleBrief}
-            disabled={!emailPrefsLoaded}
+            disabled={!prefsLoaded}
             trackColor={{ true: theme.accent, false: theme.rule }}
             accessibilityLabel="News Brief email"
           />
@@ -91,7 +90,7 @@ export function NotificationPreferencesScreen() {
           <Switch
             value={commentReplyEmailEnabled}
             onValueChange={toggleCommentReplyEmail}
-            disabled={!emailPrefsLoaded}
+            disabled={!prefsLoaded}
             trackColor={{ true: theme.accent, false: theme.rule }}
             accessibilityLabel="Comment reply email"
           />
@@ -100,27 +99,31 @@ export function NotificationPreferencesScreen() {
         <View style={{ marginTop: space.xl }}>
           <SectionLabel label="Push notifications" />
         </View>
-        <View style={{ marginTop: space.sm }}>
-          {CATEGORIES.map((cat) => (
-            <View
-              key={cat}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingVertical: space.md,
-                borderBottomWidth: 1,
-                borderColor: theme.rule,
-              }}
-            >
-              <Text style={[type.bodyUI, { color: theme.ink }]}>{cat}</Text>
-              <Switch
-                value={prefs[cat]}
-                onValueChange={(v) => setPrefs((p) => ({ ...p, [cat]: v }))}
-                trackColor={{ true: theme.accent, false: theme.rule }}
-              />
-            </View>
-          ))}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: space.md,
+            marginTop: space.sm,
+            borderBottomWidth: 1,
+            borderColor: theme.rule,
+          }}
+        >
+          <View style={{ flex: 1, marginRight: space.md }}>
+            <Text style={[type.bodyUI, { color: theme.ink }]}>Allow push notifications</Text>
+            <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>
+              New stories from topics you follow, sent to this device. Turn off to stop all push —
+              choose what you follow under Interests.
+            </Text>
+          </View>
+          <Switch
+            value={pushEnabled}
+            onValueChange={togglePush}
+            disabled={!prefsLoaded}
+            trackColor={{ true: theme.accent, false: theme.rule }}
+            accessibilityLabel="Push notifications"
+          />
         </View>
       </View>
     </Screen>

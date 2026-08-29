@@ -86,7 +86,13 @@ export function ForYouScreen() {
   const loadLists = () => {
     setListsFailed(false);
     getNewsletterLists()
-      .then((res) => setLists(res.lists))
+      .then((res) => {
+        setLists(res.lists);
+        // No subscriber-status lookup exists yet (would need a new fc-bridge endpoint), so —
+        // same as the website's own signup form — every list starts checked; unchecking one
+        // before Subscribe sends it as a detach, which is how a reader actually opts out.
+        setSelected(res.lists.map((l) => l.id));
+      })
       .catch(() => setListsFailed(true));
   };
 
@@ -100,7 +106,8 @@ export function ForYouScreen() {
     setSubscribeError(null);
     setSubscribing(true);
     try {
-      await subscribeToNewsletters(email.trim(), selected, authUser?.firstName ?? undefined);
+      const detach = (lists ?? []).map((l) => l.id).filter((id) => !selected.includes(id));
+      await subscribeToNewsletters(email.trim(), selected, detach, authUser?.firstName ?? undefined);
       setSubscribed(true);
     } catch (err) {
       setSubscribeError(err instanceof Error ? err.message : "Couldn't complete signup.");
@@ -272,12 +279,12 @@ export function ForYouScreen() {
           </View>
         ) : subscribed ? (
           <View style={{ flex: 1, justifyContent: 'center', padding: space.lg }}>
-            <FeedEmptyState title="You're subscribed" message="Check your inbox — a confirmation is on its way." />
+            <FeedEmptyState title="Preferences saved" message="Check your inbox — a confirmation is on its way." />
           </View>
         ) : (
           <View style={{ padding: space.lg, gap: space.md }}>
             <Text style={[type.bodyUI, { color: theme.inkMuted }]}>
-              Choose which BusinessDay newsletters to receive by email.
+              All newsletters are on by default — turn off any you don't want, then confirm your email.
             </Text>
             {lists.map((list) => {
               const on = selected.includes(list.id);
@@ -330,10 +337,10 @@ export function ForYouScreen() {
               <Text style={[type.caption, { color: theme.marketDown }]}>{subscribeError}</Text>
             )}
             <Button
-              label="Subscribe"
+              label={selected.length === 0 ? 'Unsubscribe from all' : 'Save preferences'}
               onPress={handleSubscribe}
               loading={subscribing}
-              disabled={selected.length === 0 || !email.trim()}
+              disabled={!email.trim()}
             />
           </View>
         ))}
