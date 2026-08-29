@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,7 +7,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { Article } from '../data/types';
 import { useAppState } from '../state/AppState';
 import { useIsSpeaking } from '../hooks/useIsSpeaking';
-import { toggleSpeak } from '../lib/tts';
+import { listenToArticle } from '../lib/listenToArticle';
 import { elevation, layout, radius, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
 import { LiveBadge, PremiumBadge } from './Badge';
@@ -26,6 +26,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
   const { authUser, savedArticleIds, toggleSaved, language } = useAppState();
   const isSaved = savedArticleIds.includes(article.id);
   const isSpeaking = useIsSpeaking(article.id);
+  const [listenLoading, setListenLoading] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // Save/listen/download are account-backed — see ArticleCard.tsx's requireAuth for why a guest
@@ -38,7 +39,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
   // Bug found live: these three toolbar buttons had no onPress at all, so the tap fell through to
   // the card's own onPress (navigate into the article) instead of doing anything — see
   // ArticleCard.tsx for the pattern these now match exactly.
-  const listen = () => requireAuth(() => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, article.headline, language));
+  const listen = () => requireAuth(() => listenToArticle(article, language, setListenLoading));
   const share = () =>
     Share.share({
       message: article.sourceUrl ? `${article.headline}\n\n${article.sourceUrl}` : `${article.headline}\n\n${article.dek}`,
@@ -67,9 +68,14 @@ export function HeroArticleCard({ article, onPress }: Props) {
             <Pressable
               hitSlop={(layout.touchTarget - 20) / 2}
               onPress={listen}
+              disabled={listenLoading}
               accessibilityLabel={isSpeaking ? 'Stop listening' : 'Listen to this article'}
             >
-              <Feather name={isSpeaking ? 'pause-circle' : 'headphones'} size={20} color={isSpeaking ? theme.accent : theme.inkMuted} />
+              {listenLoading ? (
+                <ActivityIndicator size="small" color={theme.inkMuted} />
+              ) : (
+                <Feather name={isSpeaking ? 'pause-circle' : 'headphones'} size={20} color={isSpeaking ? theme.accent : theme.inkMuted} />
+              )}
             </Pressable>
             <Pressable
               hitSlop={(layout.touchTarget - 20) / 2}

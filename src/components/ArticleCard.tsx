@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,7 +7,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { Article } from '../data/types';
 import { useAppState } from '../state/AppState';
 import { useIsSpeaking } from '../hooks/useIsSpeaking';
-import { toggleSpeak } from '../lib/tts';
+import { listenToArticle } from '../lib/listenToArticle';
 import { layout, radius, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
 import { LiveBadge, PremiumBadge } from './Badge';
@@ -25,6 +25,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
   const { authUser, savedArticleIds, toggleSaved, language } = useAppState();
   const isSaved = savedArticleIds.includes(article.id);
   const isSpeaking = useIsSpeaking(article.id);
+  const [listenLoading, setListenLoading] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // Save, listen, and download are all account-backed (bookmarks/history sync server-side, TTS
@@ -35,7 +36,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
     else navigation.navigate('Auth', { mode: 'login' });
   };
 
-  const listenAction = onListen ?? (() => toggleSpeak(article.id, `${article.headline}. ${article.dek}`, article.headline, language));
+  const listenAction = onListen ?? (() => listenToArticle(article, language, setListenLoading));
   const listen = () => requireAuth(listenAction);
   const share = onShare ?? (() => Share.share({ message: article.sourceUrl ? `${article.headline}\n\n${article.sourceUrl}` : `${article.headline}\n\n${article.dek}` }));
   // Bug found live: this icon had no onPress at all, so the tap fell through to the card's own
@@ -64,9 +65,14 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
             hitSlop={(layout.touchTarget - 20) / 2}
             style={styles.toolbarItem}
             onPress={listen}
+            disabled={listenLoading}
             accessibilityLabel={isSpeaking ? 'Stop listening' : 'Listen to this article'}
           >
-            <Feather name={isSpeaking ? 'pause-circle' : 'headphones'} size={20} color={isSpeaking ? theme.accent : theme.inkMuted} />
+            {listenLoading ? (
+              <ActivityIndicator size="small" color={theme.inkMuted} />
+            ) : (
+              <Feather name={isSpeaking ? 'pause-circle' : 'headphones'} size={20} color={isSpeaking ? theme.accent : theme.inkMuted} />
+            )}
           </Pressable>
           <Pressable
             hitSlop={(layout.touchTarget - 20) / 2}
