@@ -84,15 +84,6 @@ export type NotificationItem = {
   articleId?: string; // present when the notification deep-links to an article
 };
 
-export type NewsletterIssue = {
-  id: string;
-  title: string;
-  summary: string;
-  sentAt: string;
-  latestEditionSubject: string; // headline of the most recent issue
-  latestEditionBody: string[]; // full text of the most recent issue, shown in "View latest edition"
-};
-
 export type TodayModule =
   | { type: 'hero'; articleId: string }
   | { type: 'briefRail'; label: string; articleIds: string[] }

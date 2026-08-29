@@ -47,7 +47,6 @@ import { AboutScreen } from '../screens/you/AboutScreen';
 import { TodaysPaperScreen } from '../screens/you/TodaysPaperScreen';
 import { EEditionsScreen } from '../screens/you/EEditionsScreen';
 import { FlipBookScreen } from '../screens/you/FlipBookScreen';
-import { NewsletterIssueScreen } from '../screens/foryou/NewsletterIssueScreen';
 
 import { MarketsScreen } from '../screens/markets/MarketsScreen';
 import { MarketDetailScreen } from '../screens/markets/MarketDetailScreen';
@@ -113,7 +112,6 @@ export function RootNavigator() {
       <Stack.Screen name="TodaysPaper" component={TodaysPaperScreen} />
       <Stack.Screen name="EEditions" component={EEditionsScreen} />
       <Stack.Screen name="FlipBook" component={FlipBookScreen} />
-      <Stack.Screen name="NewsletterIssue" component={NewsletterIssueScreen} />
 
       <Stack.Screen name="Markets" component={MarketsScreen} />
       <Stack.Screen name="MarketDetail" component={MarketDetailScreen} />
