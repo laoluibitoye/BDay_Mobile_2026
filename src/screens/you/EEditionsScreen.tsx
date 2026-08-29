@@ -78,7 +78,20 @@ export function EEditionsScreen({ route }: Props) {
   const withSignedUrl = async (item: EditionListing, onReady: (url: string) => void) => {
     if (!activePublication) return;
     if (item.locked) {
-      Alert.alert("Outside your plan's archive window", 'Upgrade your plan to open editions this far back.', [{ text: 'OK' }]);
+      // A guest has no plan to check against at all (see editions.ts's optional-auth listing) —
+      // the actionable next step for them is signing in, not "upgrade", which only makes sense
+      // once there's an existing plan to compare the date against.
+      if (!authUser) {
+        Alert.alert('Sign in required', 'Sign in to see if this edition is included in your plan.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign in', onPress: () => navigation.navigate('Auth', { mode: 'login' }) },
+        ]);
+      } else {
+        Alert.alert("Outside your plan's archive window", 'Upgrade your plan to open editions this far back.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'See plans', onPress: () => navigation.navigate('SubscriptionPlans') },
+        ]);
+      }
       return;
     }
     setDownloadingDate(item.date);
@@ -107,11 +120,7 @@ export function EEditionsScreen({ route }: Props) {
 
   return (
     <Screen scroll={false} header={<AppHeader variant="compact" title="E-Editions" showBack />}>
-      {!authUser ? (
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <FeedEmptyState title="Sign in required" message="Sign in to browse and download E-Edition archives." />
-        </View>
-      ) : failed ? (
+      {failed ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <FeedEmptyState title="Couldn't load publications" message="Check your connection and try again." onRetry={loadPublications} />
         </View>
@@ -196,7 +205,9 @@ export function EEditionsScreen({ route }: Props) {
                   <View style={{ flex: 1 }}>
                     <Text style={[type.label, { color: theme.ink }]}>{formatDate(item.date)}</Text>
                     {item.locked ? (
-                      <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>Outside your plan's archive window</Text>
+                      <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>
+                        {authUser ? "Outside your plan's archive window" : 'Sign in to check access'}
+                      </Text>
                     ) : (
                       <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>Tap to read · flip through like a magazine</Text>
                     )}
