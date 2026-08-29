@@ -54,7 +54,14 @@
           "color": "#F8F9FA"
         }
       ],
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
       "@react-native-firebase/crashlytics"
     ],
     "extra": {
