@@ -14,8 +14,7 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      },
-      "associatedDomains": ["applinks:businessday.ng", "applinks:www.businessday.ng"]
+      }
     },
     "android": {
       "package": "bdnews.businessday.bdtech",
