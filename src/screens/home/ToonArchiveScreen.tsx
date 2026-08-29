@@ -27,7 +27,7 @@ export function ToonArchiveScreen() {
   useEffect(load, []);
 
   return (
-    <Screen header={<AppHeader variant="compact" title="Toon of the Day" showBack />}>
+    <Screen scroll={false} header={<AppHeader variant="compact" title="Toon of the Day" showBack />}>
       {failed ? (
         <FeedEmptyState title="Couldn't load cartoons" message="Check your connection and try again." onRetry={load} />
       ) : items === null ? null : items.length === 0 ? (

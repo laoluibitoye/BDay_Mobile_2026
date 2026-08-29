@@ -24,4 +24,7 @@ export const type = {
   cardTitle: { fontFamily: fontFamily.uiBold, fontSize: 16, lineHeight: 21, letterSpacing: 0.2 },
   caption: { fontFamily: fontFamily.uiMedium, fontSize: 12, lineHeight: 16 },
   mono: { fontFamily: fontFamily.mono, fontSize: 11, lineHeight: 16, letterSpacing: 0.4 },
+  // SectionLabel's "TOP NEWS ————" style headers — same mono family/tracking as `mono`, just a
+  // bit bigger since these are section-level headings, not fine print.
+  sectionLabel: { fontFamily: fontFamily.mono, fontSize: 13, lineHeight: 18, letterSpacing: 0.4 },
 } as const;

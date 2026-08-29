@@ -7,6 +7,13 @@ import { getDeviceId } from '../deviceId';
 // IMPLEMENTATION_PLAN.md §17.
 const WP_BASE_URL = process.env.EXPO_PUBLIC_WP_BASE_URL ?? '';
 
+// The shared flip-through PDF reader (theme's flipbook-reader.php) — the same page the website's
+// own "Read Edition" button opens (sdk/src/edition-download.ts), reused here via WebView so
+// there's exactly one page-flip implementation instead of a duplicate native one.
+export function wpFlipbookReaderUrl(pdfUrl: string): string {
+  return `${WP_BASE_URL}/?bday_reader=1&pdf=${encodeURIComponent(pdfUrl)}`;
+}
+
 export class WpApiError extends Error {
   status: number;
   constructor(status: number, message: string) {

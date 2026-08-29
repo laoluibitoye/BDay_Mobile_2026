@@ -34,6 +34,7 @@ export type RootStackParamList = {
   ColumnistPage: { authorId: string };
   TodaysPaper: undefined;
   EEditions: { publication?: string } | undefined;
+  FlipBook: { pdfUrl: string };
   BreakingNews: undefined;
   GamePlay: { gameId: string };
   Markets: undefined;

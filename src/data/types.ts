@@ -99,7 +99,8 @@ export type TodayModule =
   | { type: 'sectionLabel'; label: string }
   | { type: 'cardList'; articleIds: string[] }
   | { type: 'tileGrid'; label: string; articleIds: string[] }
-  | { type: 'textList'; label: string; articleIds: string[] };
+  | { type: 'textList'; label: string; articleIds: string[] }
+  | { type: 'editionsCarousel' };
 
 export type SubscriptionPlan = {
   id: string;

@@ -15,6 +15,8 @@ import {
 } from '../../lib/api/editions';
 import { ApiError } from '../../lib/api/client';
 import { radius, space, type, useTheme } from '../../theme';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EEditions'>;
 
@@ -41,6 +43,7 @@ function formatDate(iso: string): string {
 // "e-paper" publication; this is the real, subscription-gated archive across all of them.
 export function EEditionsScreen({ route }: Props) {
   const { theme } = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { authUser } = useAppState();
   const [publications, setPublications] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -72,30 +75,35 @@ export function EEditionsScreen({ route }: Props) {
 
   useEffect(loadEditions, [activePublication]);
 
-  const openEdition = async (item: EditionListing) => {
+  const withSignedUrl = async (item: EditionListing, onReady: (url: string) => void) => {
     if (!activePublication) return;
     if (item.locked) {
-      Alert.alert(
-        "Outside your plan's archive window",
-        'Upgrade your plan to open editions this far back.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert("Outside your plan's archive window", 'Upgrade your plan to open editions this far back.', [{ text: 'OK' }]);
       return;
     }
     setDownloadingDate(item.date);
     try {
       const { url } = await getEditionDownloadUrl(item.date, activePublication);
-      await Linking.openURL(url);
+      onReady(url);
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {
         Alert.alert("Outside your plan's archive window", 'Upgrade your plan to open editions this far back.');
       } else {
-        Alert.alert('Download failed', "We couldn't open that edition. Please try again.");
+        Alert.alert('Something went wrong', "We couldn't open that edition. Please try again.");
       }
     } finally {
       setDownloadingDate(null);
     }
   };
+
+  // No individual articles to read/mark for any publication but E-Paper (Today's Paper covers
+  // that one already, separately) — every edition here is just a PDF, so tapping a row opens the
+  // shared flip-through reader (see wpFlipbookReaderUrl) rather than a plain download. The
+  // download icon stays as a direct secondary action for anyone who'd rather just have the file.
+  const readEdition = (item: EditionListing) =>
+    withSignedUrl(item, (url) => navigation.navigate('FlipBook', { pdfUrl: url }));
+
+  const downloadEdition = (item: EditionListing) => withSignedUrl(item, (url) => void Linking.openURL(url));
 
   return (
     <Screen scroll={false} header={<AppHeader variant="compact" title="E-Editions" showBack />}>
@@ -157,9 +165,10 @@ export function EEditionsScreen({ route }: Props) {
               contentContainerStyle={{ padding: space.lg, paddingBottom: 140, gap: space.md }}
               renderItem={({ item }) => (
                 <Pressable
-                  onPress={() => openEdition(item)}
+                  onPress={() => readEdition(item)}
                   disabled={downloadingDate === item.date}
                   accessibilityRole="button"
+                  accessibilityLabel={`Read the ${formatDate(item.date)} edition`}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -182,14 +191,29 @@ export function EEditionsScreen({ route }: Props) {
                       justifyContent: 'center',
                     }}
                   >
-                    <Feather name={item.locked ? 'lock' : 'download'} size={18} color={item.locked ? theme.inkFaint : theme.accentDeep} />
+                    <Feather name={item.locked ? 'lock' : 'book-open'} size={18} color={item.locked ? theme.inkFaint : theme.accentDeep} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[type.label, { color: theme.ink }]}>{formatDate(item.date)}</Text>
-                    {item.locked && (
+                    {item.locked ? (
                       <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>Outside your plan's archive window</Text>
+                    ) : (
+                      <Text style={[type.caption, { color: theme.inkMuted, marginTop: 2 }]}>Tap to read · flip through like a magazine</Text>
                     )}
                   </View>
+                  {!item.locked && (
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        downloadEdition(item);
+                      }}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Download the ${formatDate(item.date)} edition`}
+                    >
+                      <Feather name="download" size={18} color={theme.inkMuted} />
+                    </Pressable>
+                  )}
                 </Pressable>
               )}
             />

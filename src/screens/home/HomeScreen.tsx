@@ -99,27 +99,35 @@ export function HomeScreen() {
       const pool = section.id === 'hero' ? section.articles.slice(HERO_COUNT) : section.articles;
       const ids = pool.map((a) => a.id);
       const label = { type: 'sectionLabel', label: section.label } as TodayModule;
-      switch (section.displayType) {
-        case 'hero':
-          return [label, ...pool.map((a): TodayModule => ({ type: 'hero', articleId: a.id }))];
-        case 'cardList':
-          return ids.length > 0 ? [label, { type: 'cardList', articleIds: ids } as TodayModule] : [label];
-        // briefRail/tileGrid/textList carry their own `label` field for buildMixedModules'
-        // synthetic sub-modules (e.g. "More from Economy") rendered inline with no separate
-        // header — but a real top-level WP section needs the same "See all →" header every other
-        // display type gets, which only the standalone `sectionLabel` module (case 'sectionLabel'
-        // below) renders. So the module's own label is blanked out here (falsy → its internal
-        // header is skipped) and the real header comes from the prepended `label` module instead.
-        case 'briefRail':
-          return ids.length > 0 ? [label, { type: 'briefRail', label: '', articleIds: ids } as TodayModule] : [];
-        case 'tileGrid':
-          return ids.length > 0 ? [label, { type: 'tileGrid', label: '', articleIds: ids } as TodayModule] : [];
-        case 'textList':
-          return ids.length > 0 ? [label, { type: 'textList', label: '', articleIds: ids } as TodayModule] : [];
-        case 'mixed':
-        default:
-          return [label, ...buildMixedModules(pool, section.label).filter((m) => m.type !== 'hero')];
-      }
+      const sectionModules: TodayModule[] = (() => {
+        switch (section.displayType) {
+          case 'hero':
+            return [label, ...pool.map((a): TodayModule => ({ type: 'hero', articleId: a.id }))];
+          case 'cardList':
+            return ids.length > 0 ? [label, { type: 'cardList', articleIds: ids } as TodayModule] : [label];
+          // briefRail/tileGrid/textList carry their own `label` field for buildMixedModules'
+          // synthetic sub-modules (e.g. "More from Economy") rendered inline with no separate
+          // header — but a real top-level WP section needs the same "See all →" header every other
+          // display type gets, which only the standalone `sectionLabel` module (case 'sectionLabel'
+          // below) renders. So the module's own label is blanked out here (falsy → its internal
+          // header is skipped) and the real header comes from the prepended `label` module instead.
+          case 'briefRail':
+            return ids.length > 0 ? [label, { type: 'briefRail', label: '', articleIds: ids } as TodayModule] : [];
+          case 'tileGrid':
+            return ids.length > 0 ? [label, { type: 'tileGrid', label: '', articleIds: ids } as TodayModule] : [];
+          case 'textList':
+            return ids.length > 0 ? [label, { type: 'textList', label: '', articleIds: ids } as TodayModule] : [];
+          case 'mixed':
+          default:
+            return [label, ...buildMixedModules(pool, section.label).filter((m) => m.type !== 'hero')];
+        }
+      })();
+      // E-Editions carousel is pinned directly after "BD Investigations" (section id
+      // 'investigates') regardless of what comes after it in wp-admin's order — not itself a
+      // WP-driven section, so it can't just be given its own position in that order.
+      return section.id === 'investigates'
+        ? [...sectionModules, { type: 'editionsCarousel' } as TodayModule]
+        : sectionModules;
     });
   }, [wpSections]);
 
@@ -182,6 +190,8 @@ export function HomeScreen() {
             })}
           </View>
         );
+      case 'editionsCarousel':
+        return <EditionsHomeCarousel />;
     }
   };
 
@@ -232,13 +242,6 @@ export function HomeScreen() {
                     accessibilityRole="button"
                     style={{ marginBottom: layout.sectionGap }}
                   >
-                    {paperCoverUrl && (
-                      <Image
-                        source={{ uri: paperCoverUrl }}
-                        style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: radius.card, marginBottom: space.md }}
-                        resizeMode="cover"
-                      />
-                    )}
                     <View
                       style={{
                         flexDirection: 'row',
@@ -247,6 +250,7 @@ export function HomeScreen() {
                         padding: space.lg,
                         borderRadius: radius.card,
                         backgroundColor: theme.ink,
+                        marginBottom: paperCoverUrl ? space.md : 0,
                       }}
                     >
                     <View
@@ -269,10 +273,16 @@ export function HomeScreen() {
                     </View>
                     <Feather name="chevron-right" size={18} color={theme.bg} />
                     </View>
+                    {paperCoverUrl && (
+                      <Image
+                        source={{ uri: paperCoverUrl }}
+                        style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: radius.card }}
+                        resizeMode="cover"
+                      />
+                    )}
                   </Pressable>
                   <ToonOfTheDayCard />
                   <EventsPreviewRow />
-                  <EditionsHomeCarousel />
                 </>
               ) : null
             }

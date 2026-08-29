@@ -13,11 +13,11 @@ export function SectionLabel({ label, actionLabel, onPressAction }: Props) {
   const { theme } = useTheme();
   return (
     <View style={styles.row}>
-      <Text style={[type.mono, { color: theme.accentDeep }]}>{label.toUpperCase()}</Text>
+      <Text style={[type.sectionLabel, { color: theme.accentDeep }]}>{label.toUpperCase()}</Text>
       <View style={[styles.rule, { backgroundColor: theme.rule }]} />
       {actionLabel && (
         <Pressable onPress={onPressAction} hitSlop={8}>
-          <Text style={[type.mono, { color: theme.accentDeep }]}>{actionLabel}</Text>
+          <Text style={[type.sectionLabel, { color: theme.accentDeep }]}>{actionLabel}</Text>
         </Pressable>
       )}
     </View>
