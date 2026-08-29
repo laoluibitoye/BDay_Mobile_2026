@@ -4,7 +4,7 @@
     "slug": "app",
     "scheme": "businessday",
     "owner": "businessday-technology",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/brand/bd-icon.png",
     "userInterfaceStyle": "automatic",
