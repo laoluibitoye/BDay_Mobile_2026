@@ -62,7 +62,8 @@
           }
         }
       ],
-      "@react-native-firebase/crashlytics"
+      "@react-native-firebase/crashlytics",
+      "./plugins/withModularHeaders.js"
     ],
     "extra": {
       "eas": {
