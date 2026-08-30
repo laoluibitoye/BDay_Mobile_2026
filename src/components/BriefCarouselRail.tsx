@@ -61,5 +61,5 @@ function BriefTile({ article, width, onPress }: { article: Article; width: numbe
 
 const styles = StyleSheet.create({
   tile: { borderWidth: 1, borderRadius: radius.card, padding: space.sm, overflow: 'hidden' },
-  thumb: { width: '100%', height: 150, borderRadius: radius.card - 4 },
+  thumb: { width: '100%', height: 150, borderRadius: Math.max(radius.card - 4, 0) },
 });

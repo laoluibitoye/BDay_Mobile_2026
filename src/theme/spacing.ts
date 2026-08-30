@@ -1,17 +1,15 @@
 // Source of truth: /design.md §4 Layout & spacing
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48, huge: 64 } as const;
 
-export const radius = { button: 8, card: 12, pill: 999 } as const;
+// EXPERIMENT (branch: experiment/uiux-overhaul) — flat, corporate treatment per tester feedback:
+// card radius flattened to square, "raised" neutralized to match "resting" (border only, no
+// shadow) so nothing in the app casts a card shadow. Revert to 12/shadowed values if this
+// experiment doesn't stick — see design.md §4 for the original spec this diverges from.
+export const radius = { button: 8, card: 0, pill: 999 } as const;
 
 export const elevation = {
   resting: { borderWidth: 1 },
-  raised: {
-    shadowColor: '#111111',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
-    elevation: 6,
-  },
+  raised: { borderWidth: 1 },
 } as const;
 
 // expo-blur `intensity` values (0-100 platform scale), not CSS px blur radii — see design.md §4.1.
