@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, Platform, Pressable, Text, View } from 'react-native';
+import { FlatList, Platform, Pressable, Text, View } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { AppBannerSlot } from '../../components/AppBannerSlot';
@@ -26,7 +26,6 @@ import { Article, TodayModule } from '../../data/types';
 import { sections } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
 import { getHomeFeed, getRegisteredArticle, getSectionFeed, HomeSection } from '../../lib/api/content';
-import { getTodaysPaper } from '../../lib/api/todaysPaper';
 import { radius, layout, space, type, useTheme } from '../../theme';
 
 // Today is WP-admin-editable (wp-admin → BusinessDay App → Home Sections — title/category-or-tag
@@ -49,13 +48,6 @@ export function HomeScreen() {
   const [todayFailed, setTodayFailed] = useState(false);
   const [categoryArticles, setCategoryArticles] = useState<Article[]>([]);
   const [categoryFailed, setCategoryFailed] = useState(false);
-  const [paperCoverUrl, setPaperCoverUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    getTodaysPaper()
-      .then((paper) => setPaperCoverUrl(paper.coverImageUrl))
-      .catch(() => setPaperCoverUrl(null));
-  }, []);
 
   const loadToday = useCallback(() => {
     setTodayFailed(false);
@@ -271,7 +263,6 @@ export function HomeScreen() {
                         padding: space.lg,
                         borderRadius: radius.card,
                         backgroundColor: theme.ink,
-                        marginBottom: paperCoverUrl ? space.md : 0,
                       }}
                     >
                     <View
@@ -284,7 +275,7 @@ export function HomeScreen() {
                         justifyContent: 'center',
                       }}
                     >
-                      <Feather name="book-open" size={18} color="#FFFFFF" />
+                      <Ionicons name="newspaper" size={20} color="#FFFFFF" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[type.label, { color: theme.bg }]}>Today's Paper</Text>
@@ -294,13 +285,6 @@ export function HomeScreen() {
                     </View>
                     <Feather name="chevron-right" size={18} color={theme.bg} />
                     </View>
-                    {paperCoverUrl && (
-                      <Image
-                        source={{ uri: paperCoverUrl }}
-                        style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: radius.card }}
-                        resizeMode="cover"
-                      />
-                    )}
                   </Pressable>
                   <ToonOfTheDayCard />
                   <EventsPreviewRow />
