@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Platform, Pressable, Text, View } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -263,6 +263,7 @@ export function HomeScreen() {
                         padding: space.lg,
                         borderRadius: radius.card,
                         backgroundColor: theme.ink,
+                        overflow: 'hidden',
                       }}
                     >
                     <View
@@ -284,6 +285,11 @@ export function HomeScreen() {
                       </Text>
                     </View>
                     <Feather name="chevron-right" size={18} color={theme.bg} />
+                    {/* Folded-paper-corner accent, top-right — CSS-triangle trick (no image asset):
+                        a darker under-triangle peeks past a lighter over-triangle to fake a
+                        curled page corner, echoing print/e-paper affordance for this row only. */}
+                    <View pointerEvents="none" style={homeStyles.paperFoldShadow} />
+                    <View pointerEvents="none" style={[homeStyles.paperFoldFlap, { borderRightColor: theme.bg }]} />
                     </View>
                   </Pressable>
                   <ToonOfTheDayCard />
@@ -339,3 +345,42 @@ export function HomeScreen() {
     </SafeAreaView>
   );
 }
+
+// Classic CSS "ribbon corner" triangle trick, ported to RN's border-width/border-color model:
+// a box with only two adjacent border sides given width miters into a diagonal at their corner,
+// so coloring just one of those sides (and leaving the rest transparent) yields a solid triangle.
+// Two stacked triangles (a larger dark one under a smaller light one, offset by FOLD_SHADOW_INSET)
+// fake the shadow line under a curled page corner without needing an image asset.
+const FOLD_SIZE = 26;
+const FOLD_SHADOW_INSET = 4;
+const homeStyles = StyleSheet.create({
+  paperFoldShadow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 0,
+    height: 0,
+    borderTopWidth: 0,
+    borderRightWidth: FOLD_SIZE + FOLD_SHADOW_INSET,
+    borderBottomWidth: FOLD_SIZE + FOLD_SHADOW_INSET,
+    borderLeftWidth: 0,
+    borderTopColor: 'transparent',
+    borderRightColor: 'rgba(0,0,0,0.35)',
+    borderBottomColor: 'transparent',
+    borderLeftColor: 'transparent',
+  },
+  paperFoldFlap: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 0,
+    height: 0,
+    borderTopWidth: 0,
+    borderRightWidth: FOLD_SIZE,
+    borderBottomWidth: FOLD_SIZE,
+    borderLeftWidth: 0,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: 'transparent',
+  },
+});
