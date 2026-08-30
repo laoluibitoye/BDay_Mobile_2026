@@ -8,7 +8,7 @@ import { Article } from '../data/types';
 import { useAppState } from '../state/AppState';
 import { useIsSpeaking } from '../hooks/useIsSpeaking';
 import { listenToArticle } from '../lib/listenToArticle';
-import { elevation, layout, radius, space, type, useTheme } from '../theme';
+import { layout, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
 import { LiveBadge, PremiumBadge } from './Badge';
 import { VideoPlayBadge } from './VideoPlayBadge';
@@ -47,8 +47,8 @@ export function HeroArticleCard({ article, onPress }: Props) {
   const openComments = () => navigation.navigate('ArticleReader', { articleId: article.id, scrollToComments: true });
 
   return (
-    <Pressable onPress={onPress} style={[styles.shadowWrap, elevation.raised]}>
-      <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
+    <Pressable onPress={onPress} style={[styles.card, { borderBottomColor: theme.rule }]}>
+      <View>
         <View style={styles.hero}>
           <ArticleImage article={article} style={StyleSheet.absoluteFill} />
           {!!article.featuredVideoId && <VideoPlayBadge />}
@@ -106,8 +106,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
-  shadowWrap: { marginBottom: layout.sectionGap, borderRadius: radius.card },
-  card: { borderRadius: radius.card, overflow: 'hidden' },
+  card: { marginBottom: layout.sectionGap, borderBottomWidth: 1, paddingBottom: layout.heroCardPadding },
   hero: { height: 270 },
   body: { padding: layout.heroCardPadding },
   toolbar: { flexDirection: 'row', gap: space.lg, marginTop: space.lg },

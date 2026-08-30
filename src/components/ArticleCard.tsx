@@ -8,7 +8,7 @@ import { Article } from '../data/types';
 import { useAppState } from '../state/AppState';
 import { useIsSpeaking } from '../hooks/useIsSpeaking';
 import { listenToArticle } from '../lib/listenToArticle';
-import { layout, radius, space, type, useTheme } from '../theme';
+import { layout, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
 import { LiveBadge, PremiumBadge } from './Badge';
 import { VideoPlayBadge } from './VideoPlayBadge';
@@ -44,7 +44,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
   const openComments = () => navigation.navigate('ArticleReader', { articleId: article.id, scrollToComments: true });
 
   return (
-    <Pressable onPress={onPress} style={[styles.card, { borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
+    <Pressable onPress={onPress} style={[styles.card, { borderBottomColor: theme.rule }]}>
       <View style={styles.hero}>
         <ArticleImage article={article} style={StyleSheet.absoluteFill} />
         {!!article.featuredVideoId && <VideoPlayBadge />}
@@ -108,7 +108,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: radius.card, overflow: 'hidden', marginBottom: space.lg },
+  card: { borderBottomWidth: 1, paddingBottom: space.lg, marginBottom: space.lg },
   hero: { height: 240 },
   body: { padding: space.lg },
   toolbar: { flexDirection: 'row', gap: space.lg, marginTop: space.md },
