@@ -30,7 +30,8 @@ import { useAppState } from '../../state/AppState';
 import { useAppConfig } from '../../hooks/useAppConfig';
 import { useIsSpeaking } from '../../hooks/useIsSpeaking';
 import { getArticleEntitlement } from '../../lib/api/entitlement';
-import { getRegisteredArticle } from '../../lib/api/content';
+import { getRegisteredArticle, getRelatedArticles } from '../../lib/api/content';
+import { ArticleCard } from '../../components/ArticleCard';
 import { createGiftLink, giftUrl } from '../../lib/api/gift';
 import { getComments, postComment, deleteComment, type CommentView } from '../../lib/api/comments';
 import { ApiError } from '../../lib/api/client';
@@ -38,7 +39,7 @@ import type { ArticleEntitlement, EntitlementStage } from '../../lib/api/types';
 import { htmlToParagraphs } from '../../lib/htmlToText';
 import { toggleSpeak } from '../../lib/tts';
 import { getOfflineArticle, removeArticleOffline, saveArticleOffline } from '../../lib/offlineArticles';
-import { layout, radius, space, type, useTheme } from '../../theme';
+import { fontFamily, layout, radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ArticleReader'>;
 
@@ -109,6 +110,11 @@ function ArticleReaderView({
   // image with a completely blank body and no indication why — reads as "this article is
   // broken," not "the network blipped." This drives a real FeedEmptyState/retry instead.
   const [entitlementFailed, setEntitlementFailed] = useState(false);
+  // Mirrors the website's two related-content blocks (single-default.php) — "Related News"
+  // (byTag) and "You Might Also Like" (byCategory). Fetched once per article, independent of
+  // entitlement/lock state (the website's own gating rule for byTag is applied at render time
+  // below, from `isLocked`, not by refetching).
+  const [related, setRelated] = useState<{ byTag: Article[]; byCategory: Article[] }>({ byTag: [], byCategory: [] });
   const isSpeaking = useIsSpeaking(article.id);
 
   const loadEntitlement = useCallback(() => {
@@ -127,6 +133,11 @@ function ArticleReaderView({
     recordView(article);
     loadEntitlement();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [article.id]);
+
+  useEffect(() => {
+    setRelated({ byTag: [], byCategory: [] });
+    getRelatedArticles(article.id).then(setRelated);
   }, [article.id]);
 
   useEffect(() => {
@@ -372,6 +383,27 @@ function ArticleReaderView({
             </Text>
           </Pressable>
 
+          {/* Web parity: sdk/src/funnel-counter.ts's "N free articles left" widget — shown on
+              every premium article view, whether this specific one happened to be open (still
+              within the free allowance) or locked, counting down to whichever wall is next
+              (register, for a signed-out reader; subscribe, once signed in). A subscriber never
+              gets a count back from the entitlement endpoint (both fields come back null), so
+              this naturally never renders for one. */}
+          {article.isPremium &&
+            (() => {
+              const count = authUser ? entitlement?.remaining : entitlement?.remainingToRegister;
+              if (count === null || count === undefined) return null;
+              const noun = count === 1 ? 'article' : 'articles';
+              const wall = authUser ? 'subscribe' : 'register';
+              return (
+                <View style={[styles.funnelCounter, { backgroundColor: theme.accentTint }]}>
+                  <Text style={[type.caption, { color: theme.accentDeep }]}>
+                    <Text style={{ fontFamily: fontFamily.uiBold }}>{count}</Text> free {noun} left before you need to {wall}
+                  </Text>
+                </View>
+              );
+            })()}
+
           {article.featuredVideoId ? (
             <View style={styles.featuredImage}>
               <WebView
@@ -451,6 +483,26 @@ function ArticleReaderView({
           )}
 
           {!isLocked && <AdSlot placement="article_body" />}
+
+          {/* "Related News" — same rule the website applies server-side (single-default.php):
+              shown only for an unlocked post, sourced from shared tags. */}
+          {!isLocked && related.byTag.length > 0 && (
+            <View style={{ marginTop: space.xl }}>
+              <Text style={[type.sectionHeadline, { color: theme.ink }]}>Related News</Text>
+              <View style={{ marginTop: space.sm }}>
+                {related.byTag.map((a) => (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => navigation.push('ArticleReader', { articleId: a.id })}
+                    accessibilityRole="button"
+                    style={{ paddingVertical: space.sm }}
+                  >
+                    <Text style={[type.bodyUI, { color: theme.accentDeep }]}>{a.headline}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
 
           {/* Real subscription-service comment thread for this post (comments.ts) — public to
               read, signed-in to post/reply/delete. One reply level deep, matching the backend's
@@ -575,6 +627,20 @@ function ArticleReaderView({
               </Pressable>
             </View>
           </View>
+
+          {/* "You Might Also Like" — sourced from shared primary category, shown regardless of
+              lock state (matches the website: no gating check on this block, unlike Related
+              News above). */}
+          {related.byCategory.length > 0 && (
+            <View style={{ marginTop: layout.sectionGap }}>
+              <Text style={[type.sectionHeadline, { color: theme.ink }]}>You Might Also Like</Text>
+              <View style={{ marginTop: space.md }}>
+                {related.byCategory.map((a) => (
+                  <ArticleCard key={a.id} article={a} onPress={() => navigation.push('ArticleReader', { articleId: a.id })} />
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       </Screen>
 
@@ -595,6 +661,7 @@ const styles = StyleSheet.create({
   },
   commentAction: { flexDirection: 'row', alignItems: 'center' },
   featuredImage: { height: 280, borderRadius: radius.card, marginTop: space.lg, overflow: 'hidden' },
+  funnelCounter: { borderRadius: radius.button, paddingVertical: space.xs, paddingHorizontal: space.md, marginTop: space.md, alignSelf: 'flex-start' },
   translateBanner: {
     flexDirection: 'row',
     alignItems: 'center',

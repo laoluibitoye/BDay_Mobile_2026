@@ -8,6 +8,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { useAppState } from '../../state/AppState';
 import {
+  getArchiveWindow,
   getEditionDownloadUrl,
   getEditionPublications,
   getEditionsForPublication,
@@ -51,6 +52,15 @@ export function EEditionsScreen({ route }: Props) {
   const [editions, setEditions] = useState<EditionListing[] | null>(null);
   const [editionsFailed, setEditionsFailed] = useState(false);
   const [downloadingDate, setDownloadingDate] = useState<string | null>(null);
+  // Web parity: reader-settings.ts's "Your plan includes N days of archive access" note.
+  const [archiveAccessDays, setArchiveAccessDays] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!authUser) return;
+    getArchiveWindow()
+      .then((res) => setArchiveAccessDays(res.archiveAccessDays))
+      .catch(() => undefined);
+  }, [authUser]);
 
   const loadPublications = () => {
     setFailed(false);
@@ -158,6 +168,12 @@ export function EEditionsScreen({ route }: Props) {
               );
             }}
           />
+
+          {archiveAccessDays !== null && (
+            <Text style={[type.caption, { color: theme.inkMuted, paddingHorizontal: space.lg, marginBottom: space.sm }]}>
+              Your plan includes {archiveAccessDays} days of e-paper and gallery archive access, rolling from today.
+            </Text>
+          )}
 
           {editionsFailed ? (
             <View style={{ flex: 1, justifyContent: 'center' }}>

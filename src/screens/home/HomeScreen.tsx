@@ -24,7 +24,7 @@ import { EditionsHomeCarousel } from '../../components/EditionsHomeCarousel';
 import { Article, TodayModule } from '../../data/types';
 import { sections } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
-import { getHomeFeed, getRegisteredArticle, getSectionFeed, HomeSection } from '../../lib/api/content';
+import { getHomeFeed, getMostPopular, getRegisteredArticle, getSectionFeed, HomeSection } from '../../lib/api/content';
 import { radius, layout, space, type, useTheme } from '../../theme';
 
 // Today is WP-admin-editable (wp-admin → BusinessDay App → Home Sections — title/category-or-tag
@@ -52,6 +52,15 @@ export function HomeScreen() {
   const [todayFailed, setTodayFailed] = useState(false);
   const [categoryArticles, setCategoryArticles] = useState<Article[]>([]);
   const [categoryFailed, setCategoryFailed] = useState(false);
+  // Web parity: core/homepage/data.php's 'most_popular', co-located with Editor's Pick on the
+  // website ("Editor's Pick & Most Read") — same placement here, injected after that section.
+  const [mostPopular, setMostPopular] = useState<Article[]>([]);
+
+  useEffect(() => {
+    getMostPopular()
+      .then(setMostPopular)
+      .catch(() => undefined);
+  }, []);
 
   const loadToday = useCallback(() => {
     setTodayFailed(false);
@@ -134,11 +143,17 @@ export function HomeScreen() {
       // E-Editions carousel is pinned directly after "BD Investigations" (section id
       // 'investigates') regardless of what comes after it in wp-admin's order — not itself a
       // WP-driven section, so it can't just be given its own position in that order.
-      return section.id === 'investigates'
-        ? [...sectionModules, { type: 'editionsCarousel' } as TodayModule]
-        : sectionModules;
+      if (section.id === 'investigates') {
+        return [...sectionModules, { type: 'editionsCarousel' } as TodayModule];
+      }
+      // Most Read is pinned after Editor's Pick, matching the website's co-located "Editor's
+      // Pick & Most Read" layout — also not a WP-driven section of its own.
+      if (section.id === 'editor-pick' && mostPopular.length > 0) {
+        return [...sectionModules, { type: 'mostPopular', articleIds: mostPopular.map((a) => a.id) } as TodayModule];
+      }
+      return sectionModules;
     });
-  }, [wpSections]);
+  }, [wpSections, mostPopular]);
 
   const openArticle = (id: string) => {
     const article = getRegisteredArticle(id);
@@ -209,6 +224,30 @@ export function HomeScreen() {
         return <EditionsHomeCarousel />;
       case 'latestStories':
         return <LatestStoriesModule articleIds={module.articleIds} onPressArticle={openArticle} />;
+      case 'mostPopular': {
+        const found = module.articleIds.map(renderArticle).filter((a): a is Article => a !== null);
+        if (found.length === 0) return null;
+        return (
+          <View style={{ marginBottom: layout.sectionGap }}>
+            <SectionLabel label="Most Read" />
+            <View style={{ marginTop: space.sm }}>
+              {found.map((a, i) => (
+                <Pressable
+                  key={a.id}
+                  onPress={() => openArticle(a.id)}
+                  accessibilityRole="button"
+                  style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.sm }}
+                >
+                  <Text style={[type.mono, { color: theme.accent, width: 20 }]}>{String(i + 1).padStart(2, '0')}</Text>
+                  <Text style={[type.bodyUI, { color: theme.ink, flex: 1 }]} numberOfLines={2}>
+                    {a.headline}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        );
+      }
     }
   };
 

@@ -92,7 +92,8 @@ export type TodayModule =
   | { type: 'tileGrid'; label: string; articleIds: string[] }
   | { type: 'textList'; label: string; articleIds: string[] }
   | { type: 'editionsCarousel' }
-  | { type: 'latestStories'; articleIds: string[] };
+  | { type: 'latestStories'; articleIds: string[] }
+  | { type: 'mostPopular'; articleIds: string[] };
 
 export type SubscriptionPlan = {
   id: string;

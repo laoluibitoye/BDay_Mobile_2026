@@ -86,6 +86,25 @@ export async function getArticleById(id: string): Promise<Article | null> {
   }
 }
 
+export type RelatedArticles = { byTag: Article[]; byCategory: Article[] };
+
+// Mirrors the website's two related-content blocks on single-default.php exactly: "Related News"
+// (byTag, shared tags — website skips this one for a gated post) and "You Might Also Like"
+// (byCategory, shared primary category — shown regardless of gating). See handleRelated() in
+// class-bd-feed-api.php; unlike that endpoint (anonymous/cached, no per-reader gating visibility)
+// the caller here already knows the live entitlement/lock state and decides whether to render
+// `byTag` from that, same rule the website applies server-side.
+export async function getRelatedArticles(postId: string): Promise<RelatedArticles> {
+  try {
+    const res = await wpPublicGet<{ relatedByTag: FeedItem[]; relatedByCategory: FeedItem[] }>(
+      `/wp-json/businessday-app/v1/article/${postId}/related`
+    );
+    return { byTag: registerArticles(res.relatedByTag), byCategory: registerArticles(res.relatedByCategory) };
+  } catch {
+    return { byTag: [], byCategory: [] };
+  }
+}
+
 // For call sites that already have an Article-shaped object from a non-feed endpoint (e.g.
 // Today's Paper's lean item shape, mapped locally) rather than a raw FeedItem.
 export function registerArticle(article: Article): void {
@@ -150,6 +169,14 @@ export async function getSectionFeed(slug: string, page = 1): Promise<FeedRespon
     `/wp-json/businessday-app/v1/feed/section/${encodeURIComponent(slug)}?pg=${page}`
   );
   return { ...res, articles: registerArticles(res.items) };
+}
+
+// Web parity: core/homepage/data.php's 'most_popular' (comment_count-ranked) — the "Editor's Pick
+// & Most Read" / "Most Popular" sidebar content. Fixed, always-on route, not part of the
+// admin-configurable Home Sections — see handleMostPopular() in class-bd-feed-api.php.
+export async function getMostPopular(): Promise<Article[]> {
+  const res = await wpPublicGet<{ items: FeedItem[] }>('/wp-json/businessday-app/v1/feed/most-popular');
+  return registerArticles(res.items);
 }
 
 // Tag-scoped, e.g. `bdrecent` — the real site's own editorial tag for "recent," distinct from a

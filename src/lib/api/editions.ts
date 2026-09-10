@@ -5,7 +5,9 @@ import { wpPublicGet } from './wpClient';
 // main daily edition (editions.service.spec.ts's own fixture data uses the same value).
 export const DEFAULT_PUBLICATION = 'e-paper';
 
-export function getArchiveWindow(): Promise<{ archiveAccessDays: number }> {
+// null means no window limit applies (no active subscription, or a plan with unlimited archive
+// access) — same nullability as the backend's own archive-entitlement.service.ts.
+export function getArchiveWindow(): Promise<{ archiveAccessDays: number | null }> {
   return apiRequest('/api/v1/me/archive-window');
 }
 

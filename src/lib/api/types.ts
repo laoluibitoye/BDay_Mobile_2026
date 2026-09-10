@@ -150,7 +150,13 @@ export type ArticleEntitlement = {
   excerpt: string;
   isPremium: boolean;
   stage: EntitlementStage;
-  remaining: number;
+  // Both null once a reader is a known subscriber (no countdown applies). Otherwise: `remaining`
+  // counts down free premium-article views left before the paywall for a signed-in reader;
+  // `remainingToRegister` is the same countdown for a signed-out one, before the register wall —
+  // see the web SDK's funnel-counter.ts, which drives its "N free articles left" widget off
+  // exactly this pair.
+  remaining: number | null;
+  remainingToRegister: number | null;
   isSubscriber: boolean;
   preview: string | null;
   content: string | null;
