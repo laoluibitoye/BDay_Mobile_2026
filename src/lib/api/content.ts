@@ -86,6 +86,20 @@ export async function getArticleById(id: string): Promise<Article | null> {
   }
 }
 
+export type AuthorProfile = { id: string; name: string; avatarUrl: string | null; bio: string };
+
+// New connector-plugin endpoint (handleAuthor) — real author bio/avatar plus their own post
+// archive, so ColumnistPageScreen (opened from an article's byline) isn't a stub anymore.
+export async function getAuthorArchive(
+  authorId: string,
+  page = 1
+): Promise<{ author: AuthorProfile; articles: Article[]; page: number; hasMore: boolean }> {
+  const res = await wpPublicGet<{ author: AuthorProfile; items: FeedItem[]; page: number; hasMore: boolean }>(
+    `/wp-json/businessday-app/v1/author/${authorId}?pg=${page}`
+  );
+  return { author: res.author, articles: registerArticles(res.items), page: res.page, hasMore: res.hasMore };
+}
+
 export type RelatedArticles = { byTag: Article[]; byCategory: Article[] };
 
 // Mirrors the website's two related-content blocks on single-default.php exactly: "Related News"

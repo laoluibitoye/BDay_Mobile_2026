@@ -52,6 +52,41 @@ export type MeResponse = {
   emailVerifiedAt: string | null;
   createdAt: string;
   subscription: MeSubscription | null;
+  // Team-tab gating — which UI (admin vs. member) a reader gets is decided from this, not
+  // client-side, same as the web SDK (see users.service.ts's getProfile()).
+  org: { id: string; role: 'admin' | 'member' } | null;
+};
+
+// ---- subscription-service: organizations (B2B) ----
+
+export type OrgRole = 'admin' | 'member';
+
+export type OrgMemberRow = {
+  id: string;
+  orgId: string;
+  userId: string;
+  role: OrgRole;
+  joinedAt: string;
+  user: { id: string; email: string; firstName: string | null };
+};
+
+export type OrgInviteRow = {
+  id: string;
+  orgId: string;
+  email: string;
+  status: 'pending' | 'accepted' | 'revoked' | 'expired';
+  expiresAt: string;
+  createdAt: string;
+};
+
+export type Organization = {
+  id: string;
+  name: string;
+  ownerUserId: string;
+  seatsCap: number;
+  domains: string[];
+  createdAt: string;
+  members: OrgMemberRow[];
 };
 
 export type UpdateProfileRequest = { lastName?: string; phone?: string; company?: string };

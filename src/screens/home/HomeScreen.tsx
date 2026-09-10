@@ -273,6 +273,29 @@ export function HomeScreen() {
       <View style={{ marginTop: space.sm }}>
         <MarketTickerStrip />
       </View>
+      {/* Bug found live: BreakingNewsScreen was only ever reachable by tapping an isLive-flagged
+          article card — a flag real WP-sourced articles never carry, so the screen was built but
+          unreachable. This is a real, permanent entry point instead. */}
+      <Pressable
+        onPress={() => navigation.navigate('BreakingNews')}
+        accessibilityRole="button"
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: space.xs,
+          alignSelf: 'flex-start',
+          marginTop: space.sm,
+          marginLeft: space.lg,
+          paddingVertical: 5,
+          paddingHorizontal: space.md,
+          borderRadius: radius.pill,
+          backgroundColor: theme.ink,
+        }}
+      >
+        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF3B30' }} />
+        <Text style={[type.mono, { color: theme.bg }]}>BREAKING NEWS</Text>
+        <Feather name="chevron-right" size={12} color={theme.bg} />
+      </Pressable>
       <View style={{ marginTop: space.sm, borderBottomWidth: 1, borderColor: theme.rule, paddingBottom: space.xs }}>
         <SectionTabStrip items={HOME_TABS} active={activeTab} onSelect={setActiveTab} />
       </View>

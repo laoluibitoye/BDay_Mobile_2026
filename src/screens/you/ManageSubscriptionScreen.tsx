@@ -61,7 +61,12 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
               <MenuRow icon="repeat" label="Change plan" onPress={() => navigation.navigate('SubscriptionPlans')} />
               <MenuRow icon="credit-card" label="Payment method" value="Coming soon" disabled />
               <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
-              <MenuRow icon="gift" label="Gift a subscription" value="Coming soon" disabled />
+              <MenuRow icon="gift" label="Gift a subscription" onPress={() => navigation.navigate('GiftSubscription')} />
+              <MenuRow
+                icon="briefcase"
+                label={authUser?.org ? 'Team' : 'Upgrade to a company account'}
+                onPress={() => navigation.navigate(authUser?.org ? 'Team' : 'UpgradeAccount')}
+              />
             </View>
 
             <View style={{ marginTop: space.xl }}>
@@ -81,6 +86,11 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
             </View>
             <View style={{ marginTop: space.xl }}>
               <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
+              <MenuRow
+                icon="briefcase"
+                label={authUser?.org ? 'Team' : 'Upgrade to a company account'}
+                onPress={() => navigation.navigate(authUser?.org ? 'Team' : 'UpgradeAccount')}
+              />
             </View>
           </>
         )}

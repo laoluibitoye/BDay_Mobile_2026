@@ -15,6 +15,9 @@ export type RootStackParamList = {
   Referrals: undefined;
   CommentNotifications: undefined;
   SubscriptionPlans: undefined;
+  UpgradeAccount: undefined;
+  Team: undefined;
+  GiftSubscription: undefined;
   ManageSubscription: undefined;
   BillingHistory: undefined;
   Profile: undefined;
