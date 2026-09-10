@@ -5,7 +5,7 @@ import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { getToons, type ToonItem } from '../../lib/api/toons';
-import { space, type, useTheme } from '../../theme';
+import { radius, space, type, useTheme } from '../../theme';
 
 const COLUMNS = 2;
 
@@ -46,9 +46,9 @@ export function ToonArchiveScreen() {
               style={{ flex: 1, margin: space.xs }}
             >
               {item.imageUrl ? (
-                <Image source={{ uri: item.imageUrl }} style={{ aspectRatio: 1, borderRadius: 8, backgroundColor: theme.bgCard }} />
+                <Image source={{ uri: item.imageUrl }} style={{ aspectRatio: 1, borderRadius: radius.button, backgroundColor: theme.bgCard }} />
               ) : (
-                <View style={{ aspectRatio: 1, borderRadius: 8, backgroundColor: theme.bgCard }} />
+                <View style={{ aspectRatio: 1, borderRadius: radius.button, backgroundColor: theme.bgCard }} />
               )}
               <Text
                 style={[type.sectionHeadline, { color: theme.ink, marginTop: space.xs, fontSize: 15, lineHeight: 19 }]}

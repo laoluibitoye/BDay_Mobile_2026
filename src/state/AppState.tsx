@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 import { AppState as RNAppState } from 'react-native';
 import { LanguageCode } from '../data/languages';
-import { clearTokens, getAccessToken } from '../lib/api/client';
+import { ApiError, clearTokens, getAccessToken } from '../lib/api/client';
 import { unregisterPushNotifications } from '../hooks/usePushNotifications';
 import { getMe } from '../lib/api/auth';
 import type { MeResponse } from '../lib/api/types';
@@ -139,8 +139,21 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     try {
       setAuthUser(await getMe());
       void syncServerBackedLists();
-    } catch {
-      // leave the last-known session in place on a transient failure
+    } catch (err) {
+      // Bug found live: this used to swallow every failure identically, so a genuinely revoked
+      // session (password changed elsewhere, staff deactivation) looked exactly like a transient
+      // network blip — authUser never cleared, and the UI kept showing the reader as signed in
+      // while every subsequent authenticated call quietly failed behind it. client.ts's apiRequest
+      // already tries one silent refresh before giving up, so an ApiError(401) reaching here means
+      // the refresh token itself was rejected too — a real revocation, not a hiccup. Only that case
+      // clears the session; any other failure (offline, 5xx) still leaves the last-known session in
+      // place, same as before.
+      if (err instanceof ApiError && err.status === 401) {
+        setAuthUser(null);
+        setSavedArticleIds([]);
+        setReadingHistoryIds([]);
+        setFollowedTopics([]);
+      }
     }
   }, [syncServerBackedLists]);
   const [language, setLanguage] = useState<LanguageCode>('en');

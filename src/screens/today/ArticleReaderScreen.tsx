@@ -105,16 +105,27 @@ function ArticleReaderView({
   // previously downloaded — the offline copy is otherwise never consulted, since the live
   // endpoint is always the freshest, authoritative source when it's reachable.
   const [offlineParagraphs, setOfflineParagraphs] = useState<string[] | null>(null);
+  // Bug found live: a failed entitlement fetch with no offline copy rendered the headline/dek/
+  // image with a completely blank body and no indication why — reads as "this article is
+  // broken," not "the network blipped." This drives a real FeedEmptyState/retry instead.
+  const [entitlementFailed, setEntitlementFailed] = useState(false);
   const isSpeaking = useIsSpeaking(article.id);
 
-  useEffect(() => {
-    recordView(article);
+  const loadEntitlement = useCallback(() => {
+    setEntitlementFailed(false);
     getArticleEntitlement(article.id)
       .then(setEntitlement)
       .catch(() => {
         setEntitlement(null);
+        setEntitlementFailed(true);
         getOfflineArticle(article.id).then((cached) => setOfflineParagraphs(cached?.paragraphs ?? null));
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [article.id]);
+
+  useEffect(() => {
+    recordView(article);
+    loadEntitlement();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article.id]);
 
@@ -376,23 +387,33 @@ function ArticleReaderView({
 
           <ReaderControls fontScale={fontScale} onFontScaleChange={setFontScale} />
 
-          <View style={{ marginTop: space.xl, gap: space.lg }}>
-            {visibleParagraphs.map((p, i) => (
-              <Text
-                key={i}
-                style={[
-                  type.bodyReading,
-                  {
-                    color: theme.ink,
-                    fontSize: type.bodyReading.fontSize + fontScale,
-                    lineHeight: type.bodyReading.lineHeight + fontScale * 1.6,
-                  },
-                ]}
-              >
-                {p}
-              </Text>
-            ))}
-          </View>
+          {entitlementFailed && visibleParagraphs.length === 0 ? (
+            <View style={{ marginTop: space.xl }}>
+              <FeedEmptyState
+                title="Couldn't load this article"
+                message="Check your connection and try again."
+                onRetry={loadEntitlement}
+              />
+            </View>
+          ) : (
+            <View style={{ marginTop: space.xl, gap: space.lg }}>
+              {visibleParagraphs.map((p, i) => (
+                <Text
+                  key={i}
+                  style={[
+                    type.bodyReading,
+                    {
+                      color: theme.ink,
+                      fontSize: type.bodyReading.fontSize + fontScale,
+                      lineHeight: type.bodyReading.lineHeight + fontScale * 1.6,
+                    },
+                  ]}
+                >
+                  {p}
+                </Text>
+              ))}
+            </View>
+          )}
 
           {isLocked && (
             <View style={styles.lockCardWrap}>

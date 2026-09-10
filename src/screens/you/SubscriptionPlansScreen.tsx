@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -19,10 +19,13 @@ export function SubscriptionPlansScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { authUser, isSubscribed, refreshSession } = useAppState();
-  const { startCheckout, loading } = useCheckout();
+  const { startCheckout, loading, lastErrorMessage } = useCheckout();
   const [plans, setPlans] = useState<Plan[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Web parity: the SDK's Subscribe tab has a plain optional "Coupon code" field that's passed
+  // straight into checkout/init and validated server-side — no separate preview/validate step.
+  const [couponCode, setCouponCode] = useState('');
 
   const loadPlans = () => {
     setLoadFailed(false);
@@ -39,10 +42,10 @@ export function SubscriptionPlansScreen() {
       return;
     }
     setError(null);
-    const result = await startCheckout(planId);
+    const result = await startCheckout(planId, couponCode.trim() || undefined);
     if (result === 'unconfirmed') setError('Payment not confirmed yet. If you completed checkout, try again in a moment.');
     else if (result === 'unsupported') setError('This payment method needs an app update to complete.');
-    else if (result === 'error') setError('Something went wrong starting checkout. Try again.');
+    else if (result === 'error') setError(lastErrorMessage ?? 'Something went wrong starting checkout. Try again.');
   };
 
   const cancel = () => {
@@ -78,7 +81,12 @@ export function SubscriptionPlansScreen() {
                 style={{
                   borderWidth: i === 0 ? 2 : 1,
                   borderColor: i === 0 ? theme.accent : theme.rule,
-                  borderRadius: radius.card,
+                  // A selectable option card, not a story card — radius.card was flattened to 0
+                  // app-wide for the flat editorial redesign, which left this pricing table
+                  // looking like literal square spreadsheet cells. radius.button (still a real,
+                  // deliberate corner) reads as a chosen control again without reviving the old
+                  // story-card shadow/radius look the rest of the app moved away from.
+                  borderRadius: radius.button,
                   padding: space.lg,
                   backgroundColor: theme.bgCard,
                 }}
@@ -104,6 +112,31 @@ export function SubscriptionPlansScreen() {
             ))
           )}
         </View>
+
+        {!isSubscribed && (
+          <View style={{ marginTop: space.lg }}>
+            <Text style={[type.caption, { color: theme.inkMuted, marginBottom: space.xs }]}>Coupon code (optional)</Text>
+            <TextInput
+              value={couponCode}
+              onChangeText={setCouponCode}
+              placeholder="Enter a code"
+              placeholderTextColor={theme.inkFaint}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              style={[
+                type.bodyUI,
+                {
+                  color: theme.ink,
+                  borderWidth: 1,
+                  borderColor: theme.rule,
+                  borderRadius: radius.button,
+                  paddingHorizontal: space.md,
+                  paddingVertical: space.sm,
+                },
+              ]}
+            />
+          </View>
+        )}
 
         {error && <Text style={[type.bodyUI, { color: theme.marketDown, marginTop: space.md }]}>{error}</Text>}
 

@@ -45,7 +45,12 @@ export function EditionsHomeCarousel() {
               style={{
                 width: '100%',
                 aspectRatio: 3 / 4,
-                borderRadius: radius.card,
+                // A magazine-cover thumbnail, not a story row — radius.card (flattened to 0 for
+                // the flat editorial redesign) made this a literal square against its own border,
+                // which reads as an oversight rather than a chosen look. radius.button keeps the
+                // deliberate bordered-cover treatment this genuinely needs (a cover wants a
+                // defined edge, unlike a borderless headline card) without looking accidental.
+                borderRadius: radius.button,
                 overflow: 'hidden',
                 backgroundColor: theme.bgCard,
                 borderWidth: 1,

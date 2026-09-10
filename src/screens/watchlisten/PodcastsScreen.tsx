@@ -8,7 +8,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { getPodcasts, type PodcastEpisode } from '../../lib/api/podcasts';
-import { space, type, useTheme } from '../../theme';
+import { radius, space, type, useTheme } from '../../theme';
 
 // Split out of the former combined "Watch & Listen" tab into its own top-level nav tab — real
 // content sourced from the theme's `podcast` CPT via businessday-app-connector's /podcasts route.
@@ -48,9 +48,9 @@ export function PodcastsScreen() {
               style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}
             >
               {p.imageUrl ? (
-                <Image source={{ uri: p.imageUrl }} style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: theme.bgCard }} />
+                <Image source={{ uri: p.imageUrl }} style={{ width: 64, height: 64, borderRadius: radius.button, backgroundColor: theme.bgCard }} />
               ) : (
-                <View style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: theme.bgCard, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 64, height: 64, borderRadius: radius.button, backgroundColor: theme.bgCard, alignItems: 'center', justifyContent: 'center' }}>
                   <Feather name="headphones" size={22} color={theme.inkFaint} />
                 </View>
               )}

@@ -50,7 +50,7 @@ export function BriefCarouselRail({ label, articles, onPressArticle }: Props) {
 function BriefTile({ article, width, onPress }: { article: Article; width: number; onPress: () => void }) {
   const { theme } = useTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.tile, { width, borderColor: theme.rule, backgroundColor: theme.bgCard }]}>
+    <Pressable onPress={onPress} style={[styles.tile, { width }]}>
       <ArticleImage article={article} style={styles.thumb} />
       <Text style={[type.cardTitle, { color: theme.ink, marginTop: space.sm }]} numberOfLines={3}>
         {article.headline}
@@ -59,7 +59,10 @@ function BriefTile({ article, width, onPress }: { article: Article; width: numbe
   );
 }
 
+// Same borderless, flat language as ArticleCard/HeroArticleCard — a headline+thumbnail tile is
+// the same story-card genre as those, just laid out horizontally; the GAP between tiles in the
+// row does the visual separation a border used to, so it wasn't left behind as a straggler.
 const styles = StyleSheet.create({
-  tile: { borderWidth: 1, borderRadius: radius.card, padding: space.sm, overflow: 'hidden' },
-  thumb: { width: '100%', height: 150, borderRadius: Math.max(radius.card - 4, 0) },
+  tile: { overflow: 'hidden' },
+  thumb: { width: '100%', height: 150, borderRadius: radius.card },
 });

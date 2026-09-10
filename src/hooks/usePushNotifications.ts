@@ -48,6 +48,27 @@ function ensureHandlerInstalled(Notifications: NotificationsModule) {
   }
 }
 
+// Same wait-for-mount pattern as useDeepLinking.ts's waitForNavigationReady — a cold start races
+// NavigationContainer mounting against native/JS startup, so navigating before it's ready would
+// silently no-op.
+function waitForNavigationReady(): Promise<void> {
+  if (navigationRef.isReady()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const check = () => {
+      if (navigationRef.isReady()) resolve();
+      else setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
+function openArticleFromNotification(postId: unknown): void {
+  if (typeof postId !== 'string') return;
+  void waitForNavigationReady().then(() => {
+    navigationRef.navigate('ArticleReader', { articleId: postId });
+  });
+}
+
 // Registers this device for push and wires a tap on a delivered notification straight to the
 // relevant article — mirrors NotificationsScreen.tsx's own `articleId: item.postId` mapping so a
 // push and an in-app notification row behave identically. Called once from App.tsx on mount (for
@@ -61,11 +82,18 @@ export function usePushNotifications() {
     ensureHandlerInstalled(Notifications);
 
     try {
+      // Bug found live: a tap that *launches* the app from a killed state isn't guaranteed to
+      // fire addNotificationResponseReceivedListener below (that listener only reliably covers a
+      // warm/backgrounded app) — a cold-start tap landed on whatever the default route was,
+      // never the article the push was about. getLastNotificationResponseAsync() is Expo's own
+      // recommended way to recover exactly that launch-triggering tap; called once here, on
+      // mount, alongside (not instead of) the live listener below.
+      void Notifications.getLastNotificationResponseAsync().then((response) => {
+        if (response) openArticleFromNotification(response.notification.request.content.data?.postId);
+      });
+
       const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-        const postId = response.notification.request.content.data?.postId;
-        if (typeof postId === 'string' && navigationRef.isReady()) {
-          navigationRef.navigate('ArticleReader', { articleId: postId });
-        }
+        openArticleFromNotification(response.notification.request.content.data?.postId);
       });
       return () => sub.remove();
     } catch {

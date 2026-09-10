@@ -3,6 +3,7 @@ import { Alert, FlatList, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { ListRow } from '../../components/ListRow';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { getSubscriptionHistory } from '../../lib/api/subscriptions';
 import type { PaymentRow, SubscriptionHistoryRow } from '../../lib/api/types';
 import { space, type, useTheme } from '../../theme';
@@ -26,15 +27,24 @@ function flattenPayments(history: SubscriptionHistoryRow[]): PaymentRowWithPlan[
 export function BillingHistoryScreen() {
   const { theme } = useTheme();
   const [payments, setPayments] = useState<PaymentRowWithPlan[] | null>(null);
+  // Bug found live: a fetch failure silently resolved to the same empty array as genuinely
+  // having no invoices — indistinguishable, with no retry either way.
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
+    setFailed(false);
     getSubscriptionHistory()
       .then((history) => setPayments(flattenPayments(history)))
-      .catch(() => setPayments([]));
-  }, []);
+      .catch(() => setFailed(true));
+  };
+
+  useEffect(load, []);
 
   return (
     <Screen scroll={false} header={<AppHeader variant="compact" title="Billing history" showBack />}>
+      {failed ? (
+        <FeedEmptyState title="Couldn't load billing history" message="Check your connection and try again." onRetry={load} />
+      ) : (
       <FlatList
         style={{ flex: 1 }}
         data={payments ?? []}
@@ -71,6 +81,7 @@ export function BillingHistoryScreen() {
           );
         }}
       />
+      )}
     </Screen>
   );
 }

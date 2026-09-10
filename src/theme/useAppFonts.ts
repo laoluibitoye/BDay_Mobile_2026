@@ -11,7 +11,6 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono';
 
 export function useAppFonts() {
   return useFonts({
@@ -24,6 +23,5 @@ export function useAppFonts() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    IBMPlexMono_500Medium,
   });
 }

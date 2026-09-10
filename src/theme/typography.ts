@@ -9,7 +9,11 @@ export const fontFamily = {
   uiMedium: 'Inter_500Medium',
   uiSemibold: 'Inter_600SemiBold',
   uiBold: 'Inter_700Bold',
-  mono: 'IBMPlexMono_500Medium',
+  // Bylines, timestamps, and section-header labels — was IBM Plex Mono, moved to Inter so the
+  // app doesn't carry a second UI typeface; kept as its own weight (not reusing uiMedium) since
+  // `type.mono`/`type.sectionLabel`'s tighter size and wider tracking are tuned as a distinct,
+  // smaller "meta text" register from ordinary UI copy.
+  meta: 'Inter_500Medium',
 } as const;
 
 export const type = {
@@ -23,8 +27,8 @@ export const type = {
   // than `label` so a title doesn't read as cramped when several tiles sit side by side.
   cardTitle: { fontFamily: fontFamily.uiBold, fontSize: 16, lineHeight: 21, letterSpacing: 0.2 },
   caption: { fontFamily: fontFamily.uiMedium, fontSize: 12, lineHeight: 16 },
-  mono: { fontFamily: fontFamily.mono, fontSize: 11, lineHeight: 16, letterSpacing: 0.4 },
-  // SectionLabel's "TOP NEWS ————" style headers — same mono family/tracking as `mono`, just a
+  mono: { fontFamily: fontFamily.meta, fontSize: 11, lineHeight: 16, letterSpacing: 0.4 },
+  // SectionLabel's "TOP NEWS ————" style headers — same meta family/tracking as `mono`, just a
   // bit bigger since these are section-level headings, not fine print.
-  sectionLabel: { fontFamily: fontFamily.mono, fontSize: 13, lineHeight: 18, letterSpacing: 0.4 },
+  sectionLabel: { fontFamily: fontFamily.meta, fontSize: 13, lineHeight: 18, letterSpacing: 0.4 },
 } as const;

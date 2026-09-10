@@ -10,7 +10,6 @@ import { AppBannerSlot } from '../../components/AppBannerSlot';
 import { MarketTickerStrip } from '../../components/MarketTickerStrip';
 import { SectionTabStrip } from '../../components/SectionTabStrip';
 import { HeroArticleCard } from '../../components/HeroArticleCard';
-import { HeroCarousel } from '../../components/HeroCarousel';
 import { BriefCarouselRail } from '../../components/BriefCarouselRail';
 import { SectionLabel } from '../../components/SectionLabel';
 import { TileGridRow } from '../../components/TileGridRow';
@@ -33,7 +32,12 @@ import { radius, layout, space, type, useTheme } from '../../theme';
 // kind of config IMPLEMENTATION_PLAN.md §9.5 plans to move into the WP-admin "App content
 // curation" plugin — `sections` is categorical tab-label config, not editorial content, so it
 // stays static here until a real WP-admin-editable category list exists.
-const HERO_COUNT = 5;
+// The lead story is a single, editorially-pinned post (the connector plugin's 'hero' section
+// puts the website's own bday_get_hero_lead() result — the Lead Story Lock pin if one's set,
+// else the newest 'bdlead' post — in slot 0), not a rotating set of top stories. It gets its own
+// single HeroArticleCard, matching the website's one-lead-story layout; a carousel here could
+// show a reader a different "lead" than the one an editor actually locked.
+const HERO_COUNT = 1;
 const HOME_TABS = ['Today', ...sections] as const;
 
 function slugify(name: string): string {
@@ -74,8 +78,8 @@ export function HomeScreen() {
   // sections concatenated, which could silently mix in a different section's content).
   const heroSection = useMemo(() => wpSections?.find((s) => s.id === 'hero') ?? null, [wpSections]);
 
-  const heroSlideArticles: Article[] = useMemo(() => {
-    return heroSection ? heroSection.articles.slice(0, HERO_COUNT) : [];
+  const leadArticle: Article | null = useMemo(() => {
+    return heroSection?.articles.slice(0, HERO_COUNT)[0] ?? null;
   }, [heroSection]);
 
   // Each WP section becomes a labeled run of modules, shaped by the editor's chosen display type
@@ -247,9 +251,9 @@ export function HomeScreen() {
             keyExtractor={(_, i) => `module-${i}`}
             contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
             ListHeaderComponent={
-              heroSlideArticles.length > 0 ? (
+              leadArticle ? (
                 <>
-                  <HeroCarousel articles={heroSlideArticles} onPressArticle={openArticle} />
+                  <HeroArticleCard article={leadArticle} onPress={() => openArticle(leadArticle.id)} />
                   <Pressable
                     onPress={() => navigation.navigate('TodaysPaper')}
                     accessibilityRole="button"

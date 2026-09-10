@@ -30,7 +30,9 @@ export type Theme = {
 export const lightTheme: Theme = {
   ink: brand.ink900,
   inkMuted: brand.gray700,
-  inkFaint: '#8A8A8E', // derived — design.md §2.5
+  // Was #8A8A8E (~3.3:1 against bgCard/#FFFFFF, under WCAG AA's 4.5:1 floor for the small
+  // byline/timestamp/caption text this drives everywhere) — darkened to clear ~5.1:1.
+  inkFaint: '#6C6E73',
   bg: brand.neutral50,
   bgPaper: '#F4ECDD', // derived, sepia/reading-mode utility only — design.md §2.5
   bgCard: '#FFFFFF',
@@ -49,7 +51,10 @@ export const lightTheme: Theme = {
 export const darkTheme: Theme = {
   ink: brand.neutral50,
   inkMuted: brand.gray200,
-  inkFaint: '#77797D', // derived
+  // Was #77797D — fine against pure black bg (~4.8:1) but only ~2.9:1 against bgCard/#333333,
+  // where most byline/timestamp text actually sits (cards, list rows). Lightened to clear the
+  // 4.5:1 floor against bgCard specifically (~4.6:1 there, ~7.6:1 against bg).
+  inkFaint: '#9A9CA1',
   bg: brand.ink900,
   bgPaper: '#1C1712', // derived, sepia/reading-mode utility only
   bgCard: brand.gray700,

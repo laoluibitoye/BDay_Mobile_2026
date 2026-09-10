@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { space, type, useTheme } from '../theme';
+import { layout, space, type, useTheme } from '../theme';
 
 const MODES: { id: 'light' | 'dark' | 'sepia'; icon: React.ComponentProps<typeof Feather>['name'] }[] = [
   { id: 'light', icon: 'sun' },
@@ -26,7 +26,7 @@ export function AppearanceRow() {
             <Pressable
               key={id}
               onPress={() => setMode(id)}
-              hitSlop={6}
+              hitSlop={(layout.touchTarget - 30) / 2}
               style={[
                 styles.button,
                 { borderColor: theme.rule },

@@ -7,6 +7,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { ListRow } from '../../components/ListRow';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { deleteComment, getMyComments, type MyCommentView } from '../../lib/api/comments';
 import { space, type, useTheme } from '../../theme';
 
@@ -16,11 +17,16 @@ export function MyCommentsScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [comments, setComments] = useState<MyCommentView[] | null>(null);
+  // Bug found live: a fetch failure silently resolved to the same empty array as a genuinely
+  // empty list — "you haven't commented yet" and "the request failed" looked identical, with no
+  // way to retry either way.
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(() => {
+    setFailed(false);
     getMyComments()
       .then((page) => setComments(page.comments))
-      .catch(() => setComments([]));
+      .catch(() => setFailed(true));
   }, []);
 
   useEffect(() => {
@@ -47,6 +53,9 @@ export function MyCommentsScreen() {
 
   return (
     <Screen scroll={false} header={<AppHeader variant="compact" title="My comments" showBack />}>
+      {failed ? (
+        <FeedEmptyState title="Couldn't load your comments" message="Check your connection and try again." onRetry={load} />
+      ) : (
       <FlatList
         style={{ flex: 1 }}
         data={comments ?? []}
@@ -76,6 +85,7 @@ export function MyCommentsScreen() {
           />
         )}
       />
+      )}
     </Screen>
   );
 }

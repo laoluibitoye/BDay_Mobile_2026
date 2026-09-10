@@ -18,9 +18,9 @@ type Props = {
   onPress: () => void;
 };
 
-// design.md §6 "Hero article card" — the single raised card on Today; everything else stays flat.
-// Shadow lives on an outer wrapper (no overflow:hidden) so iOS doesn't clip it; the inner
-// View owns the rounded corners + overflow:hidden for the hero image.
+// The single lead story on Today — a flat, borderless row (the flat-card redesign removed the
+// raised shadow design.md §6 originally specified here; a bottom hairline is now the only
+// separator, same language as ArticleCard).
 export function HeroArticleCard({ article, onPress }: Props) {
   const { theme } = useTheme();
   const { authUser, savedArticleIds, toggleSaved, language } = useAppState();
