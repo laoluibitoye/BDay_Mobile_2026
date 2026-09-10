@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.md,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.button,
     paddingVertical: space.md,
     paddingHorizontal: space.lg,
     minHeight: 44,

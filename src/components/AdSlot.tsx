@@ -25,7 +25,13 @@ export function AdSlot({ placement }: Props) {
       if (slot.houseAdLinkUrl) void Linking.openURL(slot.houseAdLinkUrl);
     };
     return (
-      <Pressable onPress={open} disabled={!slot.houseAdLinkUrl} style={styles.imageWrap}>
+      <Pressable
+        onPress={open}
+        disabled={!slot.houseAdLinkUrl}
+        style={styles.imageWrap}
+        accessibilityRole="button"
+        accessibilityLabel="Advertisement"
+      >
         <Image source={{ uri: slot.houseAdImageUrl }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" />
       </Pressable>
     );

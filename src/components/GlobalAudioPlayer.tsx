@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { navigationRef } from '../navigation/navigationRef';
 import { getRegisteredArticle } from '../lib/api/content';
 import { getSpeakingState, pauseSpeaking, resumeSpeaking, stopSpeaking, subscribeSpeaking } from '../lib/tts';
-import { space, type, useTheme } from '../theme';
+import { radius, space, type, useTheme } from '../theme';
 import { useBlurTarget } from './BlurTargetContext';
 import { HIDDEN_ON_ROUTES } from './GlobalTabBar';
 
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     borderWidth: 1,
     overflow: 'hidden',
     paddingVertical: space.sm,

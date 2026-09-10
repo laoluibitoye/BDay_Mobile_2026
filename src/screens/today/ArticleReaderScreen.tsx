@@ -507,7 +507,7 @@ function ArticleReaderView({
           {/* Real subscription-service comment thread for this post (comments.ts) — public to
               read, signed-in to post/reply/delete. One reply level deep, matching the backend's
               own cap. */}
-          <View style={styles.commentsSection}>
+          <View style={[styles.commentsSection, { borderColor: theme.rule }]}>
             <Text style={[type.sectionHeadline, { color: theme.ink }]}>
               Comments {totalCommentCount > 0 ? `(${totalCommentCount})` : ''}
             </Text>
@@ -666,14 +666,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radius.button,
     padding: space.sm,
     marginBottom: space.md,
   },
   lockCardWrap: { marginTop: space.xl },
   lockCard: { padding: space.lg },
-  unlockButton: { borderRadius: 8, paddingVertical: space.md, alignItems: 'center', marginTop: space.lg },
-  commentsSection: { marginTop: layout.sectionGap, paddingTop: space.lg, borderTopWidth: 1, borderColor: '#00000014' },
+  unlockButton: { borderRadius: radius.button, paddingVertical: space.md, alignItems: 'center', marginTop: space.lg },
+  // Bug found live: borderColor was a hardcoded translucent black (#00000014), invisible/wrong
+  // against a dark-mode background — the real color is applied inline at the usage site (theme.rule).
+  commentsSection: { marginTop: layout.sectionGap, paddingTop: space.lg, borderTopWidth: 1 },
   commentRow: { flexDirection: 'row', gap: space.md },
   commentAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   commentInputRow: {

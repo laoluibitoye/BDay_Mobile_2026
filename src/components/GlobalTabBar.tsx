@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MainTabParamList } from '../navigation/types';
 import { navigationRef } from '../navigation/navigationRef';
-import { space, type, useTheme } from '../theme';
+import { radius, space, type, useTheme } from '../theme';
 import { useBlurTarget } from './BlurTargetContext';
 
 const ICONS: Record<string, React.ComponentProps<typeof Feather>['name']> = {
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     width: '100%',
-    borderRadius: 999,
+    borderRadius: radius.pill,
     borderWidth: 1,
     overflow: 'hidden',
     paddingVertical: space.sm,

@@ -56,7 +56,12 @@ export function PaywallScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={() => navigation.goBack()} />
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={() => navigation.goBack()}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss"
+      />
       <GlassSheet style={styles.sheet}>
         <Text style={[type.articleHeadline, { color: theme.ink }]}>Upgrade to Premium</Text>
         <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm }]}>

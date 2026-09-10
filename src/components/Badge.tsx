@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useTheme, type, space } from '../theme';
+import { useTheme, type, space, radius } from '../theme';
 
 export function PremiumBadge() {
   const { theme } = useTheme();
@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: space.md,
     paddingVertical: 3,
-    borderRadius: 999,
+    borderRadius: radius.pill,
   },
   tag: {
     alignSelf: 'flex-start',

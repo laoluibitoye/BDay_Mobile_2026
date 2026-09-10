@@ -65,7 +65,10 @@ export function ReferralsScreen() {
               backgroundColor: referralCode ? theme.accent : theme.rule,
             }}
           >
-            <Text style={[type.label, { color: '#fff' }]}>Share my code</Text>
+            {/* Bug found live: text stayed hardcoded white even in the disabled (no code yet)
+                state, where the button falls back to theme.rule — a light gray in light mode,
+                making the label nearly invisible. */}
+            <Text style={[type.label, { color: referralCode ? theme.white : theme.inkFaint }]}>Share my code</Text>
           </Pressable>
         </View>
       </View>
