@@ -17,14 +17,23 @@ type Props = {
 export function ArticleImage({ article, style }: Props) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
 
-  if (!article.imageUrl || status === 'error') {
+  // Website parity (addons/featured-video-cards/addon.php): a video's own YouTube thumbnail
+  // replaces the card image whenever a featured video is set, taking priority over any separate
+  // featured image — same "video poster always wins" rule the website applies. Bug found live:
+  // this app never did that, so a video-featured article with no manually-set image fell
+  // straight through to a plain color block with just a play-button overlay drawn on top of it.
+  const imageUrl = article.featuredVideoId
+    ? `https://i.ytimg.com/vi/${article.featuredVideoId}/hqdefault.jpg`
+    : article.imageUrl;
+
+  if (!imageUrl || status === 'error') {
     return <View style={[styles.fill, { backgroundColor: article.heroColor }, style]} />;
   }
 
   return (
     <View style={[styles.wrap, style]}>
       <Image
-        source={{ uri: article.imageUrl }}
+        source={{ uri: imageUrl }}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
         recyclingKey={article.id}

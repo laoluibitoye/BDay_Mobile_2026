@@ -9,11 +9,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { WebView } from 'react-native-webview';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import type { RootStackParamList } from '../../navigation/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '../../components/Screen';
@@ -83,6 +84,12 @@ function ArticleReaderView({
   scrollToComments?: boolean;
 }) {
   const { theme } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
+  // The video/image block sits inside the `padding: space.lg` content column below, so its
+  // available width is the window width minus that padding on both sides — react-native-youtube-
+  // iframe needs a concrete numeric height (unlike a plain aspectRatio style), computed from that.
+  const videoWidth = windowWidth - space.lg * 2;
+  const videoHeight = (videoWidth * 9) / 16;
   const [fontScale, setFontScale] = useState(0);
   const [isTranslated, setIsTranslated] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -428,12 +435,36 @@ function ArticleReaderView({
             })()}
 
           {article.featuredVideoId ? (
-            <View style={styles.featuredImage}>
-              <WebView
-                source={{ uri: `https://www.youtube.com/embed/${article.featuredVideoId}?playsinline=1` }}
-                allowsInlineMediaPlayback
-                mediaPlaybackRequiresUserAction={false}
-                style={{ backgroundColor: 'transparent' }}
+            // Website parity (single-default.php): a plain, standard embed the reader presses
+            // play on themselves — normal controls, no forced autoplay/mute. That's a
+            // deliberately different treatment from the muted-autoplay facade used for feed
+            // CARDS (ArticleImage.tsx's YouTube-thumbnail fallback), which is passive scroll
+            // content, not something a reader has already chosen to open.
+            //
+            // Bug found live: this used to be a bare WebView pointed straight at
+            // youtube.com/embed/{id} with no YouTube IFrame Player API bridge at all — the exact
+            // kind of unauthenticated, origin-less embed YouTube's "Error 153" rejects for
+            // videos with any embedding restriction. react-native-youtube-iframe drives the real
+            // IFrame Player API (the same API script.js's card facade uses) inside its own
+            // WebView, which is both the properly-supported embedding method and materially more
+            // likely to actually play.
+            //
+            // useLocalHTML + baseUrlOverride: confirmed live that this library's own default
+            // (fetching its player harness page from an external GitHub Pages URL) reliably
+            // failed to actually start playback, and that loading the harness as fully local
+            // HTML with no baseUrlOverride reproduces Error 153 itself (YouTube's player
+            // rejecting an embed with no legitimate origin — a data:/local-HTML load has none).
+            // Loading the HTML locally (no network dependency) while telling the webview to
+            // treat it as if it came from this site's own real domain gets both: instant load
+            // and a legitimate origin YouTube accepts.
+            <View style={[styles.featuredImage, { height: videoHeight }]}>
+              <YoutubePlayer
+                height={videoHeight}
+                width={videoWidth}
+                videoId={article.featuredVideoId}
+                play={false}
+                useLocalHTML
+                baseUrlOverride={process.env.EXPO_PUBLIC_WP_BASE_URL}
               />
             </View>
           ) : (
