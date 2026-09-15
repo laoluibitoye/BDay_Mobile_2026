@@ -118,6 +118,16 @@ function ArticleReaderView({
   const isSpeaking = useIsSpeaking(article.id);
 
   const loadEntitlement = useCallback(() => {
+    // React Navigation reuses this same screen instance (no remount) for a navigate() into
+    // ArticleReader while it's already the focused screen — a push notification, deep link, or
+    // the mini-player tapping through to a different article, for instance. Without resetting
+    // these here, the previous article's entitlement/offline content kept rendering (full body,
+    // unlocked) under the new article's headline for as long as this fetch was in flight — a
+    // real, reproducible leak of one article's premium content while viewing another. `stage`'s
+    // own fallback (below) already treats a null entitlement as locked for a premium article, so
+    // resetting to null here shows a correct loading/locked state instead, never stale content.
+    setEntitlement(null);
+    setOfflineParagraphs(null);
     setEntitlementFailed(false);
     getArticleEntitlement(article.id)
       .then(setEntitlement)
