@@ -44,6 +44,18 @@ import { fontFamily, layout, radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ArticleReader'>;
 
+// 'transparent' in React Native is transparent BLACK (rgba(0,0,0,0)), not "transparent version of
+// whatever's behind it" — a gradient from 'transparent' to an opaque light theme.bg interpolates
+// the black-at-alpha-0 start toward the light end color, producing a visible grey/black smudge
+// partway through instead of a clean fade. Fading from a transparent version of the SAME color
+// avoids that entirely.
+function transparentVariant(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, 0)`;
+}
+
 // Every article shown here was registered by a real feed fetch before the reader navigated to it
 // (Home/SectionFeed/Search/etc. all call registerArticles()/registerArticle() on real results) —
 // an unregistered id means a stale/broken deep link, not a legitimate article to fabricate a
@@ -459,7 +471,7 @@ function ArticleReaderView({
                   just stopping mid-paragraph with no visual link to what follows. */}
               {isLocked && (
                 <LinearGradient
-                  colors={['transparent', theme.bg]}
+                  colors={[transparentVariant(theme.bg), theme.bg]}
                   style={styles.previewFade}
                   pointerEvents="none"
                 />
