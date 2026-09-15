@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
 import { getOffTheClock, type OffTheClockItem, type OffTheClockTab } from '../lib/api/offTheClock';
+import { getArticleById } from '../lib/api/content';
 import { fontFamily, layout, radius, space, type, useTheme } from '../theme';
 import { SectionLabel } from './SectionLabel';
 
@@ -13,6 +17,7 @@ import { SectionLabel } from './SectionLabel';
 // pattern as MarketTickerStrip.tsx.
 export function OffTheClockSection() {
   const { theme } = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [tabs, setTabs] = useState<OffTheClockTab[] | null>(null);
   const [active, setActive] = useState(0);
 
@@ -28,7 +33,19 @@ export function OffTheClockSection() {
   const [lead, ...more] = tab.items;
   if (!lead) return null;
 
-  const open = (item: OffTheClockItem) => void WebBrowser.openBrowserAsync(item.link);
+  // Bug found live: this used to always open the reader's own website link in an in-app browser
+  // — every other feed/card in the app navigates into ArticleReaderScreen instead, and the
+  // Off the Clock API already hands back a real post id (offTheClock.ts), so there was no reason
+  // to leave the app at all. Falls back to the browser only if the id can't be resolved into a
+  // real article (deleted, offline) — same "never a dead tap" posture as bday_epaper_url.
+  const open = async (item: OffTheClockItem) => {
+    const article = await getArticleById(String(item.id));
+    if (article) {
+      navigation.navigate('ArticleReader', { articleId: article.id });
+    } else {
+      void WebBrowser.openBrowserAsync(item.link);
+    }
+  };
 
   return (
     <View style={{ marginBottom: layout.sectionGap }}>
