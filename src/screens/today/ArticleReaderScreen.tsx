@@ -15,10 +15,11 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import type { RootStackParamList } from '../../navigation/types';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { ArticleImage } from '../../components/ArticleImage';
-import { GlassSheet } from '../../components/GlassSheet';
+import { Button } from '../../components/Button';
 import { PremiumBadge } from '../../components/Badge';
 import { ReaderControls } from '../../components/ReaderControls';
 import { SiaPanel } from '../../components/SiaPanel';
@@ -438,7 +439,7 @@ function ArticleReaderView({
               />
             </View>
           ) : (
-            <View style={{ marginTop: space.xl, gap: space.lg }}>
+            <View style={{ marginTop: space.xl, gap: space.lg, position: 'relative' }}>
               {visibleParagraphs.map((p, i) => (
                 <Text
                   key={i}
@@ -454,12 +455,21 @@ function ArticleReaderView({
                   {p}
                 </Text>
               ))}
+              {/* Fades the truncated preview into the lock card below it, instead of the text
+                  just stopping mid-paragraph with no visual link to what follows. */}
+              {isLocked && (
+                <LinearGradient
+                  colors={['transparent', theme.bg]}
+                  style={styles.previewFade}
+                  pointerEvents="none"
+                />
+              )}
             </View>
           )}
 
           {isLocked && (
             <View style={styles.lockCardWrap}>
-              <GlassSheet variant="card" style={styles.lockCard}>
+              <View style={[styles.lockCard, { backgroundColor: theme.bgCard, borderColor: theme.rule }]}>
                 {(() => {
                   // Stage-specific copy is editorially managed (wp-admin → BusinessDay App →
                   // Paywall Copy) — it only changes wording, never the gating decision itself,
@@ -480,15 +490,22 @@ function ArticleReaderView({
                   };
                   return (
                     <>
-                      <Text style={[type.sectionHeadline, { color: theme.ink }]}>{resolved.headline}</Text>
-                      <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm }]}>{resolved.body}</Text>
-                      <Pressable style={[styles.unlockButton, { backgroundColor: theme.accent }]} onPress={onPress}>
-                        <Text style={[type.label, { color: '#fff' }]}>{resolved.buttonLabel}</Text>
-                      </Pressable>
+                      <View style={[styles.lockIconWrap, { backgroundColor: theme.accentTint }]}>
+                        <Feather name="lock" size={18} color={theme.accent} />
+                      </View>
+                      <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.md, textAlign: 'center' }]}>
+                        {resolved.headline}
+                      </Text>
+                      <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm, textAlign: 'center' }]}>
+                        {resolved.body}
+                      </Text>
+                      <View style={{ marginTop: space.lg, alignSelf: 'stretch' }}>
+                        <Button label={resolved.buttonLabel} onPress={onPress} fullWidth />
+                      </View>
                     </>
                   );
                 })()}
-              </GlassSheet>
+              </View>
             </View>
           )}
 
@@ -680,9 +697,10 @@ const styles = StyleSheet.create({
     padding: space.sm,
     marginBottom: space.md,
   },
-  lockCardWrap: { marginTop: space.xl },
-  lockCard: { padding: space.lg },
-  unlockButton: { borderRadius: radius.button, paddingVertical: space.md, alignItems: 'center', marginTop: space.lg },
+  lockCardWrap: { marginTop: space.lg },
+  lockCard: { borderWidth: 1, borderRadius: radius.card, padding: space.xl, alignItems: 'center' },
+  lockIconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  previewFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 90 },
   // Bug found live: borderColor was a hardcoded translucent black (#00000014), invisible/wrong
   // against a dark-mode background — the real color is applied inline at the usage site (theme.rule).
   commentsSection: { marginTop: layout.sectionGap, paddingTop: space.lg, borderTopWidth: 1 },

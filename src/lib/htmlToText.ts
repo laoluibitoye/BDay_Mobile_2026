@@ -13,9 +13,17 @@ export function htmlToParagraphs(html: string): string[] {
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
+        .replace(/&#8216;/g, '‘')
         .replace(/&#8217;/g, '’')
         .replace(/&#8220;/g, '“')
         .replace(/&#8221;/g, '”')
+        .replace(/&#039;|&apos;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&mdash;/g, '—')
+        .replace(/&ndash;/g, '–')
+        // wp_trim_words()'s default "more" marker on a truncated preview — undecoded, this
+        // leaked through literally as "...and&hellip;" at the end of the locked-article preview.
+        .replace(/&hellip;/g, '…')
         .trim()
     )
     .filter((p) => p.length > 0);
