@@ -45,5 +45,5 @@ function Tile({ article, onPress }: { article: Article; onPress: () => void }) {
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, marginTop: space.sm },
   tile: { width: '47%' },
-  thumb: { width: '100%', height: 140, borderRadius: radius.card },
+  thumb: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.card },
 });

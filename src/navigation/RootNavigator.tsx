@@ -15,7 +15,6 @@ import { InterestPickerScreen } from '../screens/onboarding/InterestPickerScreen
 
 import { ArticleReaderScreen } from '../screens/today/ArticleReaderScreen';
 import { PaywallScreen } from '../screens/today/PaywallScreen';
-import { BreakingNewsScreen } from '../screens/today/BreakingNewsScreen';
 
 import { SearchScreen } from '../screens/explore/SearchScreen';
 import { SectionFeedScreen } from '../screens/explore/SectionFeedScreen';
@@ -84,7 +83,6 @@ export function RootNavigator() {
 
       <Stack.Screen name="ArticleReader" component={ArticleReaderScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'transparentModal' }} />
-      <Stack.Screen name="BreakingNews" component={BreakingNewsScreen} options={{ presentation: 'fullScreenModal' }} />
 
       <Stack.Screen name="Search" component={SearchScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />

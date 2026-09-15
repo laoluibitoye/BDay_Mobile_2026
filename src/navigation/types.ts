@@ -38,7 +38,6 @@ export type RootStackParamList = {
   TodaysPaper: undefined;
   EEditions: { publication?: string } | undefined;
   FlipBook: { pdfUrl: string };
-  BreakingNews: undefined;
   Markets: undefined;
   MarketDetail: { symbol: string };
   Watchlist: undefined;

@@ -660,7 +660,7 @@ const styles = StyleSheet.create({
     paddingTop: space.md,
   },
   commentAction: { flexDirection: 'row', alignItems: 'center' },
-  featuredImage: { height: 280, borderRadius: radius.card, marginTop: space.lg, overflow: 'hidden' },
+  featuredImage: { aspectRatio: 16 / 9, borderRadius: radius.card, marginTop: space.lg, overflow: 'hidden' },
   funnelCounter: { borderRadius: radius.button, paddingVertical: space.xs, paddingHorizontal: space.md, marginTop: space.md, alignSelf: 'flex-start' },
   translateBanner: {
     flexDirection: 'row',

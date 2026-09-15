@@ -84,13 +84,16 @@ export function MarketTickerStrip() {
       style={styles.row}
       onLayout={onLayout ? (e) => onLayout(e.nativeEvent.layout.width) : undefined}
     >
-      {items.map((q) => {
+      {items.map((q, index) => {
         const isPercent = q.note_type === 'percent';
         const up = isPercent && !q.note.trim().startsWith('-');
         const color = isPercent ? (up ? theme.marketUp : theme.marketDown) : theme.inkMuted;
         return (
           <Pressable
-            key={`${q.id}-${keySuffix}`}
+            // Index disambiguates same-id collisions (e.g. two admin-entered rows that both
+            // ended up with a blank id) — React needs a unique key regardless of whether the
+            // underlying data is clean, and `q.id` alone isn't guaranteed to be.
+            key={`${q.id}-${index}-${keySuffix}`}
             style={styles.item}
             onPress={() => openSymbol(q.id)}
             accessibilityRole="button"
@@ -134,11 +137,11 @@ export function MarketTickerStrip() {
         <Pressable
           onPress={() => navigation.navigate('Markets')}
           accessibilityRole="button"
-          accessibilityLabel="Open Markets"
+          accessibilityLabel="Open Stats to Watch"
           style={[styles.marketsButton, { backgroundColor: NEON_RED }]}
         >
           <Feather name="trending-up" size={14} color="#FFFFFF" />
-          <Text style={[type.mono, { color: '#FFFFFF' }]}>MKTS</Text>
+          <Text style={[type.mono, { color: '#FFFFFF' }]}>STATS</Text>
         </Pressable>
       </View>
 

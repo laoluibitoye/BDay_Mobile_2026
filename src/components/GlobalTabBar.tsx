@@ -32,8 +32,8 @@ const TABS: { name: keyof MainTabParamList; title: string }[] = [
 ];
 
 // Screens where a persistent bottom tab bar doesn't belong: the splash/auth funnel (nothing to
-// navigate to yet) and focused modal takeovers (Search, Paywall, Breaking News) that are meant
-// to be a self-contained overlay, not a browsing surface.
+// navigate to yet) and focused modal takeovers (Search, Paywall) that are meant to be a
+// self-contained overlay, not a browsing surface.
 // Exported so GlobalAudioPlayer (stacked directly above this bar) hides on the same routes —
 // keeps the two persistent overlays' visibility rules from drifting independently.
 export const HIDDEN_ON_ROUTES = new Set([
@@ -43,7 +43,6 @@ export const HIDDEN_ON_ROUTES = new Set([
   'InterestPicker',
   'Search',
   'Paywall',
-  'BreakingNews',
 ]);
 
 // A single persistent floating tab bar rendered once at the root (RootNavigator), above the

@@ -70,6 +70,12 @@ export function MarketDetailScreen({ route, navigation }: Props) {
             </Text>
           )}
         </View>
+
+        {!!item.description && (
+          <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.lg, lineHeight: 22 }]}>
+            {item.description}
+          </Text>
+        )}
       </View>
     </Screen>
   );

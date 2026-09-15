@@ -6,6 +6,9 @@ export type MarketPulseItem = {
   value: string;
   note: string;
   note_type: 'percent' | 'text';
+  // Admin-entered context for this figure (Appearance → BusinessDay Theme → Market Pulse) — shown
+  // on MarketDetailScreen so a reader tapping a stat gets an explanation, not just the raw number.
+  description?: string;
 };
 
 export type MarketPulseResponse = {

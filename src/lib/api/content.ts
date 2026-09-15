@@ -185,14 +185,6 @@ export async function getSectionFeed(slug: string, page = 1): Promise<FeedRespon
   return { ...res, articles: registerArticles(res.items) };
 }
 
-// Web parity: core/homepage/data.php's 'most_popular' (comment_count-ranked) — the "Editor's Pick
-// & Most Read" / "Most Popular" sidebar content. Fixed, always-on route, not part of the
-// admin-configurable Home Sections — see handleMostPopular() in class-bd-feed-api.php.
-export async function getMostPopular(): Promise<Article[]> {
-  const res = await wpPublicGet<{ items: FeedItem[] }>('/wp-json/businessday-app/v1/feed/most-popular');
-  return registerArticles(res.items);
-}
-
 // Tag-scoped, e.g. `bdrecent` — the real site's own editorial tag for "recent," distinct from a
 // plain date-ordered query across every category. See handleTag() in
 // wordpress-plugin/businessday-app-connector's class-bd-feed-api.php.

@@ -10,7 +10,7 @@ import { useIsSpeaking } from '../hooks/useIsSpeaking';
 import { listenToArticle } from '../lib/listenToArticle';
 import { layout, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
-import { LiveBadge, PremiumBadge } from './Badge';
+import { PremiumBadge } from './Badge';
 import { VideoPlayBadge } from './VideoPlayBadge';
 
 type Props = {
@@ -50,7 +50,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
         {!!article.featuredVideoId && <VideoPlayBadge />}
       </View>
       <View style={styles.body}>
-        {article.isLive ? <LiveBadge /> : article.isPremium ? <PremiumBadge /> : null}
+        {article.isPremium ? <PremiumBadge /> : null}
         <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.sm }]} numberOfLines={3}>
           {article.headline}
         </Text>
@@ -109,7 +109,7 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
 
 const styles = StyleSheet.create({
   card: { borderBottomWidth: 1, paddingBottom: space.lg, marginBottom: space.lg },
-  hero: { height: 240 },
+  hero: { aspectRatio: 16 / 9 },
   body: { padding: space.lg },
   toolbar: { flexDirection: 'row', gap: space.lg, marginTop: space.md },
   toolbarItem: { flexDirection: 'row', alignItems: 'center' },

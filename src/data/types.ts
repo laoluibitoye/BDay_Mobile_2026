@@ -17,7 +17,6 @@ export type Article = {
   publishedAt: string; // relative label, e.g. "2h ago"
   contentType: ContentType;
   isPremium: boolean;
-  isLive?: boolean;
   readTime: string;
   body: string[];
   heroColor: string;
@@ -92,8 +91,7 @@ export type TodayModule =
   | { type: 'tileGrid'; label: string; articleIds: string[] }
   | { type: 'textList'; label: string; articleIds: string[] }
   | { type: 'editionsCarousel' }
-  | { type: 'latestStories'; articleIds: string[] }
-  | { type: 'mostPopular'; articleIds: string[] };
+  | { type: 'latestStories'; articleIds: string[] };
 
 export type SubscriptionPlan = {
   id: string;

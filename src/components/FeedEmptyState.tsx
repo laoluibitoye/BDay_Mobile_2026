@@ -7,23 +7,19 @@ import { space, type, useTheme } from '../theme';
 // Shared by two distinct cases: a real API call that failed/returned nothing (pass `onRetry`),
 // and a feature with no backend to call yet (omit `onRetry`) — both render as an honest "nothing
 // to show" state rather than any screen falling back to fabricated placeholder content.
-// `light`: for the rare screen with an inverted dark background (e.g. BreakingNewsScreen) — the
-// default colors assume the normal light `theme.bg` surface behind this component.
 export function FeedEmptyState({
   title,
   message,
   onRetry,
-  light,
 }: {
   title: string;
   message: string;
   onRetry?: () => void;
-  light?: boolean;
 }) {
   const { theme } = useTheme();
-  const iconColor = light ? theme.bg : theme.inkFaint;
-  const titleColor = light ? theme.bg : theme.ink;
-  const messageColor = light ? theme.inkFaint : theme.inkMuted;
+  const iconColor = theme.inkFaint;
+  const titleColor = theme.ink;
+  const messageColor = theme.inkMuted;
   return (
     <View style={styles.container}>
       <Feather name={onRetry ? 'wifi-off' : 'inbox'} size={28} color={iconColor} />

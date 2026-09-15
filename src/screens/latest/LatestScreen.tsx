@@ -14,6 +14,7 @@ import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { Article, TodayModule } from '../../data/types';
 import { getTagFeed } from '../../lib/api/content';
 import { buildMixedModules } from '../../lib/buildMixedModules';
+import { useRefreshOnForeground } from '../../hooks/useRefreshOnForeground';
 import { layout, radius, space, type, useTheme } from '../../theme';
 
 const TABS = ['Recent', 'Explore'] as const;
@@ -93,6 +94,10 @@ function RecentTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Same reasoning as Home: refetch silently when the reader returns to an already-mounted Latest
+  // tab from the background, instead of only ever refreshing on a manual pull.
+  useRefreshOnForeground(() => void loadFirstPage());
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadFirstPage();
@@ -119,9 +124,7 @@ function RecentTab() {
   const findArticle = (id: string) => poolById.get(id);
 
   const openArticle = (id: string) => {
-    const article = findArticle(id);
-    if (article?.isLive) navigation.navigate('BreakingNews');
-    else navigation.navigate('ArticleReader', { articleId: id });
+    navigation.navigate('ArticleReader', { articleId: id });
   };
 
   // Rebuilding from the full accumulated pool on every page load is safe here: buildMixedModules

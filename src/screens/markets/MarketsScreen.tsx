@@ -29,14 +29,14 @@ export function MarketsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
       <AppHeader
         variant="compact"
-        title="Markets"
+        title="Stats to Watch"
         showBack
         rightAction={{ icon: 'star', onPress: () => navigation.navigate('Watchlist'), accessibilityLabel: 'Watchlist' }}
       />
       <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: 140, flexGrow: 1 }}>
         {failed ? (
           <View style={{ flex: 1, justifyContent: 'center' }}>
-            <FeedEmptyState title="Couldn't load Markets" message="Check your connection and try again." onRetry={load} />
+            <FeedEmptyState title="Couldn't load Stats to Watch" message="Check your connection and try again." onRetry={load} />
           </View>
         ) : items === null ? null : items.length === 0 ? (
           <View style={{ flex: 1, justifyContent: 'center' }}>

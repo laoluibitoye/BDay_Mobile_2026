@@ -21,10 +21,11 @@ import { OffTheClockSection } from '../../components/OffTheClockSection';
 import { LatestStoriesModule } from '../../components/LatestStoriesModule';
 import { EventsPreviewRow } from '../../components/EventsPreviewRow';
 import { EditionsHomeCarousel } from '../../components/EditionsHomeCarousel';
+import { useRefreshOnForeground } from '../../hooks/useRefreshOnForeground';
 import { Article, TodayModule } from '../../data/types';
 import { sections } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
-import { getHomeFeed, getMostPopular, getRegisteredArticle, getSectionFeed, HomeSection } from '../../lib/api/content';
+import { getHomeFeed, getRegisteredArticle, getSectionFeed, HomeSection } from '../../lib/api/content';
 import { radius, layout, space, type, useTheme } from '../../theme';
 
 // Today is WP-admin-editable (wp-admin → BusinessDay App → Home Sections — title/category-or-tag
@@ -52,15 +53,6 @@ export function HomeScreen() {
   const [todayFailed, setTodayFailed] = useState(false);
   const [categoryArticles, setCategoryArticles] = useState<Article[]>([]);
   const [categoryFailed, setCategoryFailed] = useState(false);
-  // Web parity: core/homepage/data.php's 'most_popular', co-located with Editor's Pick on the
-  // website ("Editor's Pick & Most Read") — same placement here, injected after that section.
-  const [mostPopular, setMostPopular] = useState<Article[]>([]);
-
-  useEffect(() => {
-    getMostPopular()
-      .then(setMostPopular)
-      .catch(() => undefined);
-  }, []);
 
   const loadToday = useCallback(() => {
     setTodayFailed(false);
@@ -80,6 +72,16 @@ export function HomeScreen() {
   }, [activeTab]);
 
   useEffect(loadCategory, [loadCategory]);
+
+  // Reader returns to an already-mounted Home after backgrounding the app — re-fetch silently
+  // instead of leaving them staring at whatever was current at launch until they think to pull to
+  // refresh.
+  useRefreshOnForeground(
+    useCallback(() => {
+      loadToday();
+      loadCategory();
+    }, [loadToday, loadCategory])
+  );
 
   // Matched by the section's real id ('hero' = Top News), not array position — the carousel must
   // always show the editor's actual Top News picks even if that section isn't sorted first in
@@ -134,7 +136,7 @@ export function HomeScreen() {
             // leaving Home, not just via the full archive.
             return section.id === 'latest-stories'
               ? [label, { type: 'latestStories', articleIds: ids } as TodayModule]
-              : [label, { type: 'textList', label: '', articleIds: ids } as TodayModule];
+              : [label, { type: 'textList', label: '', articleIds: ids.slice(0, 3) } as TodayModule];
           case 'mixed':
           default:
             return [label, ...buildMixedModules(pool, section.label).filter((m) => m.type !== 'hero')];
@@ -146,22 +148,12 @@ export function HomeScreen() {
       if (section.id === 'investigates') {
         return [...sectionModules, { type: 'editionsCarousel' } as TodayModule];
       }
-      // Most Read is pinned after Editor's Pick, matching the website's co-located "Editor's
-      // Pick & Most Read" layout — also not a WP-driven section of its own.
-      if (section.id === 'editor-pick' && mostPopular.length > 0) {
-        return [...sectionModules, { type: 'mostPopular', articleIds: mostPopular.map((a) => a.id) } as TodayModule];
-      }
       return sectionModules;
     });
-  }, [wpSections, mostPopular]);
+  }, [wpSections]);
 
   const openArticle = (id: string) => {
-    const article = getRegisteredArticle(id);
-    if (article?.isLive) {
-      navigation.navigate('BreakingNews');
-    } else {
-      navigation.navigate('ArticleReader', { articleId: id });
-    }
+    navigation.navigate('ArticleReader', { articleId: id });
   };
 
   const renderArticle = (id: string): Article | null => getRegisteredArticle(id) ?? null;
@@ -224,30 +216,6 @@ export function HomeScreen() {
         return <EditionsHomeCarousel />;
       case 'latestStories':
         return <LatestStoriesModule articleIds={module.articleIds} onPressArticle={openArticle} />;
-      case 'mostPopular': {
-        const found = module.articleIds.map(renderArticle).filter((a): a is Article => a !== null);
-        if (found.length === 0) return null;
-        return (
-          <View style={{ marginBottom: layout.sectionGap }}>
-            <SectionLabel label="Most Read" />
-            <View style={{ marginTop: space.sm }}>
-              {found.map((a, i) => (
-                <Pressable
-                  key={a.id}
-                  onPress={() => openArticle(a.id)}
-                  accessibilityRole="button"
-                  style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.sm }}
-                >
-                  <Text style={[type.mono, { color: theme.accent, width: 20 }]}>{String(i + 1).padStart(2, '0')}</Text>
-                  <Text style={[type.bodyUI, { color: theme.ink, flex: 1 }]} numberOfLines={2}>
-                    {a.headline}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        );
-      }
     }
   };
 
@@ -273,29 +241,6 @@ export function HomeScreen() {
       <View style={{ marginTop: space.sm }}>
         <MarketTickerStrip />
       </View>
-      {/* Bug found live: BreakingNewsScreen was only ever reachable by tapping an isLive-flagged
-          article card — a flag real WP-sourced articles never carry, so the screen was built but
-          unreachable. This is a real, permanent entry point instead. */}
-      <Pressable
-        onPress={() => navigation.navigate('BreakingNews')}
-        accessibilityRole="button"
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: space.xs,
-          alignSelf: 'flex-start',
-          marginTop: space.sm,
-          marginLeft: space.lg,
-          paddingVertical: 5,
-          paddingHorizontal: space.md,
-          borderRadius: radius.pill,
-          backgroundColor: theme.ink,
-        }}
-      >
-        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF3B30' }} />
-        <Text style={[type.mono, { color: theme.bg }]}>BREAKING NEWS</Text>
-        <Feather name="chevron-right" size={12} color={theme.bg} />
-      </Pressable>
       <View style={{ marginTop: space.sm, borderBottomWidth: 1, borderColor: theme.rule, paddingBottom: space.xs }}>
         <SectionTabStrip items={HOME_TABS} active={activeTab} onSelect={setActiveTab} />
       </View>

@@ -64,5 +64,5 @@ function BriefTile({ article, width, onPress }: { article: Article; width: numbe
 // row does the visual separation a border used to, so it wasn't left behind as a straggler.
 const styles = StyleSheet.create({
   tile: { overflow: 'hidden' },
-  thumb: { width: '100%', height: 150, borderRadius: radius.card },
+  thumb: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.card },
 });

@@ -24,9 +24,11 @@ export function buildMixedModules(pool: Article[], label: string): TodayModule[]
     } else if (step === 2 && remaining >= 2) {
       modules.push({ type: 'tileGrid', label: `${label} highlights`, articleIds: pool.slice(i, i + 2).map((a) => a.id) });
       i += 2;
-    } else if (step === 3 && remaining >= 4) {
-      modules.push({ type: 'textList', label: `Also in ${label}`, articleIds: pool.slice(i, i + 4).map((a) => a.id) });
-      i += 4;
+    } else if (step === 3 && remaining >= 3) {
+      // Capped at 3 — a text-only list with no thumbnails reads as dense/wordy past a handful of
+      // headlines, unlike the image-carrying modules above.
+      modules.push({ type: 'textList', label: `Also in ${label}`, articleIds: pool.slice(i, i + 3).map((a) => a.id) });
+      i += 3;
     } else {
       const take = Math.min(3, remaining);
       modules.push({ type: 'cardList', articleIds: pool.slice(i, i + take).map((a) => a.id) });
