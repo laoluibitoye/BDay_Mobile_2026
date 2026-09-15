@@ -139,7 +139,26 @@ export function HomeScreen() {
               : [label, { type: 'textList', label: '', articleIds: ids.slice(0, 3) } as TodayModule];
           case 'mixed':
           default:
-            return [label, ...buildMixedModules(pool, section.label).filter((m) => m.type !== 'hero')];
+            // Bug found live: buildMixedModules' first cycle always emits a 'hero' module, which
+            // got filtered out here to avoid a second full-bleed hero card mid-feed — but that
+            // silently dropped its article entirely, leaving this section's own "See all" header
+            // with nothing directly under it. The very next module (briefRail, cycle 1) carries
+            // its own "More from {label}" sub-header, which then read as a confusing duplicate of
+            // the real header immediately above it with an empty gap in between. Folding the
+            // would-be hero into a normal card (instead of dropping it) and blanking every
+            // synthetic sub-label (same treatment the briefRail/tileGrid/textList cases above
+            // already give a top-level WP section) fixes both: content starts right under the
+            // real header, and nothing repeats it.
+            return [
+              label,
+              ...buildMixedModules(pool, section.label).map((m): TodayModule => {
+                if (m.type === 'hero') return { type: 'cardList', articleIds: [m.articleId] };
+                if (m.type === 'briefRail' || m.type === 'tileGrid' || m.type === 'textList') {
+                  return { ...m, label: '' };
+                }
+                return m;
+              }),
+            ];
         }
       })();
       // E-Editions carousel is pinned directly after "BD Investigations" (section id

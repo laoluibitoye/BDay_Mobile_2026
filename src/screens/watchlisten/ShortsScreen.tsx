@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View, ViewToken } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { Image } from 'expo-image';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import type { VideoItem } from '../../lib/api/videos';
@@ -86,19 +87,33 @@ function ShortSlide({
   muted: boolean;
   onToggleMute: () => void;
 }) {
-  const src = `https://www.youtube.com/embed/${item.youtubeId}?playsinline=1&controls=0&modestbranding=1&rel=0&loop=1&playlist=${item.youtubeId}&autoplay=${
-    active ? 1 : 0
-  }&mute=${muted ? 1 : 0}`;
+  const { width } = useWindowDimensions();
+  // Same real YouTube thumbnail priority as ArticleImage.tsx — every other row in this feed
+  // (not just the active one) now shows the clip's actual frame instead of a bare black box with
+  // just a play-button hint drawn over nothing.
+  const thumbnailUrl = item.imageUrl ?? `https://i.ytimg.com/vi/${item.youtubeId}/hqdefault.jpg`;
 
   return (
     <View style={{ height, width: '100%', backgroundColor: '#000' }}>
+      <Image source={{ uri: thumbnailUrl }} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" />
       {active && (
-        <WebView
+        // Bug found live: this used to be a bare WebView pointed straight at a youtube.com/embed
+        // URL — the same origin-less embed shape that reliably hit YouTube's "Error 153" for any
+        // video with an embedding restriction (see ArticleReaderScreen.tsx/HeroArticleCard.tsx for
+        // the full diagnosis). react-native-youtube-iframe + useLocalHTML/baseUrlOverride is the
+        // same fix applied there: loads instantly (no external harness fetch) while presenting a
+        // legitimate origin YouTube's player actually accepts.
+        <YoutubePlayer
           key={muted ? 'muted' : 'unmuted'}
-          source={{ uri: src }}
-          style={StyleSheet.absoluteFill}
-          allowsInlineMediaPlayback
-          mediaPlaybackRequiresUserAction={false}
+          height={height}
+          width={width}
+          videoId={item.youtubeId}
+          play={active}
+          mute={muted}
+          useLocalHTML
+          baseUrlOverride={process.env.EXPO_PUBLIC_WP_BASE_URL}
+          initialPlayerParams={{ loop: true, controls: false, rel: false }}
+          webViewProps={{ pointerEvents: 'none' }}
         />
       )}
       <View style={styles.overlay} pointerEvents="box-none">

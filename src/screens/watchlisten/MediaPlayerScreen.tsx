@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
@@ -88,10 +89,17 @@ export function MediaPlayerScreen({ route }: Props) {
   return (
     <Screen header={<AppHeader variant="compact" title={video.section || 'Video'} showBack />}>
       <View style={{ height: 220, margin: space.lg, borderRadius: 12, overflow: 'hidden' }}>
-        <WebView
-          source={{ uri: `https://www.youtube.com/embed/${video.youtubeId}?playsinline=1` }}
-          allowsInlineMediaPlayback
-          mediaPlaybackRequiresUserAction={false}
+        {/* Bug found live: this used to be a bare WebView pointed straight at a youtube.com/embed
+            URL — the same origin-less embed shape that reliably hit YouTube's "Error 153" for any
+            video with an embedding restriction (see ArticleReaderScreen.tsx for the full
+            diagnosis). react-native-youtube-iframe + useLocalHTML/baseUrlOverride is the same fix
+            applied there. */}
+        <YoutubePlayer
+          height={220}
+          videoId={video.youtubeId}
+          play={false}
+          useLocalHTML
+          baseUrlOverride={process.env.EXPO_PUBLIC_WP_BASE_URL}
         />
       </View>
       <Text style={[type.articleHeadline, { color: theme.ink, paddingHorizontal: space.lg }]}>{video.title}</Text>
