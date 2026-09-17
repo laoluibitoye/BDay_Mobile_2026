@@ -6,7 +6,8 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { ListRow } from '../../components/ListRow';
-import { useCommentNotifications, invalidateCommentNotificationsCache } from '../../hooks/useCommentNotifications';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { useCommentNotificationsState, invalidateCommentNotificationsCache } from '../../hooks/useCommentNotifications';
 import { markCommentNotificationsRead } from '../../lib/api/comments';
 import { space, type, useTheme } from '../../theme';
 
@@ -16,13 +17,21 @@ import { space, type, useTheme } from '../../theme';
 export function CommentNotificationsScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const rows = useCommentNotifications();
+  const { rows, failed, retry } = useCommentNotificationsState();
 
   useEffect(() => {
     markCommentNotificationsRead()
       .then(invalidateCommentNotificationsCache)
       .catch(() => undefined);
   }, []);
+
+  if (failed) {
+    return (
+      <Screen scroll={false} header={<AppHeader variant="compact" title="Comment replies" showBack />}>
+        <FeedEmptyState title="Couldn't load replies" message="Check your connection and try again." onRetry={retry} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll={false} header={<AppHeader variant="compact" title="Comment replies" showBack />}>

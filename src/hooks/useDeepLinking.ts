@@ -11,7 +11,7 @@ import { getArticleById, resolveArticleIdFromUrl } from '../lib/api/content';
 // navigating, rather than assuming it's already sitting in the in-memory registry.
 async function handleUrl(url: string | null): Promise<void> {
   if (!url) return;
-  const { hostname, path } = Linking.parse(url);
+  const { hostname, path, queryParams } = Linking.parse(url);
   if (!hostname || !path || path === '/') return; // our own custom-scheme opens (no host) or a bare domain hit — nothing to route
 
   const id = await resolveArticleIdFromUrl(url);
@@ -21,7 +21,13 @@ async function handleUrl(url: string | null): Promise<void> {
   if (!article) return;
 
   await waitForNavigationReady();
-  navigationRef.navigate('ArticleReader', { articleId: article.id });
+  // Bug found live: gift links only ever worked opened in a browser — the app could send one
+  // (gift.ts's giftUrl()) but never read the `?aero_gift=<token>` query param back off an
+  // incoming one, so tapping a received gift link just landed on the normal paywalled article.
+  // The server side was already fully wired (class-mobile-api.php reads an X-Gift-Token header;
+  // getArticleEntitlement() already accepts and forwards one) — this was the only missing link.
+  const giftToken = typeof queryParams?.aero_gift === 'string' ? queryParams.aero_gift : undefined;
+  navigationRef.navigate('ArticleReader', { articleId: article.id, giftToken });
 }
 
 // A cold start via Universal Link resolves `getInitialURL()` before `NavigationContainer` has

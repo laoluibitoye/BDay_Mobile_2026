@@ -184,6 +184,7 @@ export function SettingsScreen() {
         </View>
         <AppearanceRow />
         <MenuRow icon="sliders" label="Feed settings" onPress={() => navigation.navigate('FeedSettings')} />
+        <MenuRow icon="globe" label="Edition & region" onPress={() => navigation.navigate('EditionRegion')} />
         {/* Language/translation deprecated for now — LanguageScreen/route left in place. */}
         <MenuRow icon="eye" label="Accessibility" onPress={() => navigation.navigate('Accessibility')} />
         <MenuRow icon="wifi" label="Data & offline" onPress={() => navigation.navigate('DataOffline')} />

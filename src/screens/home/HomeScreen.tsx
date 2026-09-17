@@ -260,7 +260,7 @@ export function HomeScreen() {
       <View style={{ marginTop: space.sm }}>
         <MarketTickerStrip />
       </View>
-      <View style={{ marginTop: space.sm, borderBottomWidth: 1, borderColor: theme.rule, paddingBottom: space.xs }}>
+      <View style={{ marginTop: space.sm, paddingBottom: space.sm }}>
         <SectionTabStrip items={HOME_TABS} active={activeTab} onSelect={setActiveTab} />
       </View>
       <AppBannerSlot placement="home_top" />

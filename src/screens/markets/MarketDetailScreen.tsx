@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -28,7 +28,15 @@ export function MarketDetailScreen({ route, navigation }: Props) {
   }, [symbol]);
 
   if (item === undefined) {
-    return <Screen header={<AppHeader variant="compact" title={symbol} showBack />}>{null}</Screen>;
+    // Bug found live: this rendered just a bare header with nothing else — a blank-screen flash
+    // while the fetch is in flight, instead of a visible loading state.
+    return (
+      <Screen header={<AppHeader variant="compact" title={symbol} showBack />}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: space.xxxl }}>
+          <ActivityIndicator color={theme.inkMuted} />
+        </View>
+      </Screen>
+    );
   }
 
   if (!item) {

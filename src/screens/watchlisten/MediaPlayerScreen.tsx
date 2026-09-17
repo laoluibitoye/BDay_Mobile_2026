@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -37,7 +37,15 @@ export function MediaPlayerScreen({ route }: Props) {
 
   if (kind === 'podcast') {
     if (podcast === undefined) {
-      return <Screen header={<AppHeader variant="compact" title="Podcast" showBack />}>{null}</Screen>;
+      // Bug found live: this rendered just a bare header with nothing else — a blank-screen
+      // flash while the fetch is in flight, instead of a visible loading state.
+      return (
+        <Screen header={<AppHeader variant="compact" title="Podcast" showBack />}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: space.xxxl }}>
+            <ActivityIndicator color={theme.inkMuted} />
+          </View>
+        </Screen>
+      );
     }
     if (!podcast) {
       return (
@@ -77,7 +85,13 @@ export function MediaPlayerScreen({ route }: Props) {
   }
 
   if (video === undefined) {
-    return <Screen header={<AppHeader variant="compact" title="Video" showBack />}>{null}</Screen>;
+    return (
+      <Screen header={<AppHeader variant="compact" title="Video" showBack />}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: space.xxxl }}>
+          <ActivityIndicator color={theme.inkMuted} />
+        </View>
+      </Screen>
+    );
   }
   if (!video) {
     return (

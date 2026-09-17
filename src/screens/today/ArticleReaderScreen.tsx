@@ -71,17 +71,26 @@ export function ArticleReaderScreen({ route, navigation }: Props) {
       </Screen>
     );
   }
-  return <ArticleReaderView article={article} navigation={navigation} scrollToComments={route.params.scrollToComments} />;
+  return (
+    <ArticleReaderView
+      article={article}
+      navigation={navigation}
+      scrollToComments={route.params.scrollToComments}
+      giftToken={route.params.giftToken}
+    />
+  );
 }
 
 function ArticleReaderView({
   article,
   navigation,
   scrollToComments,
+  giftToken,
 }: {
   article: Article;
   navigation: Props['navigation'];
   scrollToComments?: boolean;
+  giftToken?: string;
 }) {
   const { theme } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
@@ -149,7 +158,9 @@ function ArticleReaderView({
     setEntitlement(null);
     setOfflineParagraphs(null);
     setEntitlementFailed(false);
-    getArticleEntitlement(article.id)
+    // giftToken (from a `?aero_gift=` deep link — see useDeepLinking.ts) unlocks this one
+    // article for whoever holds the link, same as opening it in a browser.
+    getArticleEntitlement(article.id, giftToken)
       .then(setEntitlement)
       .catch(() => {
         setEntitlement(null);
@@ -157,7 +168,7 @@ function ArticleReaderView({
         getOfflineArticle(article.id).then((cached) => setOfflineParagraphs(cached?.paragraphs ?? null));
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [article.id]);
+  }, [article.id, giftToken]);
 
   useEffect(() => {
     recordView(article);
@@ -521,9 +532,9 @@ function ArticleReaderView({
                   // already narrows `stage` here to the three locked stages.
                   const copy = appConfig?.paywallCopy[stage];
                   const fallback = {
-                    register_prompt: { headline: 'Create a free account to keep reading', body: 'Sign up to continue.', buttonLabel: 'Sign up free' },
-                    profile_prompt: { headline: 'Complete your profile', body: 'Tell us a bit more about you to keep reading free articles.', buttonLabel: 'Complete profile' },
-                    paid_lock: { headline: 'Subscribe to keep reading', body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.', buttonLabel: 'See plans' },
+                    register_prompt: { headline: 'Create a free account to keep reading', body: 'Sign up to continue.', buttonLabel: 'Sign up free', offerBadge: '' },
+                    profile_prompt: { headline: 'Complete your profile', body: 'Tell us a bit more about you to keep reading free articles.', buttonLabel: 'Complete profile', offerBadge: '' },
+                    paid_lock: { headline: 'Subscribe to keep reading', body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.', buttonLabel: 'See plans', offerBadge: '' },
                   } as const;
                   const resolved = copy ?? fallback[stage];
                   const onPress = () => {
@@ -536,6 +547,13 @@ function ArticleReaderView({
                       <View style={[styles.lockIconWrap, { backgroundColor: theme.accentTint }]}>
                         <Feather name="lock" size={18} color={theme.accent} />
                       </View>
+                      {!!resolved.offerBadge && (
+                        <View style={[styles.offerBadge, { backgroundColor: theme.accentTint, marginTop: space.md }]}>
+                          <Text style={[type.caption, { color: theme.accentDeep, fontFamily: fontFamily.uiBold }]}>
+                            {resolved.offerBadge}
+                          </Text>
+                        </View>
+                      )}
                       <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.md, textAlign: 'center' }]}>
                         {resolved.headline}
                       </Text>
@@ -743,6 +761,7 @@ const styles = StyleSheet.create({
   lockCardWrap: { marginTop: space.lg },
   lockCard: { borderWidth: 1, borderRadius: radius.card, padding: space.xl, alignItems: 'center' },
   lockIconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  offerBadge: { borderRadius: radius.button, paddingVertical: space.xs, paddingHorizontal: space.md },
   previewFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 90 },
   // Bug found live: borderColor was a hardcoded translucent black (#00000014), invisible/wrong
   // against a dark-mode background — the real color is applied inline at the usage site (theme.rule).

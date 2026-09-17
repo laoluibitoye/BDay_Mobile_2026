@@ -4,7 +4,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
-import { useNotifications } from '../../hooks/useNotifications';
+import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { useNotificationsState } from '../../hooks/useNotifications';
 import { useAppState } from '../../state/AppState';
 import { space, type, useTheme } from '../../theme';
 
@@ -13,7 +14,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
 export function NotificationsScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { readNotificationIds, markNotificationRead, markAllNotificationsRead } = useAppState();
-  const items = useNotifications();
+  const { rows: items, failed, retry } = useNotificationsState();
 
   const rows = items ?? [];
   const hasUnread = rows.some((n) => !readNotificationIds.includes(n.id));
@@ -44,6 +45,9 @@ export function NotificationsScreen({ navigation }: Props) {
           <Text style={[type.label, { color: theme.accentDeep }]}>Mark all read</Text>
         </Pressable>
       )}
+      {failed ? (
+        <FeedEmptyState title="Couldn't load notifications" message="Check your connection and try again." onRetry={retry} />
+      ) : (
       <FlatList
         style={{ flex: 1 }}
         data={rows}
@@ -91,6 +95,7 @@ export function NotificationsScreen({ navigation }: Props) {
           );
         }}
       />
+      )}
     </Screen>
   );
 }

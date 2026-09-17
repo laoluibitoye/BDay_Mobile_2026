@@ -17,7 +17,7 @@ export type AdSlot = {
   houseAdLinkUrl: string;
 };
 
-export type PaywallCopyEntry = { headline: string; body: string; buttonLabel: string };
+export type PaywallCopyEntry = { headline: string; body: string; buttonLabel: string; offerBadge?: string };
 
 export type AppConfig = {
   banners: AppBanner[];

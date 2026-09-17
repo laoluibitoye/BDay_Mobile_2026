@@ -33,6 +33,25 @@ export function useCommentNotifications(): CommentNotificationView[] | null {
   return rows;
 }
 
+// Bug found live: a failed fetch collapsed into the same empty array a genuinely-empty inbox
+// returns, so CommentNotificationsScreen showed "No replies yet" on a real network failure with
+// no way to retry. Exposes `failed` separately (useUnreadCommentNotificationCount below keeps
+// using the plain array, unaffected).
+export function useCommentNotificationsState(): { rows: CommentNotificationView[] | null; failed: boolean; retry: () => void } {
+  const [rows, setRows] = useState<CommentNotificationView[] | null>(cached);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    setFailed(false);
+    fetchNotifications()
+      .then(setRows)
+      .catch(() => setFailed(true));
+  }, [attempt]);
+
+  return { rows, failed, retry: () => setAttempt((a) => a + 1) };
+}
+
 export function useUnreadCommentNotificationCount(): number {
   const rows = useCommentNotifications();
   return rows?.filter((r) => !r.read).length ?? 0;
