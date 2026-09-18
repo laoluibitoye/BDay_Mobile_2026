@@ -21,7 +21,6 @@ import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { ArticleImage } from '../../components/ArticleImage';
 import { Button } from '../../components/Button';
-import { PremiumBadge } from '../../components/Badge';
 import { ReaderControls } from '../../components/ReaderControls';
 import { SiaPanel } from '../../components/SiaPanel';
 import { AdSlot } from '../../components/AdSlot';
@@ -406,7 +405,6 @@ function ArticleReaderView({
               </Text>
             </View>
           )}
-          {article.isPremium && <PremiumBadge />}
           <Text style={[type.mono, { color: theme.inkFaint, marginTop: space.sm }]}>
             {article.section.toUpperCase()}
           </Text>

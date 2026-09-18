@@ -11,7 +11,6 @@ import { useIsSpeaking } from '../hooks/useIsSpeaking';
 import { listenToArticle } from '../lib/listenToArticle';
 import { layout, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
-import { PremiumBadge } from './Badge';
 
 type Props = {
   article: Article;
@@ -93,7 +92,6 @@ export function HeroArticleCard({ article, onPress }: Props) {
           )}
         </View>
         <View style={styles.body}>
-          {article.isPremium ? <PremiumBadge /> : null}
           <Text style={[type.displayHeadline, { color: theme.ink, marginTop: space.sm }]} numberOfLines={4}>
             {article.headline}
           </Text>

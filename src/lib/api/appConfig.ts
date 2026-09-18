@@ -19,10 +19,15 @@ export type AdSlot = {
 
 export type PaywallCopyEntry = { headline: string; body: string; buttonLabel: string; offerBadge?: string };
 
+// Home's category tab strip (Today | Top Stories | Banking | ...) — editor-configured on wp-admin
+// → BusinessDay App → Home Tabs. "Today" itself is never one of these; it's the fixed first tab.
+export type HomeTab = { label: string; sourceType: 'category' | 'tag'; sourceValue: string };
+
 export type AppConfig = {
   banners: AppBanner[];
   adSlots: AdSlot[];
   paywallCopy: Record<Exclude<EntitlementStage, 'open'>, PaywallCopyEntry>;
+  homeTabs: HomeTab[];
 };
 
 // Fetched from businessday-app-connector's own cached endpoint (see wordpress-plugin/), which is

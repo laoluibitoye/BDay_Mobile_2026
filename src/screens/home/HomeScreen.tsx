@@ -22,24 +22,27 @@ import { LatestStoriesModule } from '../../components/LatestStoriesModule';
 import { EventsPreviewRow } from '../../components/EventsPreviewRow';
 import { EditionsHomeCarousel } from '../../components/EditionsHomeCarousel';
 import { useRefreshOnForeground } from '../../hooks/useRefreshOnForeground';
+import { useAppConfig } from '../../hooks/useAppConfig';
 import { Article, TodayModule } from '../../data/types';
 import { sections } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
-import { getHomeFeed, getRegisteredArticle, getSectionFeed, HomeSection } from '../../lib/api/content';
+import { getHomeFeed, getRegisteredArticle, getSectionFeed, getTagFeed, HomeSection } from '../../lib/api/content';
+import type { HomeTab } from '../../lib/api/appConfig';
 import { radius, layout, space, type, useTheme } from '../../theme';
 
 // Today is WP-admin-editable (wp-admin → BusinessDay App → Home Sections — title/category-or-tag
-// source/order/post-count-offset per section). The Home sub-tab strip (`HOME_TABS`) is exactly the
-// kind of config IMPLEMENTATION_PLAN.md §9.5 plans to move into the WP-admin "App content
-// curation" plugin — `sections` is categorical tab-label config, not editorial content, so it
-// stays static here until a real WP-admin-editable category list exists.
+// source/order/post-count-offset per section). The rest of the Home sub-tab strip is editor-
+// configured too (wp-admin → BusinessDay App → Home Tabs, each a category or tag slug) — "Today"
+// itself is always the fixed first tab, never one of that configured list. `sections` (data/mock)
+// is only the fallback shown before that config loads or if an editor hasn't configured any tabs
+// yet, so Home is never left with just "Today" and nothing else to switch to.
 // The lead story is a single, editorially-pinned post (the connector plugin's 'hero' section
 // puts the website's own bday_get_hero_lead() result — the Lead Story Lock pin if one's set,
 // else the newest 'bdlead' post — in slot 0), not a rotating set of top stories. It gets its own
 // single HeroArticleCard, matching the website's one-lead-story layout; a carousel here could
 // show a reader a different "lead" than the one an editor actually locked.
 const HERO_COUNT = 1;
-const HOME_TABS = ['Today', ...sections] as const;
+const FALLBACK_HOME_TABS: HomeTab[] = sections.map((label) => ({ label, sourceType: 'category', sourceValue: slugify(label) }));
 
 function slugify(name: string): string {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -48,11 +51,22 @@ function slugify(name: string): string {
 export function HomeScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const appConfig = useAppConfig();
   const [activeTab, setActiveTab] = useState<string>('Today');
   const [wpSections, setWpSections] = useState<HomeSection[] | null>(null);
   const [todayFailed, setTodayFailed] = useState(false);
   const [categoryArticles, setCategoryArticles] = useState<Article[]>([]);
   const [categoryFailed, setCategoryFailed] = useState(false);
+
+  // Bug found live: the deployed /config endpoint doesn't have the homeTabs field yet (this
+  // client shipped ahead of that plugin re-upload) — appConfig.homeTabs is `undefined` there, not
+  // just an empty array, so `appConfig?.homeTabs.length` still threw. Also covers the case this
+  // comment already meant to: an editor clearing every row on Home Tabs falls back to the same
+  // built-in default set a fresh/unreachable config would, rather than leaving Home with only
+  // "Today" and nothing else to switch to.
+  const homeTabs = appConfig?.homeTabs?.length ? appConfig.homeTabs : FALLBACK_HOME_TABS;
+  const HOME_TABS = useMemo(() => ['Today', ...homeTabs.map((t) => t.label)], [homeTabs]);
+  const activeTabSource = homeTabs.find((t) => t.label === activeTab);
 
   const loadToday = useCallback(() => {
     setTodayFailed(false);
@@ -66,10 +80,15 @@ export function HomeScreen() {
   const loadCategory = useCallback(() => {
     if (activeTab === 'Today') return;
     setCategoryFailed(false);
-    getSectionFeed(slugify(activeTab))
-      .then(({ articles }) => setCategoryArticles(articles))
-      .catch(() => setCategoryFailed(true));
-  }, [activeTab]);
+    // A tag-sourced tab (e.g. an editor picking a tag like `bdlead` rather than a real category)
+    // needs the tag feed, not a category archive query that would just return nothing — same
+    // sourceType branch SectionFeedScreen.tsx already uses for "See all" on one of these tabs.
+    const fetch =
+      activeTabSource?.sourceType === 'tag' && activeTabSource.sourceValue
+        ? getTagFeed(activeTabSource.sourceValue)
+        : getSectionFeed(activeTabSource?.sourceValue || slugify(activeTab));
+    fetch.then(({ articles }) => setCategoryArticles(articles)).catch(() => setCategoryFailed(true));
+  }, [activeTab, activeTabSource]);
 
   useEffect(loadCategory, [loadCategory]);
 
@@ -340,7 +359,13 @@ export function HomeScreen() {
           ListHeaderComponent={
             categoryArticles.length > 0 ? (
               <Pressable
-                onPress={() => navigation.navigate('SectionFeed', { section: activeTab })}
+                onPress={() =>
+                  navigation.navigate('SectionFeed', {
+                    section: activeTab,
+                    sourceType: activeTabSource?.sourceType,
+                    sourceValue: activeTabSource?.sourceValue,
+                  })
+                }
                 accessibilityRole="button"
                 style={{
                   flexDirection: 'row',

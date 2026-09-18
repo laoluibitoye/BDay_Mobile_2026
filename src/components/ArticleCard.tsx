@@ -10,7 +10,6 @@ import { useIsSpeaking } from '../hooks/useIsSpeaking';
 import { listenToArticle } from '../lib/listenToArticle';
 import { layout, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
-import { PremiumBadge } from './Badge';
 import { VideoPlayBadge } from './VideoPlayBadge';
 
 type Props = {
@@ -50,7 +49,6 @@ export function ArticleCard({ article, onPress, onListen, onShare }: Props) {
         {!!article.featuredVideoId && <VideoPlayBadge />}
       </View>
       <View style={styles.body}>
-        {article.isPremium ? <PremiumBadge /> : null}
         <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.sm }]} numberOfLines={3}>
           {article.headline}
         </Text>
