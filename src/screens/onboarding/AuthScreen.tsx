@@ -9,6 +9,7 @@ import { useAppState } from '../../state/AppState';
 import { getMe, login, register } from '../../lib/api/auth';
 import { ApiError } from '../../lib/api/client';
 import { registerForPushNotifications } from '../../hooks/usePushNotifications';
+import { getAppConfig } from '../../lib/api/appConfig';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Auth'>;
 
@@ -47,7 +48,10 @@ export function AuthScreen({ navigation, route }: Props) {
       const me = await getMe();
       setAuthUser(me);
       void registerForPushNotifications();
-      if (isSignup) {
+      // Editor-requested (2026-09-18): the Interest Picker is hidden while the follow feature is
+      // reworked — a signup with it off skips straight to Main, same as a returning login.
+      const followEnabled = isSignup && (await getAppConfig().catch(() => null))?.features?.followEnabled;
+      if (followEnabled) {
         navigation.navigate('InterestPicker');
       } else {
         // A returning reader logging back in has already picked interests at signup — straight

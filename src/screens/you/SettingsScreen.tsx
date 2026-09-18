@@ -13,6 +13,7 @@ import { SectionLabel } from '../../components/SectionLabel';
 import { useAppState } from '../../state/AppState';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useUnreadCommentNotificationCount } from '../../hooks/useCommentNotifications';
+import { useAppConfig } from '../../hooks/useAppConfig';
 import { layout, radius, space, type, useTheme } from '../../theme';
 
 // Account/profile/preferences only — "what you've engaged with" (saved articles, downloads,
@@ -28,6 +29,9 @@ export function SettingsScreen() {
   const notifications = useNotifications();
   const unreadCount = (notifications ?? []).filter((n) => !readNotificationIds.includes(n.id)).length;
   const unreadCommentReplies = useUnreadCommentNotificationCount();
+  // Editor-requested (2026-09-18): the follow feature is hidden while it's reworked — a config
+  // that hasn't loaded yet (null) also hides these rows, same as any other config-gated row.
+  const followEnabled = useAppConfig()?.features?.followEnabled ?? false;
 
   const signOut = () => {
     Alert.alert('Sign out?', "You'll need to sign back in to access your saved articles and subscription.", [
@@ -169,7 +173,9 @@ export function SettingsScreen() {
           label="Notification preferences"
           onPress={() => requireAuth(() => navigation.navigate('NotificationPreferences'))}
         />
-        <MenuRow icon="tag" label="Your interests" onPress={() => requireAuth(() => navigation.navigate('Interests'))} />
+        {followEnabled && (
+          <MenuRow icon="tag" label="Your interests" onPress={() => requireAuth(() => navigation.navigate('Interests'))} />
+        )}
         {/* Referral system deprecated for now — ReferralsScreen/route left in place. */}
         <MenuRow
           icon="message-circle"
@@ -183,7 +189,7 @@ export function SettingsScreen() {
           <SectionLabel label="Settings & support" />
         </View>
         <AppearanceRow />
-        <MenuRow icon="sliders" label="Feed settings" onPress={() => navigation.navigate('FeedSettings')} />
+        {followEnabled && <MenuRow icon="sliders" label="Feed settings" onPress={() => navigation.navigate('FeedSettings')} />}
         <MenuRow icon="globe" label="Edition & region" onPress={() => navigation.navigate('EditionRegion')} />
         {/* Language/translation deprecated for now — LanguageScreen/route left in place. */}
         <MenuRow icon="eye" label="Accessibility" onPress={() => navigation.navigate('Accessibility')} />

@@ -23,11 +23,20 @@ export type PaywallCopyEntry = { headline: string; body: string; buttonLabel: st
 // → BusinessDay App → Home Tabs. "Today" itself is never one of these; it's the fixed first tab.
 export type HomeTab = { label: string; sourceType: 'category' | 'tag'; sourceValue: string };
 
+// Editor-requested (2026-09-18): the follow feature (post-signup Interest Picker, Settings'
+// "Your interests"/"Feed settings") is hidden while it's reworked — mirrors the website's
+// AeroPaywallContext.followEnabled, but set independently via the connector plugin's own
+// Features settings page.
+export type AppFeatures = {
+  followEnabled: boolean;
+};
+
 export type AppConfig = {
   banners: AppBanner[];
   adSlots: AdSlot[];
   paywallCopy: Record<Exclude<EntitlementStage, 'open'>, PaywallCopyEntry>;
   homeTabs: HomeTab[];
+  features: AppFeatures;
 };
 
 // Fetched from businessday-app-connector's own cached endpoint (see wordpress-plugin/), which is
