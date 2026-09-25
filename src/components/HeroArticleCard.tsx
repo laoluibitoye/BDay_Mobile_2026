@@ -11,6 +11,7 @@ import { useIsSpeaking } from '../hooks/useIsSpeaking';
 import { listenToArticle } from '../lib/listenToArticle';
 import { layout, space, type, useTheme } from '../theme';
 import { ArticleImage } from './ArticleImage';
+import { youtubeWebViewProps } from '../lib/youtubeWebViewProps';
 
 type Props = {
   article: Article;
@@ -85,7 +86,7 @@ export function HeroArticleCard({ article, onPress }: Props) {
               baseUrlOverride={process.env.EXPO_PUBLIC_WP_BASE_URL}
               onReady={() => setTimeout(() => setVideoReady(true), 200)}
               initialPlayerParams={{ loop: true, controls: false, rel: false }}
-              webViewProps={{ pointerEvents: 'none' }}
+              webViewProps={{ pointerEvents: 'none', ...youtubeWebViewProps }}
             />
           ) : (
             <ArticleImage article={article} style={StyleSheet.absoluteFill} />
