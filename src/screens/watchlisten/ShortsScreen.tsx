@@ -5,13 +5,13 @@ import YoutubePlayer from 'react-native-youtube-iframe';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { FeedLoadingState } from '../../components/FeedLoadingState';
-import type { VideoItem } from '../../lib/api/videos';
+import type { ChannelShort } from '../../lib/api/channelShorts';
 import { CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { youtubeWebViewProps } from '../../lib/youtubeWebViewProps';
 import { space, type } from '../../theme';
 
 type Props = {
-  items: VideoItem[];
+  items: ChannelShort[];
   loading: boolean;
   failed: boolean;
   offline: boolean;
@@ -65,7 +65,7 @@ export function ShortsScreen({ items, loading, failed, offline, onRetry }: Props
   if (items.length === 0) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <FeedEmptyState title="No Shorts yet" message="Short clips published on the website will show up here." />
+        <FeedEmptyState title="No Shorts yet" message="Short clips from BusinessDay TV will show up here." />
       </View>
     );
   }
@@ -73,7 +73,7 @@ export function ShortsScreen({ items, loading, failed, offline, onRetry }: Props
   return (
     <FlatList
       data={items}
-      keyExtractor={(item) => String(item.id)}
+      keyExtractor={(item) => item.videoId}
       pagingEnabled
       showsVerticalScrollIndicator={false}
       snapToInterval={height}
@@ -101,7 +101,7 @@ function ShortSlide({
   muted,
   onToggleMute,
 }: {
-  item: VideoItem;
+  item: ChannelShort;
   height: number;
   active: boolean;
   muted: boolean;
@@ -111,7 +111,7 @@ function ShortSlide({
   // Same real YouTube thumbnail priority as ArticleImage.tsx — every other row in this feed
   // (not just the active one) now shows the clip's actual frame instead of a bare black box with
   // just a play-button hint drawn over nothing.
-  const thumbnailUrl = item.imageUrl ?? `https://i.ytimg.com/vi/${item.youtubeId}/hqdefault.jpg`;
+  const thumbnailUrl = item.thumbnailUrl ?? `https://i.ytimg.com/vi/${item.videoId}/hqdefault.jpg`;
 
   return (
     <View style={{ height, width: '100%', backgroundColor: '#000' }}>
@@ -127,7 +127,7 @@ function ShortSlide({
           key={muted ? 'muted' : 'unmuted'}
           height={height}
           width={width}
-          videoId={item.youtubeId}
+          videoId={item.videoId}
           play={active}
           mute={muted}
           useLocalHTML
@@ -141,7 +141,7 @@ function ShortSlide({
           <Text style={[type.label, { color: '#FFFFFF' }]} numberOfLines={3}>
             {item.title}
           </Text>
-          <Text style={[type.caption, { color: 'rgba(255,255,255,0.75)', marginTop: 2 }]}>{item.section}</Text>
+          <Text style={[type.caption, { color: 'rgba(255,255,255,0.75)', marginTop: 2 }]}>BusinessDay TV</Text>
         </View>
         <Pressable
           onPress={onToggleMute}

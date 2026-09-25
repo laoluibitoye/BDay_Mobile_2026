@@ -9,6 +9,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { getVideos, type VideoItem } from '../../lib/api/videos';
+import { getChannelShorts, type ChannelShort } from '../../lib/api/channelShorts';
 import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { radius, space, type, useTheme } from '../../theme';
 import { ShortsScreen } from './ShortsScreen';
@@ -17,9 +18,10 @@ const SUBTABS = ['Shorts', 'Videos'] as const;
 type SubTab = (typeof SUBTABS)[number];
 
 // Podcasts moved out to its own top-level nav tab (PodcastsScreen) — this tab is video-only now.
-// Both Shorts and regular Videos come from the same `/videos` route (real posts using the theme's
-// `video` post format with a YouTube ID) and are split client-side purely by URL shape: a
-// youtube.com/shorts/ link marks a clip as a Short — see class-bd-videos-api.php's isShortsUrl().
+// Shorts and regular Videos are two independent sources: Shorts comes straight from the
+// @BDTV-NG YouTube channel's own Shorts shelf (businessday-app-connector's /channel-shorts route —
+// see class-bd-channel-shorts-api.php), while Videos stays on the editorial WordPress `video`
+// post-format feed (/videos route) — that one never had a live-channel equivalent to switch to.
 export function WatchListenScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -27,6 +29,9 @@ export function WatchListenScreen() {
   const [videos, setVideos] = useState<VideoItem[] | null>(null);
   const [videosFailed, setVideosFailed] = useState(false);
   const [videosOffline, setVideosOffline] = useState(false);
+  const [shorts, setShorts] = useState<ChannelShort[] | null>(null);
+  const [shortsFailed, setShortsFailed] = useState(false);
+  const [shortsOffline, setShortsOffline] = useState(false);
 
   const loadVideos = () => {
     setVideosFailed(false);
@@ -38,9 +43,19 @@ export function WatchListenScreen() {
       });
   };
 
-  useEffect(loadVideos, []);
+  const loadShorts = () => {
+    setShortsFailed(false);
+    getChannelShorts()
+      .then((res) => setShorts(res.items))
+      .catch((err) => {
+        setShortsFailed(true);
+        setShortsOffline(isConnectivityError(err));
+      });
+  };
 
-  const shorts = useMemo(() => (videos ?? []).filter((v) => v.isShort), [videos]);
+  useEffect(loadVideos, []);
+  useEffect(loadShorts, []);
+
   const longform = useMemo(() => (videos ?? []).filter((v) => !v.isShort), [videos]);
 
   // Shorts renders full-bleed (no padding/header chrome behind it) — everything else keeps the
@@ -49,7 +64,13 @@ export function WatchListenScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: '#000' }}>
         <SubTabPicker subTab={subTab} setSubTab={setSubTab} floating />
-        <ShortsScreen items={shorts} loading={videos === null} failed={videosFailed} offline={videosOffline} onRetry={loadVideos} />
+        <ShortsScreen
+          items={shorts ?? []}
+          loading={shorts === null}
+          failed={shortsFailed}
+          offline={shortsOffline}
+          onRetry={loadShorts}
+        />
       </View>
     );
   }
