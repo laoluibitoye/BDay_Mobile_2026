@@ -7,7 +7,7 @@ import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { FeedLoadingState } from '../../components/FeedLoadingState';
 import type { ChannelShort } from '../../lib/api/channelShorts';
 import { CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
-import { youtubeWebViewProps } from '../../lib/youtubeWebViewProps';
+import { youtubeWebViewProps, fullBleedYoutubeWebViewProps } from '../../lib/youtubeWebViewProps';
 import { space, type } from '../../theme';
 
 type Props = {
@@ -133,7 +133,7 @@ function ShortSlide({
           useLocalHTML
           baseUrlOverride={process.env.EXPO_PUBLIC_WP_BASE_URL}
           initialPlayerParams={{ loop: true, controls: false, rel: false }}
-          webViewProps={{ pointerEvents: 'none', ...youtubeWebViewProps }}
+          webViewProps={{ pointerEvents: 'none', ...youtubeWebViewProps, ...fullBleedYoutubeWebViewProps }}
         />
       )}
       <View style={styles.overlay} pointerEvents="box-none">

@@ -21,3 +21,24 @@ const ANDROID_MESSAGE_BRIDGE = `
 
 export const youtubeWebViewProps =
   Platform.OS === 'android' ? { injectedJavaScriptBeforeContentLoaded: ANDROID_MESSAGE_BRIDGE } : {};
+
+// Bug found live: the Shorts feed's video rendered pillarboxed inside a small 16:9 box pinned to
+// the top of the screen, with the (correctly full-screen) static thumbnail Image showing straight
+// through the rest of the WebView underneath it — the WebView itself fills the screen fine, but
+// react-native-youtube-iframe's local player template hard-codes its video container to a
+// responsive 16:9 embed via the classic `padding-bottom: 56.25%` CSS trick (PlayerScripts.js),
+// regardless of the `height`/`width` props passed in. That's the right behavior for a normal
+// horizontal embed (see HeroArticleCard.tsx, which relies on exactly that 16:9 box) but wrong for
+// a full-bleed *vertical* Shorts player. This overrides that one rule once the player page has
+// loaded so the video fills the real device height instead — apply this only where a full-bleed
+// vertical player is actually wanted (ShortsScreen), never on a normal 16:9 embed.
+const FILL_SCREEN_CSS = `
+  (function () {
+    var style = document.createElement('style');
+    style.textContent = '.container { height: 100vh !important; padding-bottom: 0 !important; }';
+    document.head.appendChild(style);
+  })();
+  true;
+`;
+
+export const fullBleedYoutubeWebViewProps = { injectedJavaScript: FILL_SCREEN_CSS };
