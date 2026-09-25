@@ -7,7 +7,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { getMarketPulse, type MarketPulseItem } from '../../lib/api/marketPulse';
+import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { space, type, useTheme } from '../../theme';
 
 export function MarketsScreen() {
@@ -15,12 +17,16 @@ export function MarketsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [items, setItems] = useState<MarketPulseItem[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [offline, setOffline] = useState(false);
 
   const load = () => {
     setFailed(false);
     getMarketPulse()
       .then((res) => setItems(res.items))
-      .catch(() => setFailed(true));
+      .catch((err) => {
+        setFailed(true);
+        setOffline(isConnectivityError(err));
+      });
   };
 
   useEffect(load, []);
@@ -36,9 +42,15 @@ export function MarketsScreen() {
       <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: 140, flexGrow: 1 }}>
         {failed ? (
           <View style={{ flex: 1, justifyContent: 'center' }}>
-            <FeedEmptyState title="Couldn't load Stats to Watch" message="Check your connection and try again." onRetry={load} />
+            {offline ? (
+              <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={load} />
+            ) : (
+              <FeedEmptyState title="Couldn't load Stats to Watch" message="Something went wrong on our end. Try again shortly." onRetry={load} />
+            )}
           </View>
-        ) : items === null ? null : items.length === 0 ? (
+        ) : items === null ? (
+          <FeedLoadingState />
+        ) : items.length === 0 ? (
           <View style={{ flex: 1, justifyContent: 'center' }}>
             <FeedEmptyState title="Nothing here yet" message="No market figures have been published yet." />
           </View>

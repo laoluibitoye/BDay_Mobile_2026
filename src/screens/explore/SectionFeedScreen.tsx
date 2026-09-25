@@ -6,8 +6,10 @@ import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { ArticleCard } from '../../components/ArticleCard';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { Article } from '../../data/types';
 import { getSectionFeed, getTagFeed } from '../../lib/api/content';
+import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { useAppState } from '../../state/AppState';
 import { space } from '../../theme';
 
@@ -26,8 +28,10 @@ export function SectionFeedScreen({ route, navigation }: Props) {
   const { recordTaxonomyUse } = useAppState();
   const [feed, setFeed] = useState<Article[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [offline, setOffline] = useState(false);
 
   const load = useCallback(() => {
+    setFeed(null);
     setFailed(false);
     recordTaxonomyUse(section);
     // A caller that knows this section is tag-sourced (e.g. Home's "Latest Stories"/"In Other
@@ -40,7 +44,12 @@ export function SectionFeedScreen({ route, navigation }: Props) {
       sourceType === 'tag' && sourceValue
         ? getTagFeed(sourceValue)
         : getSectionFeed(sourceValue || slugify(section));
-    request.then(({ articles }) => setFeed(articles)).catch(() => setFailed(true));
+    request
+      .then(({ articles }) => setFeed(articles))
+      .catch((err) => {
+        setFailed(true);
+        setOffline(isConnectivityError(err));
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, sourceType, sourceValue]);
 
@@ -58,14 +67,20 @@ export function SectionFeedScreen({ route, navigation }: Props) {
         contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
         ListEmptyComponent={
           failed ? (
-            <FeedEmptyState
-              title="Couldn't load this section"
-              message="Check your connection and try again."
-              onRetry={load}
-            />
-          ) : feed !== null ? (
+            offline ? (
+              <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={load} />
+            ) : (
+              <FeedEmptyState
+                title="Couldn't load this section"
+                message="Something went wrong on our end. Try again shortly."
+                onRetry={load}
+              />
+            )
+          ) : feed === null ? (
+            <FeedLoadingState />
+          ) : (
             <FeedEmptyState title="No stories yet" message={`Nothing published in ${section} yet.`} />
-          ) : null
+          )
         }
         renderItem={({ item }) => (
           <ArticleCard article={item} onPress={() => navigation.navigate('ArticleReader', { articleId: item.id })} />

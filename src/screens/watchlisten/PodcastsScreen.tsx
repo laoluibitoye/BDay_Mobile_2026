@@ -7,7 +7,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { getPodcasts, type PodcastEpisode } from '../../lib/api/podcasts';
+import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { radius, space, type, useTheme } from '../../theme';
 
 // Split out of the former combined "Watch & Listen" tab into its own top-level nav tab — real
@@ -17,12 +19,16 @@ export function PodcastsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [podcasts, setPodcasts] = useState<PodcastEpisode[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [offline, setOffline] = useState(false);
 
   const load = () => {
     setFailed(false);
     getPodcasts()
       .then((res) => setPodcasts(res.items))
-      .catch(() => setFailed(true));
+      .catch((err) => {
+        setFailed(true);
+        setOffline(isConnectivityError(err));
+      });
   };
 
   useEffect(load, []);
@@ -32,9 +38,15 @@ export function PodcastsScreen() {
       <AppHeader variant="compact" title="Podcasts" />
       {failed ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          <FeedEmptyState title="Couldn't load Podcasts" message="Check your connection and try again." onRetry={load} />
+          {offline ? (
+            <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={load} />
+          ) : (
+            <FeedEmptyState title="Couldn't load Podcasts" message="Something went wrong on our end. Try again shortly." onRetry={load} />
+          )}
         </View>
-      ) : podcasts === null ? null : podcasts.length === 0 ? (
+      ) : podcasts === null ? (
+        <FeedLoadingState />
+      ) : podcasts.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <FeedEmptyState title="Nothing here yet" message="No episodes have been published yet." />
         </View>

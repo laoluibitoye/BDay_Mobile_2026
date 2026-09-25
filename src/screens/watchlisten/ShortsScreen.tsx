@@ -4,12 +4,17 @@ import { Image } from 'expo-image';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { FeedLoadingState } from '../../components/FeedLoadingState';
 import type { VideoItem } from '../../lib/api/videos';
+import { CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
+import { youtubeWebViewProps } from '../../lib/youtubeWebViewProps';
 import { space, type } from '../../theme';
 
 type Props = {
   items: VideoItem[];
+  loading: boolean;
   failed: boolean;
+  offline: boolean;
   onRetry: () => void;
 };
 
@@ -18,7 +23,7 @@ type Props = {
 // immediate neighbors, for a seamless swipe) actually mounts a WebView — every other row renders
 // as a static thumbnail, since a screenful of live YouTube iframes at once would be both wasteful
 // and prone to audio bleeding from off-screen clips.
-export function ShortsScreen({ items, failed, onRetry }: Props) {
+export function ShortsScreen({ items, loading, failed, offline, onRetry }: Props) {
   const { height } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(true);
@@ -34,10 +39,25 @@ export function ShortsScreen({ items, failed, onRetry }: Props) {
     [height]
   );
 
+  // Bug found live: this used to have no `loading` signal at all — WatchListenScreen passed
+  // `shorts` as a plain array (`videos ?? []`), so a still-in-flight fetch looked identical to
+  // "loaded, there are genuinely no Shorts" and flashed "No Shorts yet" every time this tab opened.
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <FeedLoadingState />
+      </View>
+    );
+  }
+
   if (failed) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <FeedEmptyState title="Couldn't load Shorts" message="Check your connection and try again." onRetry={onRetry} />
+        {offline ? (
+          <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={onRetry} />
+        ) : (
+          <FeedEmptyState title="Couldn't load Shorts" message="Something went wrong on our end. Try again shortly." onRetry={onRetry} />
+        )}
       </View>
     );
   }
@@ -113,7 +133,7 @@ function ShortSlide({
           useLocalHTML
           baseUrlOverride={process.env.EXPO_PUBLIC_WP_BASE_URL}
           initialPlayerParams={{ loop: true, controls: false, rel: false }}
-          webViewProps={{ pointerEvents: 'none' }}
+          webViewProps={{ pointerEvents: 'none', ...youtubeWebViewProps }}
         />
       )}
       <View style={styles.overlay} pointerEvents="box-none">

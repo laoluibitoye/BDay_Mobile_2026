@@ -11,8 +11,10 @@ import { BriefCarouselRail } from '../../components/BriefCarouselRail';
 import { TileGridRow } from '../../components/TileGridRow';
 import { TextListItem } from '../../components/TextListItem';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { Article, TodayModule } from '../../data/types';
 import { getTagFeed } from '../../lib/api/content';
+import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { buildMixedModules } from '../../lib/buildMixedModules';
 import { useRefreshOnForeground } from '../../hooks/useRefreshOnForeground';
 import { layout, radius, space, type, useTheme } from '../../theme';
@@ -72,6 +74,7 @@ function RecentTab() {
   const [hasMore, setHasMore] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -82,8 +85,9 @@ function RecentTab() {
       setPool(real);
       setPage(1);
       setHasMore(more);
-    } catch {
+    } catch (err) {
       setFailed(true);
+      setOffline(isConnectivityError(err));
     } finally {
       setLoaded(true);
     }
@@ -176,9 +180,17 @@ function RecentTab() {
     }
   };
 
-  if (loaded && (failed || pool.length === 0)) {
+  if (!loaded) {
+    return <FeedLoadingState />;
+  }
+
+  if (failed || pool.length === 0) {
     return failed ? (
-      <FeedEmptyState title="Couldn't load the feed" message="Check your connection and try again." onRetry={loadFirstPage} />
+      offline ? (
+        <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={loadFirstPage} />
+      ) : (
+        <FeedEmptyState title="Couldn't load the feed" message="Something went wrong on our end. Try again shortly." onRetry={loadFirstPage} />
+      )
     ) : (
       <FeedEmptyState title="Nothing here yet" message="Check back shortly for the latest stories." />
     );

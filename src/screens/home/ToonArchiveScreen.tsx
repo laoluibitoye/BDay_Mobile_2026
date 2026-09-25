@@ -4,7 +4,9 @@ import { Feather } from '@expo/vector-icons';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { getToons, type ToonItem } from '../../lib/api/toons';
+import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { radius, space, type, useTheme } from '../../theme';
 
 const COLUMNS = 2;
@@ -15,13 +17,17 @@ export function ToonArchiveScreen() {
   const { theme } = useTheme();
   const [items, setItems] = useState<ToonItem[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [viewing, setViewing] = useState<ToonItem | null>(null);
 
   const load = () => {
     setFailed(false);
     getToons()
       .then((res) => setItems(res.items))
-      .catch(() => setFailed(true));
+      .catch((err) => {
+        setFailed(true);
+        setOffline(isConnectivityError(err));
+      });
   };
 
   useEffect(load, []);
@@ -29,8 +35,14 @@ export function ToonArchiveScreen() {
   return (
     <Screen scroll={false} header={<AppHeader variant="compact" title="Toon of the Day" showBack />}>
       {failed ? (
-        <FeedEmptyState title="Couldn't load cartoons" message="Check your connection and try again." onRetry={load} />
-      ) : items === null ? null : items.length === 0 ? (
+        offline ? (
+          <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={load} />
+        ) : (
+          <FeedEmptyState title="Couldn't load cartoons" message="Something went wrong on our end. Try again shortly." onRetry={load} />
+        )
+      ) : items === null ? (
+        <FeedLoadingState />
+      ) : items.length === 0 ? (
         <FeedEmptyState title="Nothing here yet" message="No cartoons have been published yet." />
       ) : (
         <FlatList

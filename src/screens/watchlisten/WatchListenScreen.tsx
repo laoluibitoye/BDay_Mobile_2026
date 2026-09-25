@@ -7,7 +7,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { getVideos, type VideoItem } from '../../lib/api/videos';
+import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { radius, space, type, useTheme } from '../../theme';
 import { ShortsScreen } from './ShortsScreen';
 
@@ -24,12 +26,16 @@ export function WatchListenScreen() {
   const [subTab, setSubTab] = useState<SubTab>('Shorts');
   const [videos, setVideos] = useState<VideoItem[] | null>(null);
   const [videosFailed, setVideosFailed] = useState(false);
+  const [videosOffline, setVideosOffline] = useState(false);
 
   const loadVideos = () => {
     setVideosFailed(false);
     getVideos()
       .then((res) => setVideos(res.items))
-      .catch(() => setVideosFailed(true));
+      .catch((err) => {
+        setVideosFailed(true);
+        setVideosOffline(isConnectivityError(err));
+      });
   };
 
   useEffect(loadVideos, []);
@@ -43,7 +49,7 @@ export function WatchListenScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: '#000' }}>
         <SubTabPicker subTab={subTab} setSubTab={setSubTab} floating />
-        <ShortsScreen items={shorts} failed={videosFailed} onRetry={loadVideos} />
+        <ShortsScreen items={shorts} loading={videos === null} failed={videosFailed} offline={videosOffline} onRetry={loadVideos} />
       </View>
     );
   }
@@ -55,9 +61,15 @@ export function WatchListenScreen() {
 
       {videosFailed ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          <FeedEmptyState title="Couldn't load Videos" message="Check your connection and try again." onRetry={loadVideos} />
+          {videosOffline ? (
+            <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={loadVideos} />
+          ) : (
+            <FeedEmptyState title="Couldn't load Videos" message="Something went wrong on our end. Try again shortly." onRetry={loadVideos} />
+          )}
         </View>
-      ) : videos === null ? null : longform.length === 0 ? (
+      ) : videos === null ? (
+        <FeedLoadingState />
+      ) : longform.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <FeedEmptyState title="Nothing here yet" message="No videos have been published yet." />
         </View>

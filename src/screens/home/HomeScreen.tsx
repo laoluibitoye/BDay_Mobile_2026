@@ -16,6 +16,7 @@ import { TileGridRow } from '../../components/TileGridRow';
 import { TextListItem } from '../../components/TextListItem';
 import { ArticleCard } from '../../components/ArticleCard';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
+import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { ToonOfTheDayCard } from '../../components/ToonOfTheDayCard';
 import { OffTheClockSection } from '../../components/OffTheClockSection';
 import { LatestStoriesModule } from '../../components/LatestStoriesModule';
@@ -28,6 +29,7 @@ import { sections } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
 import { getHomeFeed, getRegisteredArticle, getSectionFeed, getTagFeed, HomeSection } from '../../lib/api/content';
 import type { HomeTab } from '../../lib/api/appConfig';
+import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { radius, layout, space, type, useTheme } from '../../theme';
 
 // Today is WP-admin-editable (wp-admin → BusinessDay App → Home Sections — title/category-or-tag
@@ -55,8 +57,15 @@ export function HomeScreen() {
   const [activeTab, setActiveTab] = useState<string>('Today');
   const [wpSections, setWpSections] = useState<HomeSection[] | null>(null);
   const [todayFailed, setTodayFailed] = useState(false);
-  const [categoryArticles, setCategoryArticles] = useState<Article[]>([]);
+  const [todayOffline, setTodayOffline] = useState(false);
+  // `null` (not just `[]`) so "still loading" and "loaded, this tab genuinely has nothing" are
+  // distinguishable — Bug found live: this used to start as `[]` and never reset on tab switch,
+  // so both the very first category-tab load AND every subsequent tab switch showed "No stories
+  // yet" for a moment (or, switching between two already-loaded tabs, briefly the PREVIOUS tab's
+  // stale articles) before the real fetch resolved.
+  const [categoryArticles, setCategoryArticles] = useState<Article[] | null>(null);
   const [categoryFailed, setCategoryFailed] = useState(false);
+  const [categoryOffline, setCategoryOffline] = useState(false);
 
   // Bug found live: the deployed /config endpoint doesn't have the homeTabs field yet (this
   // client shipped ahead of that plugin re-upload) — appConfig.homeTabs is `undefined` there, not
@@ -72,13 +81,17 @@ export function HomeScreen() {
     setTodayFailed(false);
     getHomeFeed()
       .then(setWpSections)
-      .catch(() => setTodayFailed(true));
+      .catch((err) => {
+        setTodayFailed(true);
+        setTodayOffline(isConnectivityError(err));
+      });
   }, []);
 
   useEffect(loadToday, [loadToday]);
 
   const loadCategory = useCallback(() => {
     if (activeTab === 'Today') return;
+    setCategoryArticles(null);
     setCategoryFailed(false);
     // A tag-sourced tab (e.g. an editor picking a tag like `bdlead` rather than a real category)
     // needs the tag feed, not a category archive query that would just return nothing — same
@@ -87,7 +100,12 @@ export function HomeScreen() {
       activeTabSource?.sourceType === 'tag' && activeTabSource.sourceValue
         ? getTagFeed(activeTabSource.sourceValue)
         : getSectionFeed(activeTabSource?.sourceValue || slugify(activeTab));
-    fetch.then(({ articles }) => setCategoryArticles(articles)).catch(() => setCategoryFailed(true));
+    fetch
+      .then(({ articles }) => setCategoryArticles(articles))
+      .catch((err) => {
+        setCategoryFailed(true);
+        setCategoryOffline(isConnectivityError(err));
+      });
   }, [activeTab, activeTabSource]);
 
   useEffect(loadCategory, [loadCategory]);
@@ -269,7 +287,7 @@ export function HomeScreen() {
   // cards), cycling hero/brief-rail/tile-grid/text-list/card-list so a large archive doesn't read
   // as one monotonous repeated layout.
   const categoryModules = useMemo(
-    () => (activeTab === 'Today' ? [] : buildMixedModules(categoryArticles, activeTab)),
+    () => (activeTab === 'Today' ? [] : buildMixedModules(categoryArticles ?? [], activeTab)),
     [activeTab, categoryArticles]
   );
 
@@ -286,8 +304,14 @@ export function HomeScreen() {
 
       {activeTab === 'Today' ? (
         todayFailed ? (
-          <FeedEmptyState title="Couldn't load the feed" message="Check your connection and try again." onRetry={loadToday} />
-        ) : wpSections !== null && todaySequence.length === 0 ? (
+          todayOffline ? (
+            <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={loadToday} />
+          ) : (
+            <FeedEmptyState title="Couldn't load the feed" message="Something went wrong on our end. Try again shortly." onRetry={loadToday} />
+          )
+        ) : wpSections === null ? (
+          <FeedLoadingState />
+        ) : todaySequence.length === 0 ? (
           <FeedEmptyState title="Nothing here yet" message="Check back shortly for today's stories." />
         ) : (
           <FlatList<TodayModule>
@@ -357,7 +381,7 @@ export function HomeScreen() {
           keyExtractor={(_, i) => `cat-module-${i}`}
           contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
           ListHeaderComponent={
-            categoryArticles.length > 0 ? (
+            (categoryArticles?.length ?? 0) > 0 ? (
               <Pressable
                 onPress={() =>
                   navigation.navigate('SectionFeed', {
@@ -389,7 +413,13 @@ export function HomeScreen() {
           }
           ListEmptyComponent={
             categoryFailed ? (
-              <FeedEmptyState title="Couldn't load this section" message="Check your connection and try again." onRetry={loadCategory} />
+              categoryOffline ? (
+                <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={loadCategory} />
+              ) : (
+                <FeedEmptyState title="Couldn't load this section" message="Something went wrong on our end. Try again shortly." onRetry={loadCategory} />
+              )
+            ) : categoryArticles === null ? (
+              <FeedLoadingState />
             ) : (
               <FeedEmptyState title="No stories yet" message={`Nothing published in ${activeTab} yet.`} />
             )
