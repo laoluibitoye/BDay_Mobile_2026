@@ -11,6 +11,7 @@ import { useSiaChat } from '../hooks/useSiaChat';
 import { isSiaConfigured } from '../lib/api/sia';
 import { getArticleById, resolveArticleIdFromUrl } from '../lib/api/content';
 import { openWebSubscribe } from '../lib/webCheckout';
+import { SiaAvatar } from './sia/SiaAvatar';
 import { SiaChat } from './sia/SiaChat';
 import { SiaLocked, type SiaLockReason } from './sia/SiaLocked';
 
@@ -128,11 +129,11 @@ function SiaPanelInner({ articleId, articleHeadline, articleUrl }: Props) {
           setLockedHint(null);
           setOpen(true);
         }}
-        style={[styles.fab, { bottom: insets.bottom + 96, backgroundColor: theme.accent, shadowColor: theme.ink }]}
+        style={[styles.fab, { bottom: insets.bottom + 96, backgroundColor: theme.bg, shadowColor: theme.ink }]}
         accessibilityRole="button"
         accessibilityLabel="Ask Sia about this article"
       >
-        <Text style={[type.label, { color: '#FFFFFF', fontSize: 18 }]}>S</Text>
+        <SiaAvatar size={FAB_SIZE} ring={{ width: 2, color: theme.accent }} />
       </Pressable>
 
       <Modal
@@ -159,9 +160,7 @@ function SiaPanelInner({ articleId, articleHeadline, articleUrl }: Props) {
               <View style={[styles.grabber, { backgroundColor: theme.rule }]} />
 
               <View style={[styles.header, { borderBottomColor: theme.rule }]}>
-                <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-                  <Text style={[type.label, { color: '#fff' }]}>S</Text>
-                </View>
+                <SiaAvatar size={32} ring={{ width: 1, color: theme.rule }} />
                 <View style={{ flex: 1 }}>
                   <Text accessibilityRole="header" style={[type.label, { color: theme.ink }]}>
                     Sia
@@ -245,7 +244,6 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     borderBottomWidth: 1,
   },
-  avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   opening: { position: 'absolute', left: 0, right: 0, top: 0, paddingVertical: space.sm, alignItems: 'center' },
 });

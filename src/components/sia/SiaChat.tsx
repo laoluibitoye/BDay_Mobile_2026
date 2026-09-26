@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { radius, space, type, useTheme } from '../../theme';
 import { MAX_QUERY_CHARS, type ChatMessage, type ChatState, type SiaChatEngine } from '../../lib/sia/engine';
 import { parseMarkdown } from '../../lib/sia/markdown';
+import { SiaAvatar } from './SiaAvatar';
 import { SiaMarkdown } from './SiaMarkdown';
 
 // Same starter questions the website widget offers, plus the design spec's "Summarise this for me" quick action.
@@ -147,9 +148,7 @@ export function SiaChat({ engine, state, articleHeadline, onOpenArticle, onOpenL
       >
         {!hasMessages && (
           <View style={styles.empty}>
-            <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
-              <Text style={[type.label, { color: '#fff', fontSize: 20 }]}>S</Text>
-            </View>
+            <SiaAvatar size={44} ring={{ width: 1, color: theme.rule }} />
             <Text style={[type.sectionHeadline, { color: theme.ink, textAlign: 'center' }]}>Hi, I&apos;m Sia</Text>
             <Text style={[type.bodyUI, { color: theme.inkMuted, textAlign: 'center' }]}>
               {articleHeadline
@@ -227,7 +226,6 @@ export function SiaChat({ engine, state, articleHeadline, onOpenArticle, onOpenL
 const styles = StyleSheet.create({
   listContent: { padding: space.lg, gap: space.md },
   empty: { alignItems: 'center', gap: space.sm, paddingVertical: space.lg },
-  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   userBubble: { alignSelf: 'flex-end', maxWidth: '86%', padding: space.md, borderRadius: radius.button },
   botBubble: { alignSelf: 'flex-start', maxWidth: '100%', padding: space.md, borderWidth: 1, borderRadius: radius.button },
   thinking: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
