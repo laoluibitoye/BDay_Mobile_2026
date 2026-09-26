@@ -554,16 +554,25 @@ function ArticleReaderView({
                   // which always comes live from AeroPaywall's `stage`.
                   // `isLocked` (this block's guard) is derived from `stage !== 'open'`, so TS
                   // already narrows `stage` here to the three locked stages.
-                  const copy = appConfig?.paywallCopy[stage];
+                  // Found live (web SDK had the same bug): the funnel's stages advance on device
+                  // view count, not on completing the prior stage — a reader can reach
+                  // profile_prompt having never actually registered, most commonly now that
+                  // Hybrid-scope free articles count toward the same limit as premium ones. Aim
+                  // that case at signup instead: there's no profile to complete for someone who
+                  // was never asked to create an account, and ProfileScreen has no
+                  // signed-out guard at all — it would just show every field as empty with no
+                  // real way forward. profile_prompt only ever makes sense for `authUser`.
+                  const effectiveStage = stage === 'profile_prompt' && !authUser ? 'register_prompt' : stage;
+                  const copy = appConfig?.paywallCopy[effectiveStage];
                   const fallback = {
                     register_prompt: { headline: 'Create a free account to keep reading', body: 'Sign up to continue.', buttonLabel: 'Sign up free', offerBadge: '' },
                     profile_prompt: { headline: 'Complete your profile', body: 'Tell us a bit more about you to keep reading free articles.', buttonLabel: 'Complete profile', offerBadge: '' },
                     paid_lock: { headline: 'Subscribe to keep reading', body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.', buttonLabel: 'See plans', offerBadge: '' },
                   } as const;
-                  const resolved = copy ?? fallback[stage];
+                  const resolved = copy ?? fallback[effectiveStage];
                   const onPress = () => {
-                    if (stage === 'register_prompt') navigation.navigate('Auth', { mode: 'signup' });
-                    else if (stage === 'profile_prompt') navigation.navigate('Profile');
+                    if (effectiveStage === 'register_prompt') navigation.navigate('Auth', { mode: 'signup' });
+                    else if (effectiveStage === 'profile_prompt') navigation.navigate('Profile');
                     else navigation.navigate('Paywall');
                   };
                   return (
