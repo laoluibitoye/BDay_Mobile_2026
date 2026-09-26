@@ -741,10 +741,13 @@ function ArticleReaderView({
         </View>
       </Screen>
 
-      {/* Sia, the AI reading assistant — a subscriber perk (see SiaPanel.tsx). Hidden while the paywall prompt
-          is showing so the two never compete, and absent entirely unless EXPO_PUBLIC_SIA_BASE_URL is set for
-          this build. */}
-      {!isLocked && <SiaPanel articleId={article.id} articleHeadline={article.headline} articleUrl={article.sourceUrl} />}
+      {/* Sia, the AI reading assistant — a subscriber perk (see SiaPanel.tsx). Shown only once the server has said
+          this article is open to the reader: until then `stage` is a guess, and a locked article would flash the
+          button for a moment before its paywall prompt appears (which it must never compete with). Absent entirely
+          unless EXPO_PUBLIC_SIA_BASE_URL is set for this build. */}
+      {entitlement !== null && !isLocked && (
+        <SiaPanel articleId={article.id} articleHeadline={article.headline} articleUrl={article.sourceUrl} />
+      )}
     </View>
   );
 }
