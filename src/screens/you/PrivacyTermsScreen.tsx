@@ -1,8 +1,10 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Linking, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { space, type, useTheme } from '../../theme';
+
+const FULL_POLICY_URL = 'https://businessday.ng/app-privacy-policy/';
 
 const SECTIONS = [
   {
@@ -31,7 +33,7 @@ const SECTIONS = [
   },
   {
     title: 'Your rights under NDPR',
-    body: 'As a Nigerian Data Protection Regulation (NDPR) data subject, you can request a copy of your data or ask us to delete your account at any time from You → Account & Security.',
+    body: 'As a Nigerian Data Protection Regulation (NDPR) data subject, you can request a copy of your data or ask us to delete your account and details at any time — contact us at digital@businessday.ng to make either request.',
   },
   {
     title: 'Changes to this policy',
@@ -59,7 +61,16 @@ export function PrivacyTermsScreen() {
   return (
     <Screen header={<AppHeader variant="compact" title="Privacy & Terms" showBack />}>
       <View style={{ padding: space.lg, gap: space.xl }}>
-        <Text style={[type.caption, { color: theme.inkFaint }]}>Last updated September 2026</Text>
+        <View>
+          <Text style={[type.caption, { color: theme.inkFaint }]}>Last updated September 2026</Text>
+          <Text
+            style={[type.bodyUI, { color: theme.accentDeep, marginTop: space.xs }]}
+            onPress={() => Linking.openURL(FULL_POLICY_URL)}
+            accessibilityRole="link"
+          >
+            Read the full policy on businessday.ng →
+          </Text>
+        </View>
         {SECTIONS.map((s) => (
           <View key={s.title}>
             <Text style={[type.sectionHeadline, { color: theme.ink }]}>{s.title}</Text>

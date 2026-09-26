@@ -79,7 +79,6 @@ export function HelpCenterScreen() {
             )
           }
         />
-        <MenuRow icon="message-circle" label="Live chat" value="Coming soon" disabled />
       </View>
     </Screen>
   );

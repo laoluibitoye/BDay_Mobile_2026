@@ -59,7 +59,6 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
 
             <View style={{ marginTop: space.xl }}>
               <MenuRow icon="repeat" label="Change plan" onPress={() => navigation.navigate('SubscriptionPlans')} />
-              <MenuRow icon="credit-card" label="Payment method" value="Coming soon" disabled />
               <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
               <MenuRow icon="gift" label="Gift a subscription" onPress={() => navigation.navigate('GiftSubscription')} />
               <MenuRow

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -8,7 +8,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { Button } from '../../components/Button';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { useAppState } from '../../state/AppState';
-import { useCheckout } from '../../hooks/useCheckout';
+import { openWebSubscribe } from '../../lib/webCheckout';
 import { confirmCancelSubscription } from '../../lib/confirmCancelSubscription';
 import { getPlans } from '../../lib/api/checkout';
 import { cancelSubscription } from '../../lib/api/auth';
@@ -19,13 +19,8 @@ export function SubscriptionPlansScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { authUser, isSubscribed, refreshSession } = useAppState();
-  const { startCheckout, loading, lastErrorMessage } = useCheckout();
   const [plans, setPlans] = useState<Plan[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Web parity: the SDK's Subscribe tab has a plain optional "Coupon code" field that's passed
-  // straight into checkout/init and validated server-side — no separate preview/validate step.
-  const [couponCode, setCouponCode] = useState('');
 
   const loadPlans = () => {
     setLoadFailed(false);
@@ -36,16 +31,15 @@ export function SubscriptionPlansScreen() {
 
   useEffect(loadPlans, []);
 
-  const subscribe = async (planId: string) => {
+  // Purchasing happens on the website now (see webCheckout.ts) — signing up is still fine
+  // in-app (it's account creation, not a purchase), so a signed-out reader is prompted for that
+  // first, then handed straight to the website to actually subscribe.
+  const subscribe = () => {
     if (!authUser) {
       navigation.navigate('Auth', { mode: 'signup' });
       return;
     }
-    setError(null);
-    const result = await startCheckout(planId, couponCode.trim() || undefined);
-    if (result === 'unconfirmed') setError('Payment not confirmed yet. If you completed checkout, try again in a moment.');
-    else if (result === 'unsupported') setError('This payment method needs an app update to complete.');
-    else if (result === 'error') setError(lastErrorMessage ?? 'Something went wrong starting checkout. Try again.');
+    openWebSubscribe();
   };
 
   const cancel = () => {
@@ -105,7 +99,7 @@ export function SubscriptionPlansScreen() {
                 ))}
                 {!isSubscribed && (
                   <View style={{ marginTop: space.md }}>
-                    <Button label="Subscribe" onPress={() => subscribe(plan.id)} loading={loading} fullWidth />
+                    <Button label="Subscribe" onPress={subscribe} fullWidth />
                   </View>
                 )}
               </View>
@@ -114,31 +108,10 @@ export function SubscriptionPlansScreen() {
         </View>
 
         {!isSubscribed && (
-          <View style={{ marginTop: space.lg }}>
-            <Text style={[type.caption, { color: theme.inkMuted, marginBottom: space.xs }]}>Coupon code (optional)</Text>
-            <TextInput
-              value={couponCode}
-              onChangeText={setCouponCode}
-              placeholder="Enter a code"
-              placeholderTextColor={theme.inkFaint}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              style={[
-                type.bodyUI,
-                {
-                  color: theme.ink,
-                  borderWidth: 1,
-                  borderColor: theme.rule,
-                  borderRadius: radius.button,
-                  paddingHorizontal: space.md,
-                  paddingVertical: space.sm,
-                },
-              ]}
-            />
-          </View>
+          <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.lg, textAlign: 'center' }]}>
+            Subscribing continues on our website — you'll come back and log in to unlock access.
+          </Text>
         )}
-
-        {error && <Text style={[type.bodyUI, { color: theme.marketDown, marginTop: space.md }]}>{error}</Text>}
 
         {isSubscribed && (
           <View style={{ marginTop: space.xl }}>

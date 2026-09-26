@@ -7,7 +7,7 @@ import { GlassSheet } from '../../components/GlassSheet';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { useAppState } from '../../state/AppState';
 import { useAppConfig } from '../../hooks/useAppConfig';
-import { useCheckout } from '../../hooks/useCheckout';
+import { openWebSubscribe } from '../../lib/webCheckout';
 import { getPlans } from '../../lib/api/checkout';
 import type { Plan } from '../../lib/api/types';
 import { fontFamily, radius, space, type, useTheme } from '../../theme';
@@ -30,12 +30,10 @@ export function PaywallScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { authUser } = useAppState();
   const appConfig = useAppConfig();
-  const { startCheckout, loading } = useCheckout();
   const copy = appConfig?.paywallCopy.paid_lock ?? FALLBACK_COPY;
 
   const [plan, setPlan] = useState<Plan | null>(null);
   const [plansLoaded, setPlansLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getPlans()
@@ -44,28 +42,15 @@ export function PaywallScreen({ navigation }: Props) {
       .finally(() => setPlansLoaded(true));
   }, []);
 
-  const upgrade = async () => {
+  // Purchasing happens on the website now (see webCheckout.ts) — signing up is still fine
+  // in-app (it's account creation, not a purchase), so a signed-out reader is prompted for that
+  // first, then handed straight to the website to actually subscribe.
+  const upgrade = () => {
     if (!authUser) {
       navigation.navigate('Auth', { mode: 'signup' });
       return;
     }
-    if (!plan) {
-      // No reachable subscription-service — nothing real to check out against.
-      setError('Subscriptions aren’t available right now. Try again shortly.');
-      return;
-    }
-
-    setError(null);
-    const result = await startCheckout(plan.id);
-    if (result === 'activated') {
-      navigation.goBack();
-    } else if (result === 'unconfirmed') {
-      setError('Payment not confirmed yet. If you completed checkout, try again in a moment.');
-    } else if (result === 'unsupported') {
-      setError('This payment method needs an app update to complete.');
-    } else {
-      setError('Something went wrong starting checkout. Try again.');
-    }
+    openWebSubscribe();
   };
 
   return (
@@ -101,16 +86,14 @@ export function PaywallScreen({ navigation }: Props) {
           <FeedEmptyState title="Plans unavailable" message="Subscriptions aren't available right now. Try again shortly." />
         ) : null}
 
-        {error && <Text style={[type.bodyUI, { color: theme.marketDown, marginTop: space.md }]}>{error}</Text>}
-
         <View style={{ marginTop: space.xl, gap: space.md }}>
-          <Button label={copy.buttonLabel} onPress={upgrade} loading={loading} fullWidth />
+          <Button label={copy.buttonLabel} onPress={upgrade} fullWidth />
           <Pressable onPress={() => navigation.goBack()}>
             <Text style={[type.bodyUI, { color: theme.inkMuted, textAlign: 'center' }]}>Maybe later</Text>
           </Pressable>
         </View>
         <Text style={[type.mono, { color: theme.inkFaint, textAlign: 'center', marginTop: space.lg }]}>
-          SECURED PAYMENT · CANCEL ANYTIME
+          CONTINUES ON OUR WEBSITE · CANCEL ANYTIME
         </Text>
       </GlassSheet>
     </View>

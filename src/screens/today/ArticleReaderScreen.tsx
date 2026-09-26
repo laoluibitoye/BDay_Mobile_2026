@@ -22,7 +22,10 @@ import { AppHeader } from '../../components/AppHeader';
 import { ArticleImage } from '../../components/ArticleImage';
 import { Button } from '../../components/Button';
 import { ReaderControls } from '../../components/ReaderControls';
-import { SiaPanel } from '../../components/SiaPanel';
+// Sia (an AI reading assistant) is hidden for now, until it's properly integrated with a real
+// backend — see SiaPanel.tsx, which today just shows a "coming soon" modal. Re-add the import and
+// the render below once it's ready.
+// import { SiaPanel } from '../../components/SiaPanel';
 import { AdSlot } from '../../components/AdSlot';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { LANGUAGES } from '../../data/languages';
@@ -730,7 +733,7 @@ function ArticleReaderView({
         </View>
       </Screen>
 
-      {!isLocked && <SiaPanel articleHeadline={article.headline} />}
+      {/* {!isLocked && <SiaPanel articleHeadline={article.headline} />} */}
     </View>
   );
 }

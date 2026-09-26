@@ -124,6 +124,8 @@ export type Plan = {
   createdAt: string;
 };
 
+export type Gateway = 'stripe' | 'paypal' | 'paystack' | 'flutterwave';
+
 // GET /api/v1/me/subscriptions — a reader's full subscription+payment history, most recent
 // first. `amount` here is already a real number (UsersService.getSubscriptionHistory maps
 // Prisma's Decimal payment.amount via Number(...) server-side) — unlike Plan's price fields,
@@ -147,33 +149,6 @@ export type SubscriptionHistoryRow = {
   autoRenew: boolean;
   payments: PaymentRow[];
 };
-
-export type Gateway = 'stripe' | 'paypal' | 'paystack' | 'flutterwave';
-
-export type CheckoutInitRequest = {
-  planId: string;
-  gateway: Gateway;
-  couponCode?: string;
-  seats?: number;
-  channel?: 'mobile';
-  returnUrl?: string;
-};
-
-// The server branches checkout into one of three shapes — the client must switch on `mode`,
-// never assume one, regardless of which gateway it requested (gateways.interface.ts).
-export type CheckoutResult =
-  | { mode: 'redirect'; url: string; reference: string }
-  | { mode: 'inline'; publicKey: string; reference: string; amount: number; currency: string; customerEmail: string }
-  | { mode: 'mock'; reference: string };
-
-export type CheckoutInitResponse = { checkout: CheckoutResult; pricing: Record<string, unknown> };
-
-export type CheckoutVerifyRequest = { reference: string };
-// On activation the server re-signs a fresh access token carrying updated subscriptionStatus —
-// the client must overwrite its stored access token, not just flip a local flag.
-export type CheckoutVerifyResponse = { activated: false } | { activated: true; accessToken: string };
-
-export type CouponValidateRequest = { code: string; planId: string; currency: 'NGN' | 'USD'; seats?: number };
 
 // ---- WordPress connector-plugin: entitlement ----
 
