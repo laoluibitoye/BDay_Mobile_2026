@@ -30,6 +30,9 @@ cat > "$ENV_FILE" <<'EOF'
 # Temporarily overwritten by scripts/run-staging.sh — restored automatically on exit.
 EXPO_PUBLIC_API_BASE_URL=https://aero-paywall-web-admin.onrender.com
 EXPO_PUBLIC_WP_BASE_URL=https://stg18326.businessday.ng
+# Sia is one production service. It accepts the same login tokens (same signing key), but only reads
+# article context from businessday.ng links, so on staging content it answers as a general chat.
+EXPO_PUBLIC_SIA_BASE_URL=https://sia.businessday.ng
 EOF
 
 CI=1 npx expo start --ios
