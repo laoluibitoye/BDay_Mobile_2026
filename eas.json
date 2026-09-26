@@ -17,6 +17,12 @@
     "production": {
       "autoIncrement": true,
       "environment": "production"
+    },
+    "simulator": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
+      }
     }
   },
   "submit": {
