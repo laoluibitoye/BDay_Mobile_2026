@@ -35,9 +35,7 @@ import { ProfileScreen } from '../screens/you/ProfileScreen';
 import { FeedSettingsScreen } from '../screens/you/FeedSettingsScreen';
 import { AccessibilityScreen } from '../screens/you/AccessibilityScreen';
 import { DataOfflineScreen } from '../screens/you/DataOfflineScreen';
-import { EditionRegionScreen } from '../screens/you/EditionRegionScreen';
 import { EditorialStandardsScreen } from '../screens/you/EditorialStandardsScreen';
-import { CorrectionsScreen } from '../screens/you/CorrectionsScreen';
 import { SettingsScreen } from '../screens/you/SettingsScreen';
 import { LanguageScreen } from '../screens/you/LanguageScreen';
 import { AccountSecurityScreen } from '../screens/you/AccountSecurityScreen';
@@ -104,9 +102,7 @@ export function RootNavigator() {
       <Stack.Screen name="FeedSettings" component={FeedSettingsScreen} />
       <Stack.Screen name="Accessibility" component={AccessibilityScreen} />
       <Stack.Screen name="DataOffline" component={DataOfflineScreen} />
-      <Stack.Screen name="EditionRegion" component={EditionRegionScreen} />
       <Stack.Screen name="EditorialStandards" component={EditorialStandardsScreen} />
-      <Stack.Screen name="Corrections" component={CorrectionsScreen} />
       <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
       <Stack.Screen name="PrivacyTerms" component={PrivacyTermsScreen} />
       <Stack.Screen name="About" component={AboutScreen} />

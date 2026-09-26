@@ -29,7 +29,6 @@ export function AboutScreen() {
 
       <View style={{ padding: space.lg, paddingTop: 0 }}>
         <MenuRow icon="edit-3" label="Editorial standards" onPress={() => navigation.navigate('EditorialStandards')} />
-        <MenuRow icon="alert-circle" label="Corrections" onPress={() => navigation.navigate('Corrections')} />
         <MenuRow icon="file-text" label="Privacy & Terms" onPress={() => navigation.navigate('PrivacyTerms')} />
         <MenuRow icon="help-circle" label="Help Center" onPress={() => navigation.navigate('HelpCenter')} />
       </View>

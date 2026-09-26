@@ -26,8 +26,6 @@ export type DataOfflinePrefs = {
   preloadImages: boolean;
 };
 
-export type Edition = 'nigeria' | 'africa' | 'global';
-
 export type ProfileInfo = {
   name: string;
   email: string;
@@ -63,8 +61,6 @@ type AppStateValue = {
   setAccessibilityPref: (key: keyof AccessibilityPrefs, value: boolean) => void;
   dataOfflinePrefs: DataOfflinePrefs;
   setDataOfflinePref: (key: keyof DataOfflinePrefs, value: boolean) => void;
-  edition: Edition;
-  setEdition: (e: Edition) => void;
   // Real WP category ids (as strings) — matches follows.ts's FollowRow.termId, not display labels.
   followedTopics: string[];
   toggleFollowedTopic: (categoryId: string, categoryName: string) => void;
@@ -161,7 +157,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [downloadedArticleIds, setDownloadedArticleIds] = useState<string[]>([]);
   const [accessibilityPrefs, setAccessibilityPrefs] = useState<AccessibilityPrefs>(DEFAULT_ACCESSIBILITY_PREFS);
   const [dataOfflinePrefs, setDataOfflinePrefs] = useState<DataOfflinePrefs>(DEFAULT_DATA_OFFLINE_PREFS);
-  const [edition, setEdition] = useState<Edition>('nigeria');
   const [followedTopics, setFollowedTopics] = useState<string[]>([]);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [biometricReEntry, setBiometricReEntry] = useState(false);
@@ -259,8 +254,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       dataOfflinePrefs,
       setDataOfflinePref: (key: keyof DataOfflinePrefs, val: boolean) =>
         setDataOfflinePrefs((prev) => ({ ...prev, [key]: val })),
-      edition,
-      setEdition,
       followedTopics,
       // categoryId is the real WP category id (string form) — matches useInterestCategories'
       // InterestChipGrid data and follows.ts's FollowRow.termId. Optimistic, same posture as
@@ -301,7 +294,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       downloadedArticleIds,
       accessibilityPrefs,
       dataOfflinePrefs,
-      edition,
       followedTopics,
       readNotificationIds,
       biometricReEntry,

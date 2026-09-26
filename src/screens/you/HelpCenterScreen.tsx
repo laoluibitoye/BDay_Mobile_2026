@@ -72,9 +72,9 @@ export function HelpCenterScreen() {
         <MenuRow
           icon="mail"
           label="Email support"
-          value="support@businessday.ng"
+          value="digital@businessday.ng"
           onPress={() =>
-            Linking.openURL('mailto:support@businessday.ng').catch(() =>
+            Linking.openURL('mailto:digital@businessday.ng').catch(() =>
               Alert.alert('Unable to open mail app')
             )
           }

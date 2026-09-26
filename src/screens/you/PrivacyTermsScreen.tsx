@@ -39,7 +39,7 @@ const SECTIONS = [
   },
   {
     title: 'Contact us',
-    body: 'Questions or concerns about this policy can be sent to support@businessday.ng.',
+    body: 'Questions or concerns about this policy can be sent to digital@businessday.ng.',
   },
   {
     title: 'Terms of use',

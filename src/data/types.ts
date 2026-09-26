@@ -102,14 +102,6 @@ export type SubscriptionPlan = {
   features: string[];
 };
 
-
-export type CorrectionEntry = {
-  id: string;
-  articleId: string;
-  date: string;
-  note: string;
-};
-
 export type Invoice = {
   id: string;
   date: string;

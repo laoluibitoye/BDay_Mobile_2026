@@ -12,7 +12,7 @@ type Props = {
   accessibilityLabel?: string;
 };
 
-// Shared bordered-card row for "an item in a list" screens (Downloads, Newsletters, Corrections)
+// Shared bordered-card row for "an item in a list" screens (Downloads, Newsletters)
 // that previously each hand-rolled the same border/radius/bgCard row independently.
 export function ListRow({ title, subtitle, meta, onPress, rightElement, numberOfLinesTitle = 2, accessibilityLabel }: Props) {
   const { theme } = useTheme();

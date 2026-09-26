@@ -27,9 +27,7 @@ export type RootStackParamList = {
   FeedSettings: undefined;
   Accessibility: undefined;
   DataOffline: undefined;
-  EditionRegion: undefined;
   EditorialStandards: undefined;
-  Corrections: undefined;
   HelpCenter: undefined;
   PrivacyTerms: undefined;
   About: undefined;

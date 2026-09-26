@@ -1,8 +1,5 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
-import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { space, type, useTheme } from '../../theme';
@@ -24,7 +21,6 @@ const SECTIONS = [
 
 export function EditorialStandardsScreen() {
   const { theme } = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <Screen header={<AppHeader variant="compact" title="Editorial standards" showBack />}>
@@ -35,19 +31,6 @@ export function EditorialStandardsScreen() {
             <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]}>{s.body}</Text>
           </View>
         ))}
-        <View>
-          <Text style={[type.sectionHeadline, { color: theme.ink }]}>Corrections policy</Text>
-          <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.xs }]}>
-            Errors are corrected transparently and promptly.{' '}
-            <Text
-              style={{ color: theme.accentDeep }}
-              onPress={() => navigation.navigate('Corrections')}
-              accessibilityRole="link"
-            >
-              See the public corrections log →
-            </Text>
-          </Text>
-        </View>
       </View>
     </Screen>
   );
