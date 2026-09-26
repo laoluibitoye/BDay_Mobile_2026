@@ -40,7 +40,7 @@ import { createGiftLink, giftUrl } from '../../lib/api/gift';
 import { getComments, postComment, deleteComment, type CommentView } from '../../lib/api/comments';
 import { ApiError } from '../../lib/api/client';
 import type { ArticleEntitlement, EntitlementStage } from '../../lib/api/types';
-import { htmlToParagraphs } from '../../lib/htmlToText';
+import { htmlToParagraphs, lockedPreviewText, LOCKED_PREVIEW_LINES } from '../../lib/htmlToText';
 import { toggleSpeak } from '../../lib/tts';
 import { recordFinishedArticleAndMaybePrompt } from '../../lib/appRating';
 import { getOfflineArticle, removeArticleOffline, saveArticleOffline } from '../../lib/offlineArticles';
@@ -272,6 +272,12 @@ function ArticleReaderView({
       ? offlineParagraphs
       : htmlToParagraphs((isLocked ? entitlement?.preview : entitlement?.content) ?? '');
 
+  const readingLineHeight = type.bodyReading.lineHeight + fontScale * 1.6;
+  const readingTextStyle = [
+    type.bodyReading,
+    { color: theme.ink, fontSize: type.bodyReading.fontSize + fontScale, lineHeight: readingLineHeight },
+  ];
+
   // Save/listen/download are account-backed — see ArticleCard.tsx's requireAuth for why a guest
   // gets routed to sign in instead of the action running.
   const requireAuth = (action: () => void) => {
@@ -316,7 +322,9 @@ function ArticleReaderView({
 
   const listen = () =>
     requireAuth(() => {
-      const text = `${article.headline}. ${visibleParagraphs.join(' ')}`;
+      // A locked article is read aloud only as far as it's shown — see lockedPreviewText.
+      const body = isLocked ? lockedPreviewText(visibleParagraphs) : visibleParagraphs.join(' ');
+      const text = `${article.headline}. ${body}`;
       toggleSpeak(article.id, text, article.headline, language);
     });
 
@@ -506,27 +514,29 @@ function ArticleReaderView({
             </View>
           ) : (
             <View style={{ marginTop: space.xl, gap: space.lg, position: 'relative' }}>
-              {visibleParagraphs.map((p, i) => (
-                <Text
-                  key={i}
-                  style={[
-                    type.bodyReading,
-                    {
-                      color: theme.ink,
-                      fontSize: type.bodyReading.fontSize + fontScale,
-                      lineHeight: type.bodyReading.lineHeight + fontScale * 1.6,
-                    },
-                  ]}
-                >
-                  {p}
-                </Text>
-              ))}
+              {isLocked ? (
+                // Just the first few lines, then the gate — never enough of a short article to read
+                // it whole. One Text so the line clamp counts real lines across paragraph breaks.
+                visibleParagraphs.length > 0 && (
+                  <Text style={readingTextStyle} numberOfLines={LOCKED_PREVIEW_LINES} ellipsizeMode="tail">
+                    {lockedPreviewText(visibleParagraphs)}
+                  </Text>
+                )
+              ) : (
+                visibleParagraphs.map((p, i) => (
+                  <Text key={i} style={readingTextStyle}>
+                    {p}
+                  </Text>
+                ))
+              )}
               {/* Fades the truncated preview into the lock card below it, instead of the text
                   just stopping mid-paragraph with no visual link to what follows. */}
               {isLocked && (
                 <LinearGradient
                   colors={[transparentVariant(theme.bg), theme.bg]}
-                  style={styles.previewFade}
+                  // One line tall: with only three lines of preview, the old fixed 90px fade
+                  // would have washed out nearly all of it.
+                  style={[styles.previewFade, { height: readingLineHeight }]}
                   pointerEvents="none"
                 />
               )}
@@ -774,7 +784,7 @@ const styles = StyleSheet.create({
   lockCard: { borderWidth: 1, borderRadius: radius.card, padding: space.xl, alignItems: 'center' },
   lockIconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   offerBadge: { borderRadius: radius.button, paddingVertical: space.xs, paddingHorizontal: space.md },
-  previewFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 90 },
+  previewFade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   // Bug found live: borderColor was a hardcoded translucent black (#00000014), invisible/wrong
   // against a dark-mode background — the real color is applied inline at the usage site (theme.rule).
   commentsSection: { marginTop: layout.sectionGap, paddingTop: space.lg, borderTopWidth: 1 },
