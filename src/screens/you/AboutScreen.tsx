@@ -1,12 +1,13 @@
 import React from 'react';
 import { Image, Text, View } from 'react-native';
+import Constants from 'expo-constants';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { MenuRow } from '../../components/MenuRow';
-import { openFeedbackEmail, openStoreReviewPage } from '../../lib/appRating';
+import { openFeedbackEmail } from '../../lib/appRating';
 import { space, type, useTheme } from '../../theme';
 
 export function AboutScreen() {
@@ -22,7 +23,7 @@ export function AboutScreen() {
           resizeMode="contain"
         />
         <Text style={[type.sectionHeadline, { color: theme.ink, marginTop: space.md }]}>BusinessDay Mobile</Text>
-        <Text style={[type.mono, { color: theme.inkFaint, marginTop: 2 }]}>v1.0.0 (prototype)</Text>
+        <Text style={[type.mono, { color: theme.inkFaint, marginTop: 2 }]}>v{Constants.expoConfig?.version ?? '2.0.0'}</Text>
         <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.md, textAlign: 'center' }]}>
           Africa's business daily — credible journalism, live market data, and a daily briefing worth ten minutes.
         </Text>
@@ -32,7 +33,6 @@ export function AboutScreen() {
         <MenuRow icon="edit-3" label="Editorial standards" onPress={() => navigation.navigate('EditorialStandards')} />
         <MenuRow icon="file-text" label="Privacy & Terms" onPress={() => navigation.navigate('PrivacyTerms')} />
         <MenuRow icon="help-circle" label="Help Center" onPress={() => navigation.navigate('HelpCenter')} />
-        <MenuRow icon="star" label="Rate BusinessDay" onPress={openStoreReviewPage} />
         <MenuRow icon="message-circle" label="Send feedback" onPress={openFeedbackEmail} />
       </View>
 

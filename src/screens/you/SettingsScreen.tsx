@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { AppearanceRow } from '../../components/AppearanceRow';
+import { openStoreReviewPage } from '../../lib/appRating';
 import { Button } from '../../components/Button';
 import { MenuRow } from '../../components/MenuRow';
 import { SectionLabel } from '../../components/SectionLabel';
@@ -196,6 +197,7 @@ export function SettingsScreen() {
         <MenuRow icon="help-circle" label="Help Center" onPress={() => navigation.navigate('HelpCenter')} />
         <MenuRow icon="file-text" label="Privacy & Terms" onPress={() => navigation.navigate('PrivacyTerms')} />
         <MenuRow icon="info" label="About" onPress={() => navigation.navigate('About')} />
+        <MenuRow icon="star" label="Rate BusinessDay" onPress={openStoreReviewPage} />
 
         <View style={{ marginTop: space.xl }}>
           {authUser ? (

@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { layout, space, type, useTheme } from '../theme';
+import { ThemeToggle } from './ThemeToggle';
 
 type RightAction = {
   icon: React.ComponentProps<typeof Feather>['name'];
@@ -43,6 +44,7 @@ export function AppHeader({ variant, title, showBack, rightAction }: Props) {
             />
           </View>
           <View style={[styles.side, styles.sideRight]}>
+            <ThemeToggle />
             <Pressable
               hitSlop={(layout.touchTarget - 22) / 2}
               onPress={() => navigation.navigate('Search' as never)}
@@ -92,6 +94,7 @@ export function AppHeader({ variant, title, showBack, rightAction }: Props) {
               <Feather name={rightAction.icon} size={22} color={theme.ink} />
             </Pressable>
           )}
+          <ThemeToggle />
           {/* Settings is never fully replaced by a screen-specific action — it must stay reachable
               from every screen (design.md §6 "App header"), so a custom rightAction is shown
               alongside it, not instead of it. */}
@@ -112,8 +115,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   masthead: { flexDirection: 'row', alignItems: 'center' },
-  side: { width: 40, alignItems: 'flex-start' },
-  sideRight: { alignItems: 'flex-end' },
+  side: { width: 76, alignItems: 'flex-start' },
+  sideRight: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: space.lg },
   center: { flex: 1, alignItems: 'center' },
   logo: { width: 168, height: 33 },
   row: {
