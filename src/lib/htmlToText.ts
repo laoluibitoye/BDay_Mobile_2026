@@ -28,3 +28,22 @@ export function htmlToParagraphs(html: string): string[] {
     )
     .filter((p) => p.length > 0);
 }
+
+// A locked article shows only a short taste before the register/profile/paywall card: this many
+// lines on screen, however big the reader has set the text. Lines rather than words because a
+// word count means a different amount of article at each text size — and because a short article
+// must never fit entirely inside its own preview. The server's preview is much longer (the
+// site-wide "preview word count", 120 by default, shared with the website), so the app trims it.
+export const LOCKED_PREVIEW_LINES = 3;
+
+// The same taste as text, for the paths that never show the on-screen lines — read-aloud above
+// all, which would otherwise speak the server's whole preview and hand the reader far more than
+// the three lines shown. Sized to what three lines hold at the smallest text setting; the screen
+// still clamps to LOCKED_PREVIEW_LINES, so at larger sizes less than this is visible.
+const LOCKED_PREVIEW_MAX_WORDS = 25;
+
+export function lockedPreviewText(paragraphs: string[]): string {
+  const words = paragraphs.join(' ').split(/\s+/).filter(Boolean);
+  if (words.length <= LOCKED_PREVIEW_MAX_WORDS) return words.join(' ');
+  return `${words.slice(0, LOCKED_PREVIEW_MAX_WORDS).join(' ')}…`;
+}

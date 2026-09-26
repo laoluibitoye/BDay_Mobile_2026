@@ -1,7 +1,7 @@
 import type { Article } from '../data/types';
 import type { LanguageCode } from '../data/languages';
 import { getArticleEntitlement } from './api/entitlement';
-import { htmlToParagraphs } from './htmlToText';
+import { htmlToParagraphs, lockedPreviewText } from './htmlToText';
 import { getSpeakingState, toggleSpeak } from './tts';
 
 // Bug found live: ArticleCard/HeroArticleCard's "Listen" button read only the headline + dek
@@ -26,7 +26,9 @@ export async function listenToArticle(
     const isLocked = entitlement.stage !== 'open';
     const html = (isLocked ? entitlement.preview : entitlement.content) ?? '';
     const paragraphs = htmlToParagraphs(html);
-    const text = paragraphs.length > 0 ? `${article.headline}. ${paragraphs.join(' ')}` : `${article.headline}. ${article.dek}`;
+    // A locked article is read aloud only as far as the reader screen shows it — see lockedPreviewText.
+    const body = isLocked ? lockedPreviewText(paragraphs) : paragraphs.join(' ');
+    const text = paragraphs.length > 0 ? `${article.headline}. ${body}` : `${article.headline}. ${article.dek}`;
     toggleSpeak(article.id, text, article.headline, language);
   } catch {
     // Network failure — fall back to what's already on hand rather than doing nothing.
