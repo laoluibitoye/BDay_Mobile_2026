@@ -33,7 +33,7 @@ const SECTIONS = [
   },
   {
     title: 'Your rights under NDPR',
-    body: 'As a Nigerian Data Protection Regulation (NDPR) data subject, you can request a copy of your data or ask us to delete your account and details at any time — contact us at digital@businessday.ng to make either request.',
+    body: 'As a Nigerian Data Protection Regulation (NDPR) data subject, you can request a copy of your data at any time by contacting digital@businessday.ng, or request deletion of your account and details from You → Account & Security.',
   },
   {
     title: 'Changes to this policy',
