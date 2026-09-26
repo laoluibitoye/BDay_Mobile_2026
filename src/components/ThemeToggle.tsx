@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { layout, radius, space, type, useTheme } from '../theme';
+import { layout, radius, space, useTheme } from '../theme';
 
 type Mode = 'light' | 'dark' | 'sepia';
 
@@ -66,9 +66,8 @@ export function ThemeToggle() {
                       active && { backgroundColor: theme.accentTint },
                     ]}
                   >
-                    <Feather name={icon} size={20} color={active ? theme.accentDeep : theme.inkMuted} />
+                    <Feather name={icon} size={17} color={active ? theme.accentDeep : theme.inkMuted} />
                   </View>
-                  <Text style={[type.caption, { color: active ? theme.ink : theme.inkMuted, marginTop: 4 }]}>{label}</Text>
                 </Pressable>
               );
             })}
@@ -83,8 +82,8 @@ const styles = StyleSheet.create({
   card: {
     position: 'absolute',
     flexDirection: 'row',
-    gap: space.md,
-    padding: space.md,
+    gap: space.sm,
+    padding: space.sm,
     borderWidth: 1,
     borderRadius: radius.button,
     shadowColor: '#000',
@@ -93,6 +92,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
-  option: { alignItems: 'center', minWidth: 52 },
-  circle: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  option: { alignItems: 'center' },
+  circle: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });
