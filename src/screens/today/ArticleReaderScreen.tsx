@@ -22,10 +22,7 @@ import { AppHeader } from '../../components/AppHeader';
 import { ArticleImage } from '../../components/ArticleImage';
 import { Button } from '../../components/Button';
 import { ReaderControls } from '../../components/ReaderControls';
-// Sia (an AI reading assistant) is hidden for now, until it's properly integrated with a real
-// backend — see SiaPanel.tsx, which today just shows a "coming soon" modal. Re-add the import and
-// the render below once it's ready.
-// import { SiaPanel } from '../../components/SiaPanel';
+import { SiaPanel } from '../../components/SiaPanel';
 import { AdSlot } from '../../components/AdSlot';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { LANGUAGES } from '../../data/languages';
@@ -744,7 +741,10 @@ function ArticleReaderView({
         </View>
       </Screen>
 
-      {/* {!isLocked && <SiaPanel articleHeadline={article.headline} />} */}
+      {/* Sia, the AI reading assistant — a subscriber perk (see SiaPanel.tsx). Hidden while the paywall prompt
+          is showing so the two never compete, and absent entirely unless EXPO_PUBLIC_SIA_BASE_URL is set for
+          this build. */}
+      {!isLocked && <SiaPanel articleId={article.id} articleHeadline={article.headline} articleUrl={article.sourceUrl} />}
     </View>
   );
 }

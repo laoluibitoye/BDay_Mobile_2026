@@ -11,6 +11,7 @@ import { getReadingHistory, recordReadingHistoryView } from '../lib/api/readingH
 import { invalidateReadingHistoryCache } from '../hooks/useReadingHistory';
 import { follow as followRequest, getFollows, unfollow as unfollowRequest } from '../lib/api/follows';
 import { removeArticleOffline } from '../lib/offlineArticles';
+import { conversationStore } from '../lib/sia/conversationStore';
 import type { Article } from '../data/types';
 
 export type AccessibilityPrefs = {
@@ -199,6 +200,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setProfile(DEFAULT_PROFILE);
         void unregisterPushNotifications();
         void clearTokens();
+        // Sia conversations are private to the reader — don't leave them on a phone that may change hands.
+        void conversationStore.clearAll();
       },
       isSubscribed,
       savedArticleIds,
