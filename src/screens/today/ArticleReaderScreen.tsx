@@ -436,26 +436,31 @@ function ArticleReaderView({
             </Text>
           </Pressable>
 
-          {/* Web parity: sdk/src/funnel-counter.ts's "N free articles left" widget — shown on
-              every premium article view, whether this specific one happened to be open (still
-              within the free allowance) or locked, counting down to whichever wall is next
-              (register, for a signed-out reader; subscribe, once signed in). A subscriber never
-              gets a count back from the entitlement endpoint (both fields come back null), so
-              this naturally never renders for one. */}
-          {article.isPremium &&
-            (() => {
-              const count = authUser ? entitlement?.remaining : entitlement?.remainingToRegister;
-              if (count === null || count === undefined) return null;
-              const noun = count === 1 ? 'article' : 'articles';
-              const wall = authUser ? 'subscribe' : 'register';
-              return (
-                <View style={[styles.funnelCounter, { backgroundColor: theme.accentTint }]}>
-                  <Text style={[type.caption, { color: theme.accentDeep }]}>
-                    <Text style={{ fontFamily: fontFamily.uiBold }}>{count}</Text> free {noun} left before you need to {wall}
-                  </Text>
-                </View>
-              );
-            })()}
+          {/* Web parity: sdk/src/init.ts's "N free articles left" widget — shown on every article,
+              whether this specific one happened to be open (still within the free allowance) or
+              locked, counting down to whichever wall is next. A signed-out reader's countdown to
+              registering applies to free and premium articles alike, since registration is asked
+              for on both — this used to be premium-only, so a reader browsing free articles (the
+              overwhelming majority) never saw it even as free views counted toward the same
+              limit. A signed-in reader's countdown to the paywall only shows on a premium
+              article: the paywall belongs to premium content, so it isn't ahead of them on a
+              free one, and warning someone who is happily reading free articles that a subscribe
+              wall is coming would only push them away. A subscriber never gets a count back from
+              the entitlement endpoint (both fields come back null), so this naturally never
+              renders for one. */}
+          {(() => {
+            const count = authUser ? (article.isPremium ? entitlement?.remaining : null) : entitlement?.remainingToRegister;
+            if (count === null || count === undefined) return null;
+            const noun = count === 1 ? 'article' : 'articles';
+            const wall = authUser ? 'subscribe' : 'register';
+            return (
+              <View style={[styles.funnelCounter, { backgroundColor: theme.accentTint }]}>
+                <Text style={[type.caption, { color: theme.accentDeep }]}>
+                  <Text style={{ fontFamily: fontFamily.uiBold }}>{count}</Text> free {noun} left before you need to {wall}
+                </Text>
+              </View>
+            );
+          })()}
 
           {article.featuredVideoId ? (
             // Website parity (single-default.php): a plain, standard embed the reader presses
