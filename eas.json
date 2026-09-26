@@ -24,6 +24,16 @@
         "simulator": true,
         "image": "latest"
       }
+    },
+    "standalone-test": {
+      "distribution": "internal",
+      "environment": "production",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
