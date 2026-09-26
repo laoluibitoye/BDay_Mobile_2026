@@ -6,6 +6,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
 import { AppHeader } from '../../components/AppHeader';
 import { MenuRow } from '../../components/MenuRow';
+import { openFeedbackEmail, openStoreReviewPage } from '../../lib/appRating';
 import { space, type, useTheme } from '../../theme';
 
 export function AboutScreen() {
@@ -31,6 +32,8 @@ export function AboutScreen() {
         <MenuRow icon="edit-3" label="Editorial standards" onPress={() => navigation.navigate('EditorialStandards')} />
         <MenuRow icon="file-text" label="Privacy & Terms" onPress={() => navigation.navigate('PrivacyTerms')} />
         <MenuRow icon="help-circle" label="Help Center" onPress={() => navigation.navigate('HelpCenter')} />
+        <MenuRow icon="star" label="Rate BusinessDay" onPress={openStoreReviewPage} />
+        <MenuRow icon="message-circle" label="Send feedback" onPress={openFeedbackEmail} />
       </View>
 
       <Text style={[type.caption, { color: theme.inkFaint, textAlign: 'center', marginTop: space.lg }]}>

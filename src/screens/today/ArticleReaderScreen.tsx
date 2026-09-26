@@ -42,6 +42,7 @@ import { ApiError } from '../../lib/api/client';
 import type { ArticleEntitlement, EntitlementStage } from '../../lib/api/types';
 import { htmlToParagraphs } from '../../lib/htmlToText';
 import { toggleSpeak } from '../../lib/tts';
+import { recordFinishedArticleAndMaybePrompt } from '../../lib/appRating';
 import { getOfflineArticle, removeArticleOffline, saveArticleOffline } from '../../lib/offlineArticles';
 import { fontFamily, layout, radius, space, type, useTheme } from '../../theme';
 
@@ -251,6 +252,16 @@ function ArticleReaderView({
 
   const stage: EntitlementStage = entitlement?.stage ?? (article.isPremium && !isSubscribed ? 'paid_lock' : 'open');
   const isLocked = stage !== 'open';
+
+  // A reader who scrolled to the end of an unlocked article is at a good moment to (rarely) ask
+  // for a store rating — see appRating.ts. Once per opened article.
+  const countedFinishedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isLocked && readProgress >= 0.9 && countedFinishedRef.current !== article.id) {
+      countedFinishedRef.current = article.id;
+      recordFinishedArticleAndMaybePrompt();
+    }
+  }, [isLocked, readProgress, article.id]);
 
   // Offline fallback only ever applies to the unlocked, full-content case — a downloaded article
   // was only ever cached while genuinely open (see toggleDownloaded below), so there's nothing to
