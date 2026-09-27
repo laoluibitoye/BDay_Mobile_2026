@@ -66,16 +66,38 @@ export function HelpCenterScreen() {
           );
         })}
 
+        {/* Google Play's News & Magazines policy requires a clearly labeled, easy-to-find
+            contact section with a phone number or email tied to the app/developer — this is
+            that section. Keep the label literally "Contact us", not folded into a generic
+            "Still need help" heading. */}
         <View style={{ marginTop: space.xl }}>
-          <SectionLabel label="Still need help" />
+          <SectionLabel label="Contact us" />
         </View>
         <MenuRow
           icon="mail"
-          label="Email support"
+          label="Email"
           value="digital@businessday.ng"
           onPress={() =>
             Linking.openURL('mailto:digital@businessday.ng').catch(() =>
               Alert.alert('Unable to open mail app')
+            )
+          }
+        />
+        <MenuRow
+          icon="phone"
+          label="Call us"
+          value="+234 806 854 5123"
+          onPress={() =>
+            Linking.openURL('tel:+2348068545123').catch(() => Alert.alert('Unable to open phone app'))
+          }
+        />
+        <MenuRow
+          icon="globe"
+          label="Our office & contact page"
+          value="businessday.ng/contact-us"
+          onPress={() =>
+            Linking.openURL('https://businessday.ng/contact-us/').catch(() =>
+              Alert.alert('Unable to open browser')
             )
           }
         />
