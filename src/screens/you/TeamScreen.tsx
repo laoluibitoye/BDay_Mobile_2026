@@ -93,11 +93,8 @@ export function TeamScreen({ navigation }: Props) {
       <Screen header={<AppHeader variant="compact" title="Team" showBack />}>
         <View style={{ padding: space.lg }}>
           <Text style={[type.bodyUI, { color: theme.inkMuted }]}>
-            Team management is part of a company account. Set one up to invite colleagues onto your plan.
+            Team management is part of a company account. Company accounts are set up on businessday.ng.
           </Text>
-          <View style={{ marginTop: space.lg }}>
-            <Button label="Upgrade Account" onPress={() => navigation.navigate('UpgradeAccount')} fullWidth />
-          </View>
         </View>
       </Screen>
     );

@@ -567,7 +567,9 @@ function ArticleReaderView({
                   const fallback = {
                     register_prompt: { headline: 'Create a free account to keep reading', body: 'Sign up to continue.', buttonLabel: 'Sign up free', offerBadge: '' },
                     profile_prompt: { headline: 'Complete your profile', body: 'Tell us a bit more about you to keep reading free articles.', buttonLabel: 'Complete profile', offerBadge: '' },
-                    paid_lock: { headline: 'Subscribe to keep reading', body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.', buttonLabel: 'See plans', offerBadge: '' },
+                    // "Learn more", not "See plans"/"Subscribe" — this only leads to a sign-in
+                    // screen now (see PaywallScreen.tsx), never a plan or price list.
+                    paid_lock: { headline: 'Subscribe to keep reading', body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.', buttonLabel: 'Learn more', offerBadge: '' },
                   } as const;
                   const resolved = copy ?? fallback[effectiveStage];
                   const onPress = () => {

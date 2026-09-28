@@ -60,12 +60,13 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
             <View style={{ marginTop: space.xl }}>
               <MenuRow icon="repeat" label="Change plan" onPress={() => navigation.navigate('SubscriptionPlans')} />
               <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
-              <MenuRow icon="gift" label="Gift a subscription" onPress={() => navigation.navigate('GiftSubscription')} />
-              <MenuRow
-                icon="briefcase"
-                label={authUser?.org ? 'Team' : 'Upgrade to a company account'}
-                onPress={() => navigation.navigate(authUser?.org ? 'Team' : 'UpgradeAccount')}
-              />
+              {/* Gifting and company-account upgrades are both purchase-initiation flows with no
+                  "already purchased" angle, so Apple's Reader-app exception (3.1.3(a), see the
+                  2.0.0 rejection under Guideline 3.1.1) doesn't cover them the way it covers a
+                  plain sign-in path. Hidden pending either real In-App Purchase or Apple's
+                  External Purchase Link entitlement — GiftSubscriptionScreen/UpgradeAccountScreen
+                  still exist, just unreachable from here for now. */}
+              {authUser?.org && <MenuRow icon="briefcase" label="Team" onPress={() => navigation.navigate('Team')} />}
             </View>
 
             <View style={{ marginTop: space.xl }}>
@@ -78,18 +79,12 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
         ) : (
           <>
             <Text style={[type.bodyUI, { color: theme.inkMuted }]}>
-              You're on the free plan. Subscribe to unlock unlimited reading, full market data, and offline downloads.
+              You're on the free plan. Subscriptions are managed on businessday.ng — already subscribed? Make sure
+              you're signed in with the same account.
             </Text>
-            <View style={{ marginTop: space.lg }}>
-              <Button label="View plans" onPress={() => navigation.navigate('SubscriptionPlans')} fullWidth />
-            </View>
             <View style={{ marginTop: space.xl }}>
               <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
-              <MenuRow
-                icon="briefcase"
-                label={authUser?.org ? 'Team' : 'Upgrade to a company account'}
-                onPress={() => navigation.navigate(authUser?.org ? 'Team' : 'UpgradeAccount')}
-              />
+              {authUser?.org && <MenuRow icon="briefcase" label="Team" onPress={() => navigation.navigate('Team')} />}
             </View>
           </>
         )}
