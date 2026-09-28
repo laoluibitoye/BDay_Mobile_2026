@@ -40,6 +40,7 @@ import type { ArticleEntitlement, EntitlementStage } from '../../lib/api/types';
 import { htmlToParagraphs, lockedPreviewText, LOCKED_PREVIEW_LINES } from '../../lib/htmlToText';
 import { toggleSpeak } from '../../lib/tts';
 import { recordFinishedArticleAndMaybePrompt } from '../../lib/appRating';
+import { openWebSubscribe } from '../../lib/webCheckout';
 import { getOfflineArticle, removeArticleOffline, saveArticleOffline } from '../../lib/offlineArticles';
 import { fontFamily, layout, radius, space, type, useTheme } from '../../theme';
 
@@ -567,15 +568,17 @@ function ArticleReaderView({
                   const fallback = {
                     register_prompt: { headline: 'Create a free account to keep reading', body: 'Sign up to continue.', buttonLabel: 'Sign up free', offerBadge: '' },
                     profile_prompt: { headline: 'Complete your profile', body: 'Tell us a bit more about you to keep reading free articles.', buttonLabel: 'Complete profile', offerBadge: '' },
-                    // "Learn more", not "See plans"/"Subscribe" — this only leads to a sign-in
-                    // screen now (see PaywallScreen.tsx), never a plan or price list.
-                    paid_lock: { headline: 'Subscribe to keep reading', body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.', buttonLabel: 'Learn more', offerBadge: '' },
+                    paid_lock: { headline: 'Subscribe to keep reading', body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.', buttonLabel: 'See plans', offerBadge: '' },
                   } as const;
                   const resolved = copy ?? fallback[effectiveStage];
+                  // paid_lock: skips the in-app Paywall screen entirely and opens the website
+                  // subscribe page directly (see webCheckout.ts) — same reasoning as
+                  // ManageSubscriptionScreen's Subscribe/Change plan buttons.
                   const onPress = () => {
                     if (effectiveStage === 'register_prompt') navigation.navigate('Auth', { mode: 'signup' });
                     else if (effectiveStage === 'profile_prompt') navigation.navigate('Profile');
-                    else navigation.navigate('Paywall');
+                    else if (!authUser) navigation.navigate('Auth', { mode: 'signup' });
+                    else openWebSubscribe();
                   };
                   return (
                     <>

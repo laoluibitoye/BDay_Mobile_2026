@@ -8,6 +8,7 @@ import { MenuRow } from '../../components/MenuRow';
 import { Button } from '../../components/Button';
 import { useAppState } from '../../state/AppState';
 import { confirmCancelSubscription } from '../../lib/confirmCancelSubscription';
+import { openWebSubscribe } from '../../lib/webCheckout';
 import { cancelSubscription } from '../../lib/api/auth';
 import { radius, space, type, useTheme } from '../../theme';
 
@@ -58,7 +59,7 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
             </View>
 
             <View style={{ marginTop: space.xl }}>
-              <MenuRow icon="repeat" label="Change plan" onPress={() => navigation.navigate('SubscriptionPlans')} />
+              <MenuRow icon="repeat" label="Change plan" onPress={openWebSubscribe} />
               <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
               {/* Gifting and company-account upgrades are both purchase-initiation flows with no
                   "already purchased" angle, so Apple's Reader-app exception (3.1.3(a), see the
@@ -79,9 +80,12 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
         ) : (
           <>
             <Text style={[type.bodyUI, { color: theme.inkMuted }]}>
-              You're on the free plan. Subscriptions are managed on businessday.ng — already subscribed? Make sure
-              you're signed in with the same account.
+              You're on the free plan. Subscribe to unlock unlimited reading, full market data, and offline
+              downloads.
             </Text>
+            <View style={{ marginTop: space.lg }}>
+              <Button label="Subscribe" onPress={openWebSubscribe} fullWidth />
+            </View>
             <View style={{ marginTop: space.xl }}>
               <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
               {authUser?.org && <MenuRow icon="briefcase" label="Team" onPress={() => navigation.navigate('Team')} />}
