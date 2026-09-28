@@ -367,10 +367,18 @@ export function HomeScreen() {
                   </Pressable>
                   <ToonOfTheDayCard />
                   <EventsPreviewRow />
-                  <OffTheClockSection />
                 </>
               ) : null
             }
+            // Reader-reported: Off the Clock rendered right under the hero, near the top of the
+            // feed — it used to live in ListHeaderComponent above, alongside Today's Paper/Toon/
+            // Events. On the website (confirmed live, businessday.ng homepage section order) it's
+            // one of the last sections on the page, just before Partner Content/YSoT/Latest
+            // Stories — nowhere near the top. It has no slot of its own in wpSections (an
+            // admin-curated list of category tabs, not a 1:1 mirror of every homepage section), so
+            // there's no "correct" index to splice it into mid-list; the footer at least gets its
+            // relative position right (well after the WP-driven sections, not before any of them).
+            ListFooterComponent={<OffTheClockSection />}
             renderItem={({ item }) => <>{renderModule(item)}</>}
           />
         )
