@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Feather } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
 import { Button } from '../../components/Button';
 import { radius, space, type, useTheme } from '../../theme';
@@ -67,9 +66,6 @@ export function AuthScreen({ navigation, route }: Props) {
       setLoading(false);
     }
   };
-
-  const socialComingSoon = (provider: string) =>
-    Alert.alert(`Continue with ${provider}`, "This sign-in method isn't available in this preview build yet.");
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -153,25 +149,10 @@ export function AuthScreen({ navigation, route }: Props) {
         </Text>
       )}
 
-      {/* iOS: Apple's App Review flagged these as a broken "core feature" — Continue with Apple
-          was a stub that just alerted "not available yet", which is what triggered the 2.1(a)
-          rejection. Pulled from iOS entirely rather than half-build Sign in with Apple under
-          time pressure. Android keeps both as before — Google didn't flag it, and building real
-          Apple/Google sign-in is tracked as separate follow-up work. */}
-      {Platform.OS === 'android' && (
-        <>
-          <View style={styles.divider}>
-            <View style={[styles.dividerLine, { backgroundColor: theme.rule }]} />
-            <Text style={[type.caption, { color: theme.inkFaint, marginHorizontal: space.sm }]}>OR</Text>
-            <View style={[styles.dividerLine, { backgroundColor: theme.rule }]} />
-          </View>
-
-          <View style={{ gap: space.md }}>
-            <SocialButton icon="chrome" label="Continue with Google" onPress={() => socialComingSoon('Google')} theme={theme} />
-            <SocialButton icon="smartphone" label="Continue with Apple" onPress={() => socialComingSoon('Apple')} theme={theme} />
-          </View>
-        </>
-      )}
+      {/* Both platforms: "Continue with Google"/"Continue with Apple" were stub buttons that just
+          alerted "not available yet" — that's what triggered Apple's 2.1(a) rejection on iOS.
+          Removed everywhere for now rather than ship a broken placeholder on either platform;
+          real social login is tracked as separate follow-up work. */}
 
       <View style={{ marginTop: space.xxxl }}>
         <Button
@@ -185,47 +166,7 @@ export function AuthScreen({ navigation, route }: Props) {
   );
 }
 
-function SocialButton({
-  icon,
-  label,
-  onPress,
-  theme,
-}: {
-  icon: React.ComponentProps<typeof Feather>['name'];
-  label: string;
-  onPress: () => void;
-  theme: ReturnType<typeof useTheme>['theme'];
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={({ pressed }) => [
-        styles.socialButton,
-        { borderColor: theme.rule },
-        pressed && { backgroundColor: theme.bgCard },
-      ]}
-    >
-      <Feather name={icon} size={18} color={theme.ink} />
-      <Text style={[type.label, { color: theme.ink }]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, padding: space.xl, paddingTop: space.huge },
   input: { borderWidth: 1, borderRadius: radius.button, paddingVertical: space.md, paddingHorizontal: space.lg },
-  divider: { flexDirection: 'row', alignItems: 'center', marginTop: space.xl, marginBottom: space.lg },
-  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    borderWidth: 1,
-    borderRadius: radius.button,
-    paddingVertical: space.md,
-    paddingHorizontal: space.lg,
-    minHeight: 44,
-  },
 });
