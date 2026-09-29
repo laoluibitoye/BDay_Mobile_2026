@@ -3,6 +3,7 @@ import {
   Alert,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -565,18 +566,26 @@ function ArticleReaderView({
                   // real way forward. profile_prompt only ever makes sense for `authUser`.
                   const effectiveStage = stage === 'profile_prompt' && !authUser ? 'register_prompt' : stage;
                   const copy = appConfig?.paywallCopy[effectiveStage];
+                  const isIOS = Platform.OS === 'ios';
                   const fallback = {
                     register_prompt: { headline: 'Create a free account to keep reading', body: 'Sign up to continue.', buttonLabel: 'Sign up free', offerBadge: '' },
                     profile_prompt: { headline: 'Complete your profile', body: 'Tell us a bit more about you to keep reading free articles.', buttonLabel: 'Complete profile', offerBadge: '' },
-                    paid_lock: { headline: 'Subscribe to keep reading', body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.', buttonLabel: 'See plans', offerBadge: '' },
+                    paid_lock: {
+                      headline: 'Subscribe to keep reading',
+                      body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.',
+                      buttonLabel: isIOS ? 'Learn more' : 'See plans',
+                      offerBadge: '',
+                    },
                   } as const;
                   const resolved = copy ?? fallback[effectiveStage];
-                  // paid_lock: skips the in-app Paywall screen entirely and opens the website
-                  // subscribe page directly (see webCheckout.ts) — same reasoning as
-                  // ManageSubscriptionScreen's Subscribe/Change plan buttons.
+                  // paid_lock on Android: skips the in-app Paywall screen entirely and opens the
+                  // website subscribe page directly (see webCheckout.ts) — same reasoning as
+                  // ManageSubscriptionScreen's Subscribe/Change plan buttons. On iOS this instead
+                  // routes through the Paywall screen, which is sign-in-only (Apple 3.1.1).
                   const onPress = () => {
                     if (effectiveStage === 'register_prompt') navigation.navigate('Auth', { mode: 'signup' });
                     else if (effectiveStage === 'profile_prompt') navigation.navigate('Profile');
+                    else if (isIOS) navigation.navigate('Paywall');
                     else if (!authUser) navigation.navigate('Auth', { mode: 'signup' });
                     else openWebSubscribe();
                   };

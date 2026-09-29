@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
 import type { RootStackParamList } from '../../navigation/types';
@@ -153,16 +153,25 @@ export function AuthScreen({ navigation, route }: Props) {
         </Text>
       )}
 
-      <View style={styles.divider}>
-        <View style={[styles.dividerLine, { backgroundColor: theme.rule }]} />
-        <Text style={[type.caption, { color: theme.inkFaint, marginHorizontal: space.sm }]}>OR</Text>
-        <View style={[styles.dividerLine, { backgroundColor: theme.rule }]} />
-      </View>
+      {/* iOS: Apple's App Review flagged these as a broken "core feature" — Continue with Apple
+          was a stub that just alerted "not available yet", which is what triggered the 2.1(a)
+          rejection. Pulled from iOS entirely rather than half-build Sign in with Apple under
+          time pressure. Android keeps both as before — Google didn't flag it, and building real
+          Apple/Google sign-in is tracked as separate follow-up work. */}
+      {Platform.OS === 'android' && (
+        <>
+          <View style={styles.divider}>
+            <View style={[styles.dividerLine, { backgroundColor: theme.rule }]} />
+            <Text style={[type.caption, { color: theme.inkFaint, marginHorizontal: space.sm }]}>OR</Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.rule }]} />
+          </View>
 
-      <View style={{ gap: space.md }}>
-        <SocialButton icon="chrome" label="Continue with Google" onPress={() => socialComingSoon('Google')} theme={theme} />
-        <SocialButton icon="smartphone" label="Continue with Apple" onPress={() => socialComingSoon('Apple')} theme={theme} />
-      </View>
+          <View style={{ gap: space.md }}>
+            <SocialButton icon="chrome" label="Continue with Google" onPress={() => socialComingSoon('Google')} theme={theme} />
+            <SocialButton icon="smartphone" label="Continue with Apple" onPress={() => socialComingSoon('Apple')} theme={theme} />
+          </View>
+        </>
+      )}
 
       <View style={{ marginTop: space.xxxl }}>
         <Button

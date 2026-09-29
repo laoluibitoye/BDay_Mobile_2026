@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
@@ -20,6 +20,7 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
   // isSubscribed is derived from authUser.subscription?.status === 'active', so
   // authUser.subscription is guaranteed non-null whenever this branch renders below.
   const subscription = authUser?.subscription ?? null;
+  const isIOS = Platform.OS === 'ios';
 
   const cancel = () => {
     confirmCancelSubscription(async () => {
@@ -59,7 +60,11 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
             </View>
 
             <View style={{ marginTop: space.xl }}>
-              <MenuRow icon="repeat" label="Change plan" onPress={openWebSubscribe} />
+              <MenuRow
+                icon="repeat"
+                label="Change plan"
+                onPress={isIOS ? () => navigation.navigate('SubscriptionPlans') : openWebSubscribe}
+              />
               <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
               {/* Gifting and company-account upgrades are both purchase-initiation flows with no
                   "already purchased" angle, so Apple's Reader-app exception (3.1.3(a), see the
@@ -75,6 +80,17 @@ export function ManageSubscriptionScreen({ navigation }: Props) {
               <Text style={[type.caption, { color: theme.inkMuted, marginTop: space.sm, textAlign: 'center' }]}>
                 You'll keep Premium access until the end of the current billing period.
               </Text>
+            </View>
+          </>
+        ) : isIOS ? (
+          <>
+            <Text style={[type.bodyUI, { color: theme.inkMuted }]}>
+              You're on the free plan. Subscriptions are managed on businessday.ng — already subscribed? Make sure
+              you're signed in with the same account.
+            </Text>
+            <View style={{ marginTop: space.xl }}>
+              <MenuRow icon="file-text" label="Billing history" onPress={() => navigation.navigate('BillingHistory')} />
+              {authUser?.org && <MenuRow icon="briefcase" label="Team" onPress={() => navigation.navigate('Team')} />}
             </View>
           </>
         ) : (

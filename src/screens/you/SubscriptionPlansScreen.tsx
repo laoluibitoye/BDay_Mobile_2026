@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -12,12 +12,15 @@ import { openWebSubscribe } from '../../lib/webCheckout';
 import { cancelSubscription } from '../../lib/api/auth';
 import { space, type, useTheme } from '../../theme';
 
-// No plan/price list here — the app doesn't show pricing in-app. Subscribe opens the website
-// directly instead (see webCheckout.ts). An already-subscribed reader manages/cancels here.
+// iOS: no plan/price list — Apple's Reader-app exception (3.1.3(a)) doesn't cover an in-app
+// storefront, even one that only links out. Android keeps the Subscribe button that opens the
+// website directly (see webCheckout.ts). An already-subscribed reader manages/cancels here on
+// both platforms — that's not a purchase.
 export function SubscriptionPlansScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { authUser, isSubscribed, refreshSession } = useAppState();
+  const isIOS = Platform.OS === 'ios';
 
   const subscribe = () => {
     if (!authUser) {
@@ -48,7 +51,20 @@ export function SubscriptionPlansScreen() {
             : "You're on the free plan."}
         </Text>
 
-        {!isSubscribed && (
+        {!isSubscribed && isIOS && (
+          <>
+            {!authUser && (
+              <View style={{ marginTop: space.xl }}>
+                <Button label="Sign in" onPress={() => navigation.navigate('Auth', { mode: 'login' })} fullWidth />
+              </View>
+            )}
+            <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.lg, textAlign: 'center' }]}>
+              Subscriptions are managed on businessday.ng. Already subscribed? Sign in with the same account.
+            </Text>
+          </>
+        )}
+
+        {!isSubscribed && !isIOS && (
           <>
             <View style={{ marginTop: space.xl }}>
               <Button label={authUser ? 'Subscribe' : 'Sign in'} onPress={subscribe} fullWidth />
