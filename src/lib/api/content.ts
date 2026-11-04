@@ -1,5 +1,6 @@
 import { wpPublicGet } from './wpClient';
 import { formatRelativeTime } from '../relativeTime';
+import { getCachedFeed, setCachedFeed } from '../feedCache';
 import type { Article } from '../../data/types';
 
 // Shape returned by the new businessday-app-connector WordPress plugin's feed endpoints —
@@ -155,18 +156,32 @@ function toDisplayType(value: string | undefined): HomeSectionDisplayType {
   return HOME_SECTION_DISPLAY_TYPES.includes(value as HomeSectionDisplayType) ? (value as HomeSectionDisplayType) : 'mixed';
 }
 
+const HOME_FEED_CACHE_KEY = 'home';
+
+// Read back the last successful getHomeFeed() response, if any, so a screen can show it the
+// instant the app opens (or this screen mounts) instead of a blank loading state — the caller
+// still kicks off a real getHomeFeed() in parallel to refresh it. Re-registers every cached
+// article so ArticleReaderScreen's by-id lookup works immediately, before that refresh lands.
+export async function getCachedHomeFeed(): Promise<HomeSection[] | null> {
+  const cached = await getCachedFeed<HomeSection[]>(HOME_FEED_CACHE_KEY);
+  if (cached) for (const section of cached) for (const article of section.articles) registerArticle(article);
+  return cached;
+}
+
 // Home is editor-configured sections (wp-admin → BusinessDay App → Home Sections), not a flat
 // list — see wordpress-plugin/businessday-app-connector's handleHome().
 export async function getHomeFeed(): Promise<HomeSection[]> {
   const res = await wpPublicGet<HomeFeedResponse>('/wp-json/businessday-app/v1/feed/home');
-  return res.sections.map((s) => ({
+  const sections = res.sections.map((s) => ({
     id: s.id,
     label: s.label,
     displayType: toDisplayType(s.displayType),
-    sourceType: s.sourceType === 'tag' ? 'tag' : 'category',
+    sourceType: (s.sourceType === 'tag' ? 'tag' : 'category') as HomeSection['sourceType'],
     sourceValue: s.sourceValue ?? '',
     articles: registerArticles(s.items),
   }));
+  void setCachedFeed(HOME_FEED_CACHE_KEY, sections);
+  return sections;
 }
 
 // Query param is `pg`, not `page` — a bare `page=` query parameter reliably trips a Cloudflare
@@ -178,11 +193,33 @@ export async function getLatestFeed(page = 1): Promise<FeedResponse & { articles
   return { ...res, articles: registerArticles(res.items) };
 }
 
+// Shared by getSectionFeed/getTagFeed and their getCached* readers below — same idea as
+// HOME_FEED_CACHE_KEY, just one entry per Home category/tag tab instead of a single entry.
+function tabFeedCacheKey(sourceType: 'category' | 'tag', slug: string): string {
+  return `tab_${sourceType}_${slug}`;
+}
+
+async function getCachedTabFeed(sourceType: 'category' | 'tag', slug: string): Promise<Article[] | null> {
+  const cached = await getCachedFeed<Article[]>(tabFeedCacheKey(sourceType, slug));
+  if (cached) for (const article of cached) registerArticle(article);
+  return cached;
+}
+
+export function getCachedSectionFeed(slug: string): Promise<Article[] | null> {
+  return getCachedTabFeed('category', slug);
+}
+
+export function getCachedTagFeed(slug: string): Promise<Article[] | null> {
+  return getCachedTabFeed('tag', slug);
+}
+
 export async function getSectionFeed(slug: string, page = 1): Promise<FeedResponse & { articles: Article[] }> {
   const res = await wpPublicGet<FeedResponse>(
     `/wp-json/businessday-app/v1/feed/section/${encodeURIComponent(slug)}?pg=${page}`
   );
-  return { ...res, articles: registerArticles(res.items) };
+  const articles = registerArticles(res.items);
+  if (page === 1) void setCachedFeed(tabFeedCacheKey('category', slug), articles);
+  return { ...res, articles };
 }
 
 // Tag-scoped, e.g. `bdrecent` — the real site's own editorial tag for "recent," distinct from a
@@ -190,7 +227,9 @@ export async function getSectionFeed(slug: string, page = 1): Promise<FeedRespon
 // wordpress-plugin/businessday-app-connector's class-bd-feed-api.php.
 export async function getTagFeed(slug: string, page = 1): Promise<FeedResponse & { articles: Article[] }> {
   const res = await wpPublicGet<FeedResponse>(`/wp-json/businessday-app/v1/feed/tag/${encodeURIComponent(slug)}?pg=${page}`);
-  return { ...res, articles: registerArticles(res.items) };
+  const articles = registerArticles(res.items);
+  if (page === 1) void setCachedFeed(tabFeedCacheKey('tag', slug), articles);
+  return { ...res, articles };
 }
 
 export type InterestCategory = { id: string; name: string };

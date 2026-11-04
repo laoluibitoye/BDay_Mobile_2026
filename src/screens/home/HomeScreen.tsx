@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -28,7 +28,16 @@ import { useAppConfig } from '../../hooks/useAppConfig';
 import { Article, TodayModule } from '../../data/types';
 import { sections } from '../../data/mock';
 import { buildMixedModules } from '../../lib/buildMixedModules';
-import { getHomeFeed, getRegisteredArticle, getSectionFeed, getTagFeed, HomeSection } from '../../lib/api/content';
+import {
+  getCachedHomeFeed,
+  getCachedSectionFeed,
+  getCachedTagFeed,
+  getHomeFeed,
+  getRegisteredArticle,
+  getSectionFeed,
+  getTagFeed,
+  HomeSection,
+} from '../../lib/api/content';
 import type { HomeTab } from '../../lib/api/appConfig';
 import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { radius, layout, space, type, useTheme } from '../../theme';
@@ -88,13 +97,37 @@ export function HomeScreen() {
       });
   }, []);
 
+  // Reader-reported: reopening the app showed a blank Today tab with a spinner for a few seconds
+  // before anything appeared, even though the same feed had just loaded before the app closed.
+  // Read back whatever was cached from the last successful load first (near-instant, local disk)
+  // so there's something on screen immediately; loadToday() below still always runs too, silently
+  // replacing it with a fresh fetch. `current ?? cached` only applies this if nothing else (a
+  // same-tick network resolve on a fast connection, say) already beat it to setting wpSections.
+  useEffect(() => {
+    void getCachedHomeFeed().then((cached) => {
+      if (cached) setWpSections((current) => current ?? cached);
+    });
+  }, []);
+
   useEffect(() => {
     void loadToday();
   }, [loadToday]);
 
+  // In-memory, this session only — lets switching back to an already-visited tab (e.g.
+  // Markets -> Banking -> Markets) show its articles instantly instead of re-running the disk-
+  // cache lookup below. Keyed the same way the disk cache is, via tabCacheKey().
+  const categoryMemCacheRef = useRef<Record<string, Article[]>>({});
+
+  const tabCacheKey = useCallback(
+    (tab: string) => {
+      const source = homeTabs.find((t) => t.label === tab);
+      return source ? `${source.sourceType}:${source.sourceValue}` : `category:${slugify(tab)}`;
+    },
+    [homeTabs]
+  );
+
   const loadCategory = useCallback(() => {
     if (activeTab === 'Today') return;
-    setCategoryArticles(null);
     setCategoryFailed(false);
     // A tag-sourced tab (e.g. an editor picking a tag like `bdlead` rather than a real category)
     // needs the tag feed, not a category archive query that would just return nothing — same
@@ -104,12 +137,46 @@ export function HomeScreen() {
         ? getTagFeed(activeTabSource.sourceValue)
         : getSectionFeed(activeTabSource?.sourceValue || slugify(activeTab));
     return fetch
-      .then(({ articles }) => setCategoryArticles(articles))
+      .then(({ articles }) => {
+        categoryMemCacheRef.current[tabCacheKey(activeTab)] = articles;
+        setCategoryArticles(articles);
+      })
       .catch((err) => {
         setCategoryFailed(true);
         setCategoryOffline(isConnectivityError(err));
       });
-  }, [activeTab, activeTabSource]);
+  }, [activeTab, activeTabSource, tabCacheKey]);
+
+  // Reader-reported: switching Home tabs (Top Stories, Banking, Markets, …) blanked the screen
+  // with a spinner for a few seconds before showing anything — worst right after reopening the
+  // app, when nothing was in memory yet and every tab had to wait on a fresh network fetch.
+  // Before loadCategory() below even runs, show whatever's already in memory for this tab
+  // (instant, same session) or on disk (near-instant, survives app restarts); loadCategory()
+  // still always runs too, silently replacing it with a fresh fetch. Only fall back to the null
+  // "still loading" state when truly nothing is cached anywhere for this tab yet.
+  useEffect(() => {
+    if (activeTab === 'Today') return;
+    const key = tabCacheKey(activeTab);
+    const memCached = categoryMemCacheRef.current[key];
+    if (memCached) {
+      setCategoryArticles(memCached);
+      return;
+    }
+    setCategoryArticles(null);
+    let cancelled = false;
+    const getCached =
+      activeTabSource?.sourceType === 'tag' && activeTabSource.sourceValue
+        ? getCachedTagFeed(activeTabSource.sourceValue)
+        : getCachedSectionFeed(activeTabSource?.sourceValue || slugify(activeTab));
+    void getCached.then((cached) => {
+      if (cancelled || !cached) return;
+      categoryMemCacheRef.current[key] = cached;
+      setCategoryArticles((current) => current ?? cached);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, activeTabSource, tabCacheKey]);
 
   useEffect(() => {
     void loadCategory();
@@ -318,14 +385,21 @@ export function HomeScreen() {
       <AppBannerSlot placement="home_top" />
 
       {activeTab === 'Today' ? (
-        todayFailed ? (
-          todayOffline ? (
-            <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={loadToday} />
+        // Checked in this order so a cached/stale feed (shown instantly on launch, see the
+        // getCachedHomeFeed effect above) keeps displaying even if the silent background refresh
+        // that follows it fails — a reader with something on screen already should never lose it
+        // to a full-screen error just because this one refresh didn't land; the error states below
+        // are only for when there's genuinely no content to fall back to yet.
+        wpSections === null ? (
+          todayFailed ? (
+            todayOffline ? (
+              <FeedEmptyState {...CONNECTIVITY_ERROR_COPY} onRetry={loadToday} />
+            ) : (
+              <FeedEmptyState title="Couldn't load the feed" message="Something went wrong on our end. Try again shortly." onRetry={loadToday} />
+            )
           ) : (
-            <FeedEmptyState title="Couldn't load the feed" message="Something went wrong on our end. Try again shortly." onRetry={loadToday} />
+            <FeedLoadingState />
           )
-        ) : wpSections === null ? (
-          <FeedLoadingState />
         ) : todaySequence.length === 0 ? (
           <FeedEmptyState title="Nothing here yet" message="Check back shortly for today's stories." />
         ) : (
