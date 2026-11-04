@@ -74,6 +74,11 @@ export function SiaLocked({ reason, checking, hint, onSubscribe, onLogin, onRech
               {hint}
             </Text>
           )}
+          {reason === 'guest' && (
+            <Text style={[type.caption, { color: theme.inkFaint, textAlign: 'center' }]}>
+              Don't have an account? Create one at businessday.ng
+            </Text>
+          )}
         </View>
       </View>
 

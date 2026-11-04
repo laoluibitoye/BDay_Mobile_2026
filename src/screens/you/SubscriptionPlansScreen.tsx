@@ -24,7 +24,10 @@ export function SubscriptionPlansScreen() {
 
   const subscribe = () => {
     if (!authUser) {
-      navigation.navigate('Auth', { mode: 'signup' });
+      // Sign in, never register (Apple + Google Play both flagged in-app registration for
+      // paid-content-capable accounts) — also fixes a pre-existing mismatch where this button
+      // was labeled "Sign in" but opened the signup form.
+      navigation.navigate('Auth', { mode: 'login' });
       return;
     }
     openWebSubscribe();
@@ -61,6 +64,11 @@ export function SubscriptionPlansScreen() {
             <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.lg, textAlign: 'center' }]}>
               Subscriptions are managed on businessday.ng. Already subscribed? Sign in with the same account.
             </Text>
+            {!authUser && (
+              <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.xs, textAlign: 'center' }]}>
+                Don't have an account? Create one at businessday.ng
+              </Text>
+            )}
           </>
         )}
 
@@ -72,6 +80,11 @@ export function SubscriptionPlansScreen() {
             <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.lg, textAlign: 'center' }]}>
               Subscribing continues on businessday.ng. Already subscribed? Sign in with the same account.
             </Text>
+            {!authUser && (
+              <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.xs, textAlign: 'center' }]}>
+                Don't have an account? Create one at businessday.ng
+              </Text>
+            )}
           </>
         )}
 

@@ -139,13 +139,8 @@ export function SettingsScreen() {
             <Text style={[type.caption, { color: theme.inkMuted }]}>
               Sign in to save articles, follow topics, and subscribe.
             </Text>
-            <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.xs }}>
-              <View style={{ flex: 1 }}>
-                <Button label="Sign in" variant="secondary" onPress={() => navigation.navigate('Auth', { mode: 'login' })} fullWidth />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button label="Create account" onPress={() => navigation.navigate('Auth', { mode: 'signup' })} fullWidth />
-              </View>
+            <View style={{ marginTop: space.xs }}>
+              <Button label="Sign in" onPress={() => navigation.navigate('Auth', { mode: 'login' })} fullWidth />
             </View>
           </View>
         )}

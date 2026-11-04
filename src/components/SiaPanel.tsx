@@ -98,9 +98,11 @@ function SiaPanelInner({ articleId, articleHeadline, articleUrl }: Props) {
   }, []);
 
   const onSubscribe = useCallback(() => {
-    // Same split as the paywall: a guest creates an account first, then buys on the website (the app never
-    // takes payment — see lib/webCheckout.ts); a signed-in reader goes straight to the website.
-    if (!authUser) closeThen(() => navigation.navigate('Auth', { mode: 'signup' }));
+    // Sign in, never register — Apple and Google Play both flagged in-app account registration
+    // for accounts that can access paid content (webCheckout.ts; the app never takes payment
+    // itself). A guest signs in with an existing account; a signed-in reader goes straight to
+    // the website.
+    if (!authUser) closeThen(() => navigation.navigate('Auth', { mode: 'login' }));
     else openWebSubscribe();
   }, [authUser, closeThen, navigation]);
 

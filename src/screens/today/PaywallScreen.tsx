@@ -36,7 +36,10 @@ export function PaywallScreen({ navigation }: Props) {
 
   const subscribe = () => {
     if (!authUser) {
-      navigation.navigate('Auth', { mode: 'signup' });
+      // Sign in, never register (Apple + Google Play both flagged in-app registration for
+      // paid-content-capable accounts) — also fixes a pre-existing mismatch where this button
+      // was labeled "Sign in" but opened the signup form.
+      navigation.navigate('Auth', { mode: 'login' });
       return;
     }
     openWebSubscribe();
@@ -70,6 +73,11 @@ export function PaywallScreen({ navigation }: Props) {
             )
           ) : (
             <Button label={authUser ? 'Subscribe' : 'Sign in'} onPress={subscribe} fullWidth />
+          )}
+          {!authUser && (
+            <Text style={[type.caption, { color: theme.inkFaint, textAlign: 'center' }]}>
+              Don't have an account? Create one at businessday.ng
+            </Text>
           )}
           <Pressable onPress={() => navigation.goBack()}>
             <Text style={[type.bodyUI, { color: theme.inkMuted, textAlign: 'center' }]}>Maybe later</Text>

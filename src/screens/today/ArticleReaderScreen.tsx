@@ -568,7 +568,12 @@ function ArticleReaderView({
                   const copy = appConfig?.paywallCopy[effectiveStage];
                   const isIOS = Platform.OS === 'ios';
                   const fallback = {
-                    register_prompt: { headline: 'Create a free account to keep reading', body: 'Sign up to continue.', buttonLabel: 'Sign up free', offerBadge: '' },
+                    // Sign in, never register — Apple and Google Play both flagged in-app
+                    // account registration for accounts that can access paid content. This
+                    // ignores wp-admin's paywallCopy.register_prompt entirely (still "Sign up
+                    // free" there as of this writing) rather than depend on a separate content
+                    // fix — see the identical reasoning on AuthScreen.
+                    register_prompt: { headline: 'Login to keep reading', body: 'Sign in to continue reading.', buttonLabel: 'Sign in', offerBadge: '' },
                     profile_prompt: { headline: 'Complete your profile', body: 'Tell us a bit more about you to keep reading free articles.', buttonLabel: 'Complete profile', offerBadge: '' },
                     paid_lock: {
                       headline: 'Subscribe to keep reading',
@@ -577,16 +582,16 @@ function ArticleReaderView({
                       offerBadge: '',
                     },
                   } as const;
-                  const resolved = copy ?? fallback[effectiveStage];
+                  const resolved = effectiveStage === 'register_prompt' ? fallback.register_prompt : (copy ?? fallback[effectiveStage]);
                   // paid_lock on Android: skips the in-app Paywall screen entirely and opens the
                   // website subscribe page directly (see webCheckout.ts) — same reasoning as
                   // ManageSubscriptionScreen's Subscribe/Change plan buttons. On iOS this instead
                   // routes through the Paywall screen, which is sign-in-only (Apple 3.1.1).
                   const onPress = () => {
-                    if (effectiveStage === 'register_prompt') navigation.navigate('Auth', { mode: 'signup' });
+                    if (effectiveStage === 'register_prompt') navigation.navigate('Auth', { mode: 'login' });
                     else if (effectiveStage === 'profile_prompt') navigation.navigate('Profile');
                     else if (isIOS) navigation.navigate('Paywall');
-                    else if (!authUser) navigation.navigate('Auth', { mode: 'signup' });
+                    else if (!authUser) navigation.navigate('Auth', { mode: 'login' });
                     else openWebSubscribe();
                   };
                   return (
@@ -610,6 +615,11 @@ function ArticleReaderView({
                       <View style={{ marginTop: space.lg, alignSelf: 'stretch' }}>
                         <Button label={resolved.buttonLabel} onPress={onPress} fullWidth />
                       </View>
+                      {!authUser && (
+                        <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.sm, textAlign: 'center' }]}>
+                          Don't have an account? Create one at businessday.ng
+                        </Text>
+                      )}
                     </>
                   );
                 })()}
