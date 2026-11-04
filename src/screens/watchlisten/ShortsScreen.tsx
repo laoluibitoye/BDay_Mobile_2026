@@ -123,8 +123,18 @@ function ShortSlide({
         // the full diagnosis). react-native-youtube-iframe + useLocalHTML/baseUrlOverride is the
         // same fix applied there: loads instantly (no external harness fetch) while presenting a
         // legitimate origin YouTube's player actually accepts.
+        //
+        // Bug found live: the mute button looked like it did nothing. A `key={muted ? ... }` here
+        // was leftover from the pre-migration bare-WebView version above, where mute was baked
+        // into the embed URL's query string and could only change by reloading the whole WebView.
+        // react-native-youtube-iframe already applies `mute` reactively via postMessage without
+        // remounting — keeping the key forced a full remount on every tap instead, which threw
+        // away the already-playing (and therefore autoplay-exempt) player and replaced it with a
+        // brand-new one that tried to autoplay unmuted from frame zero. That's exactly the
+        // play-before-mute race HeroArticleCard.tsx's comment documents, and the browser's
+        // autoplay policy silently blocks it. Dropping the key lets `mute` toggle the existing
+        // player instead, which is a permitted operation on media that's already playing.
         <YoutubePlayer
-          key={muted ? 'muted' : 'unmuted'}
           height={height}
           width={width}
           videoId={item.videoId}
