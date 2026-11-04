@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../navigation/types';
 import { AppHeader } from '../../components/AppHeader';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
@@ -56,9 +56,18 @@ export function WatchListenScreen() {
   useEffect(() => {
     void loadVideos();
   }, []);
-  useEffect(() => {
-    void loadShorts();
-  }, []);
+
+  // Shorts comes straight from the live @BDTV-NG channel shelf, not a fixed list — reader-reported:
+  // this used to fetch once per app session (plain useEffect) and never again, so a reader who
+  // posted a new Short wouldn't see it on the tab until the app was fully relaunched. useFocusEffect
+  // reruns on every return to this tab (e.g. switching back from Home), not just first mount.
+  // loadShorts() never clears `shorts` on failure, so this is a silent background refresh — whatever
+  // was already on screen keeps showing while the new fetch is in flight.
+  useFocusEffect(
+    useCallback(() => {
+      void loadShorts();
+    }, [])
+  );
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = async () => {
