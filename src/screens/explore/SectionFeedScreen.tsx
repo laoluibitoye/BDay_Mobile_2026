@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Platform } from 'react-native';
+import { FlatList, Platform, RefreshControl } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Screen } from '../../components/Screen';
@@ -11,7 +11,7 @@ import { Article } from '../../data/types';
 import { getSectionFeed, getTagFeed } from '../../lib/api/content';
 import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
 import { useAppState } from '../../state/AppState';
-import { space } from '../../theme';
+import { space, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SectionFeed'>;
 
@@ -24,6 +24,7 @@ function slugify(name: string): string {
 // Home and the Latest → Explore taxonomy cloud) — the real WordPress category archive via
 // businessday-app-connector's cached section feed.
 export function SectionFeedScreen({ route, navigation }: Props) {
+  const { theme } = useTheme();
   const { section, sourceType, sourceValue } = route.params;
   const { recordTaxonomyUse } = useAppState();
   const [feed, setFeed] = useState<Article[] | null>(null);
@@ -44,7 +45,7 @@ export function SectionFeedScreen({ route, navigation }: Props) {
       sourceType === 'tag' && sourceValue
         ? getTagFeed(sourceValue)
         : getSectionFeed(sourceValue || slugify(section));
-    request
+    return request
       .then(({ articles }) => setFeed(articles))
       .catch((err) => {
         setFailed(true);
@@ -53,7 +54,16 @@ export function SectionFeedScreen({ route, navigation }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, sourceType, sourceValue]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   return (
     <Screen scroll={false} header={<AppHeader variant="compact" title={section} showBack />}>
@@ -65,6 +75,7 @@ export function SectionFeedScreen({ route, navigation }: Props) {
         data={feed ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
         ListEmptyComponent={
           failed ? (
             offline ? (

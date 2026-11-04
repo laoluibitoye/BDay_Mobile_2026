@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +19,7 @@ import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { ToonOfTheDayCard } from '../../components/ToonOfTheDayCard';
 import { OffTheClockSection } from '../../components/OffTheClockSection';
+import { YourNewsSection } from '../../components/YourNewsSection';
 import { LatestStoriesModule } from '../../components/LatestStoriesModule';
 import { EventsPreviewRow } from '../../components/EventsPreviewRow';
 import { EditionsHomeCarousel } from '../../components/EditionsHomeCarousel';
@@ -79,7 +80,7 @@ export function HomeScreen() {
 
   const loadToday = useCallback(() => {
     setTodayFailed(false);
-    getHomeFeed()
+    return getHomeFeed()
       .then(setWpSections)
       .catch((err) => {
         setTodayFailed(true);
@@ -87,7 +88,9 @@ export function HomeScreen() {
       });
   }, []);
 
-  useEffect(loadToday, [loadToday]);
+  useEffect(() => {
+    void loadToday();
+  }, [loadToday]);
 
   const loadCategory = useCallback(() => {
     if (activeTab === 'Today') return;
@@ -100,7 +103,7 @@ export function HomeScreen() {
       activeTabSource?.sourceType === 'tag' && activeTabSource.sourceValue
         ? getTagFeed(activeTabSource.sourceValue)
         : getSectionFeed(activeTabSource?.sourceValue || slugify(activeTab));
-    fetch
+    return fetch
       .then(({ articles }) => setCategoryArticles(articles))
       .catch((err) => {
         setCategoryFailed(true);
@@ -108,7 +111,9 @@ export function HomeScreen() {
       });
   }, [activeTab, activeTabSource]);
 
-  useEffect(loadCategory, [loadCategory]);
+  useEffect(() => {
+    void loadCategory();
+  }, [loadCategory]);
 
   // Reader returns to an already-mounted Home after backgrounding the app — re-fetch silently
   // instead of leaving them staring at whatever was current at launch until they think to pull to
@@ -119,6 +124,16 @@ export function HomeScreen() {
       loadCategory();
     }, [loadToday, loadCategory])
   );
+
+  // Manual pull-to-refresh — both loaders already resolve regardless of success/failure (their
+  // own .catch sets the failed/offline state), so awaiting them just tells RefreshControl when to
+  // stop spinning, same "always settles" contract useRefreshOnForeground already relies on above.
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadToday(), Promise.resolve(loadCategory())]);
+    setRefreshing(false);
+  }, [loadToday, loadCategory]);
 
   // Matched by the section's real id ('hero' = Top News), not array position — the carousel must
   // always show the editor's actual Top News picks even if that section isn't sorted first in
@@ -319,6 +334,7 @@ export function HomeScreen() {
             data={todaySequence}
             keyExtractor={(_, i) => `module-${i}`}
             contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
             ListHeaderComponent={
               leadArticle ? (
                 <>
@@ -365,6 +381,7 @@ export function HomeScreen() {
                     <View pointerEvents="none" style={[homeStyles.paperFoldFlap, { borderRightColor: theme.bg }]} />
                     </View>
                   </Pressable>
+                  <YourNewsSection />
                   <ToonOfTheDayCard />
                   <EventsPreviewRow />
                 </>
@@ -388,6 +405,7 @@ export function HomeScreen() {
           data={categoryModules}
           keyExtractor={(_, i) => `cat-module-${i}`}
           contentContainerStyle={{ padding: space.lg, paddingBottom: 140 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
           ListHeaderComponent={
             (categoryArticles?.length ?? 0) > 0 ? (
               <Pressable

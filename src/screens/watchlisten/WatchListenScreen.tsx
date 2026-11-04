@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -35,7 +35,7 @@ export function WatchListenScreen() {
 
   const loadVideos = () => {
     setVideosFailed(false);
-    getVideos()
+    return getVideos()
       .then((res) => setVideos(res.items))
       .catch((err) => {
         setVideosFailed(true);
@@ -45,7 +45,7 @@ export function WatchListenScreen() {
 
   const loadShorts = () => {
     setShortsFailed(false);
-    getChannelShorts()
+    return getChannelShorts()
       .then((res) => setShorts(res.items))
       .catch((err) => {
         setShortsFailed(true);
@@ -53,8 +53,19 @@ export function WatchListenScreen() {
       });
   };
 
-  useEffect(loadVideos, []);
-  useEffect(loadShorts, []);
+  useEffect(() => {
+    void loadVideos();
+  }, []);
+  useEffect(() => {
+    void loadShorts();
+  }, []);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([loadVideos(), loadShorts()]);
+    setRefreshing(false);
+  };
 
   const longform = useMemo(() => (videos ?? []).filter((v) => !v.isShort), [videos]);
 
@@ -95,7 +106,10 @@ export function WatchListenScreen() {
           <FeedEmptyState title="Nothing here yet" message="No videos have been published yet." />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: 140 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: 140 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
+        >
           {longform.map((v) => (
             <Pressable
               key={v.id}

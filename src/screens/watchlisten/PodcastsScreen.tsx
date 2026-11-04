@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,7 +23,7 @@ export function PodcastsScreen() {
 
   const load = () => {
     setFailed(false);
-    getPodcasts()
+    return getPodcasts()
       .then((res) => setPodcasts(res.items))
       .catch((err) => {
         setFailed(true);
@@ -31,7 +31,16 @@ export function PodcastsScreen() {
       });
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
@@ -51,7 +60,10 @@ export function PodcastsScreen() {
           <FeedEmptyState title="Nothing here yet" message="No episodes have been published yet." />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: 140 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: 140 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
+        >
           {podcasts.map((p) => (
             <Pressable
               key={p.id}
