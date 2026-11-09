@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View, ViewT
 import { Image } from 'expo-image';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedEmptyState } from '../../components/FeedEmptyState';
 import { FeedLoadingState } from '../../components/FeedLoadingState';
 import type { ChannelShort } from '../../lib/api/channelShorts';
@@ -108,6 +109,7 @@ function ShortSlide({
   onToggleMute: () => void;
 }) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   // Same real YouTube thumbnail priority as ArticleImage.tsx — every other row in this feed
   // (not just the active one) now shows the clip's actual frame instead of a bare black box with
   // just a play-button hint drawn over nothing.
@@ -158,7 +160,7 @@ function ShortSlide({
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel={muted ? 'Unmute' : 'Mute'}
-          style={styles.muteButton}
+          style={[styles.muteButton, { top: insets.top + space.md }]}
         >
           <Feather name={muted ? 'volume-x' : 'volume-2'} size={18} color="#FFFFFF" />
         </Pressable>
@@ -177,7 +179,6 @@ const styles = StyleSheet.create({
   captionBlock: { padding: space.lg, paddingBottom: space.xxxl },
   muteButton: {
     position: 'absolute',
-    top: space.xl,
     right: space.lg,
     width: 36,
     height: 36,
