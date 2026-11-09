@@ -11,6 +11,7 @@ import { FeedLoadingState } from '../../components/FeedLoadingState';
 import { getVideos, type VideoItem } from '../../lib/api/videos';
 import { getChannelShorts, type ChannelShort } from '../../lib/api/channelShorts';
 import { isConnectivityError, CONNECTIVITY_ERROR_COPY } from '../../lib/api/errors';
+import { setActiveWatchSubTab } from '../../lib/watchSubTab';
 import { radius, space, type, useTheme } from '../../theme';
 import { ShortsScreen } from './ShortsScreen';
 
@@ -56,6 +57,15 @@ export function WatchListenScreen() {
   useEffect(() => {
     void loadVideos();
   }, []);
+
+  // GlobalTabBar is rendered at the root, outside this screen, so it can't read `subTab` as a prop
+  // — this is how it finds out "the reader is on Shorts specifically" to auto-collapse itself over
+  // the full-bleed video (see watchSubTab.ts). Reset to null on unmount so a stale 'Shorts' value
+  // can't linger if this screen is ever torn down outside of a normal tab switch.
+  useEffect(() => {
+    setActiveWatchSubTab(subTab);
+    return () => setActiveWatchSubTab(null);
+  }, [subTab]);
 
   // Shorts comes straight from the live @BDTV-NG channel shelf, not a fixed list — reader-reported:
   // this used to fetch once per app session (plain useEffect) and never again, so a reader who

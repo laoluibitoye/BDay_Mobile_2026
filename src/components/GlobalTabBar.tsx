@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MainTabParamList } from '../navigation/types';
 import { navigationRef } from '../navigation/navigationRef';
+import { getActiveWatchSubTab, subscribeActiveWatchSubTab } from '../lib/watchSubTab';
 import { radius, space, type, useTheme } from '../theme';
 import { useBlurTarget } from './BlurTargetContext';
 
@@ -70,6 +71,13 @@ export function GlobalTabBar() {
   // per-screen when it's in the way.
   const [collapsed, setCollapsed] = useState(false);
 
+  // Reader-requested: auto-collapse over Shorts specifically, rather than waiting for the reader
+  // to tap the handle themselves every time — Shorts is exactly the full-bleed case the comment
+  // above already calls out. watchSubTab.ts is how WatchListenScreen (a leaf screen) tells this
+  // root-level bar which of its two sub-tabs is active.
+  const [activeWatchSubTab, setActiveWatchSubTabState] = useState(getActiveWatchSubTab());
+  useEffect(() => subscribeActiveWatchSubTab(setActiveWatchSubTabState), []);
+
   // Hooks must run unconditionally every render (React's rule), so the "not ready yet" bail-out
   // has to come after every hook call below, not before — `isReady` gates what we DO with the
   // state, not whether we compute it.
@@ -110,6 +118,15 @@ export function GlobalTabBar() {
       if (collapsed) setCollapsed(false);
     }
   }
+
+  // Keyed on the route too, not just `activeWatchSubTab` — the store's value can stay 'Shorts'
+  // across a trip to another tab and back (WatchListenScreen doesn't unmount on blur), so without
+  // `activeTabName` in here, returning to Shorts wouldn't re-collapse the bar since the store value
+  // never actually changed.
+  const onShorts = routeSettled && currentRouteName === 'Main' && activeTabName === 'WatchListen' && activeWatchSubTab === 'Shorts';
+  useEffect(() => {
+    if (onShorts) setCollapsed(true);
+  }, [onShorts]);
 
   if (!isVisibleRoute) return null;
 

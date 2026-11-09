@@ -148,6 +148,15 @@ function ShortSlide({
           webViewProps={{ pointerEvents: 'none', ...youtubeWebViewProps, ...fullBleedYoutubeWebViewProps }}
         />
       )}
+      {active && (
+        // YouTube renders its own Shorts-branded chrome (logo, title, speaker, overflow menu)
+        // inside the cross-origin youtube.com iframe nested in the player's WebView — that's a
+        // different origin than our local player page, so injectedJavaScript/CSS (which only
+        // reaches the local page's own DOM, see FILL_SCREEN_CSS above) can't touch it. `controls:
+        // false` suppresses the normal play/pause/scrub bar but not this; there's no playerVar for
+        // it. Covering it with our own opaque bar is the only thing actually reachable from here.
+        <View style={[styles.youtubeChromeCover, { height: insets.top }]} pointerEvents="none" />
+      )}
       <View style={styles.overlay} pointerEvents="box-none">
         <View style={styles.captionBlock} pointerEvents="none">
           <Text style={[type.label, { color: '#FFFFFF' }]} numberOfLines={3}>
@@ -175,6 +184,7 @@ function ShortSlide({
 }
 
 const styles = StyleSheet.create({
+  youtubeChromeCover: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#000' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'flex-end' },
   captionBlock: { padding: space.lg, paddingBottom: space.xxxl },
   muteButton: {
