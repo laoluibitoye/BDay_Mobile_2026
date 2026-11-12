@@ -3,7 +3,6 @@ import {
   Alert,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -41,7 +40,6 @@ import type { ArticleEntitlement, EntitlementStage } from '../../lib/api/types';
 import { htmlToParagraphs, lockedPreviewText, LOCKED_PREVIEW_LINES } from '../../lib/htmlToText';
 import { toggleSpeak } from '../../lib/tts';
 import { recordFinishedArticleAndMaybePrompt } from '../../lib/appRating';
-import { openWebSubscribe } from '../../lib/webCheckout';
 import { getOfflineArticle, removeArticleOffline, saveArticleOffline } from '../../lib/offlineArticles';
 import { fontFamily, layout, radius, space, type, useTheme } from '../../theme';
 
@@ -566,7 +564,6 @@ function ArticleReaderView({
                   // real way forward. profile_prompt only ever makes sense for `authUser`.
                   const effectiveStage = stage === 'profile_prompt' && !authUser ? 'register_prompt' : stage;
                   const copy = appConfig?.paywallCopy[effectiveStage];
-                  const isIOS = Platform.OS === 'ios';
                   const fallback = {
                     // Sign in, never register — Apple and Google Play both flagged in-app
                     // account registration for accounts that can access paid content. This
@@ -578,21 +575,20 @@ function ArticleReaderView({
                     paid_lock: {
                       headline: 'Subscribe to keep reading',
                       body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.',
-                      buttonLabel: isIOS ? 'Learn more' : 'See plans',
+                      buttonLabel: 'Learn more',
                       offerBadge: '',
                     },
                   } as const;
                   const resolved = effectiveStage === 'register_prompt' ? fallback.register_prompt : (copy ?? fallback[effectiveStage]);
-                  // paid_lock on Android: skips the in-app Paywall screen entirely and opens the
-                  // website subscribe page directly (see webCheckout.ts) — same reasoning as
-                  // ManageSubscriptionScreen's Subscribe/Change plan buttons. On iOS this instead
-                  // routes through the Paywall screen, which is sign-in-only (Apple 3.1.1).
+                  // paid_lock on both platforms now routes through the Paywall screen, which is
+                  // sign-in-only (see PaywallScreen.tsx's comment — Google Play's consumption-only
+                  // rule turned out to be at least as strict as Apple's 3.1.1 here, confirmed live
+                  // when this exact lock's old Android path — straight to openWebSubscribe() — got
+                  // the app pulled to India/Russia-only distribution).
                   const onPress = () => {
                     if (effectiveStage === 'register_prompt') navigation.navigate('Auth', { mode: 'login' });
                     else if (effectiveStage === 'profile_prompt') navigation.navigate('Profile');
-                    else if (isIOS) navigation.navigate('Paywall');
-                    else if (!authUser) navigation.navigate('Auth', { mode: 'login' });
-                    else openWebSubscribe();
+                    else navigation.navigate('Paywall');
                   };
                   return (
                     <>

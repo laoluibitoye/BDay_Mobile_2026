@@ -10,7 +10,6 @@ import { useAppState } from '../state/AppState';
 import { useSiaChat } from '../hooks/useSiaChat';
 import { isSiaConfigured } from '../lib/api/sia';
 import { getArticleById, resolveArticleIdFromUrl } from '../lib/api/content';
-import { openWebSubscribe } from '../lib/webCheckout';
 import { SiaAvatar } from './sia/SiaAvatar';
 import { SiaChat } from './sia/SiaChat';
 import { SiaLocked, type SiaLockReason } from './sia/SiaLocked';
@@ -98,12 +97,17 @@ function SiaPanelInner({ articleId, articleHeadline, articleUrl }: Props) {
   }, []);
 
   const onSubscribe = useCallback(() => {
-    // Sign in, never register — Apple and Google Play both flagged in-app account registration
-    // for accounts that can access paid content (webCheckout.ts; the app never takes payment
-    // itself). A guest signs in with an existing account; a signed-in reader goes straight to
-    // the website.
-    if (!authUser) closeThen(() => navigation.navigate('Auth', { mode: 'login' }));
-    else openWebSubscribe();
+    // Sign in, never register, and never a direct checkout link — Apple's Reader-app exception
+    // and Google Play's consumption-only rule (see PaywallScreen.tsx's comment) both rule out an
+    // in-app purchase path entirely; this used to call openWebSubscribe() unconditionally here
+    // (not even platform-gated), making it a live Android violation same as the article lock's
+    // old path. Both guest and signed-in-but-unsubscribed readers land on the same sign-in-only
+    // Paywall screen now.
+    if (!authUser) {
+      closeThen(() => navigation.navigate('Auth', { mode: 'login' }));
+    } else {
+      closeThen(() => navigation.navigate('Paywall'));
+    }
   }, [authUser, closeThen, navigation]);
 
   const onLogin = useCallback(() => closeThen(() => navigation.navigate('Auth', { mode: 'login' })), [closeThen, navigation]);

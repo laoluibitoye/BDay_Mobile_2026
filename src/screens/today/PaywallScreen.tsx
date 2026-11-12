@@ -1,29 +1,26 @@
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 import { Button } from '../../components/Button';
 import { GlassSheet } from '../../components/GlassSheet';
 import { useAppState } from '../../state/AppState';
 import { useAppConfig } from '../../hooks/useAppConfig';
-import { openWebSubscribe } from '../../lib/webCheckout';
 import { fontFamily, radius, space, type, useTheme } from '../../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Paywall'>;
 
-// iOS: Apple rejected 2.0.0 under Guideline 3.1.1 for a plan/price card with a "Subscribe" button
-// that opened the website — a Reader app (3.1.3(a)) may let someone sign in to content they
-// already subscribe to, but may not present anything that looks like a storefront, even one that
-// links out. Android has no such restriction, so it keeps the Subscribe button that opens
-// businessday.ng directly (see webCheckout.ts).
-const IOS_FALLBACK_COPY = {
+// Both platforms are Reader-app/consumption-only now, not just iOS: Apple rejected 2.0.0 under
+// Guideline 3.1.1 for a plan/price card with a "Subscribe" button that opened the website — a
+// Reader app (3.1.3(a)) may let someone sign in to content they already subscribe to, but may not
+// present anything that looks like a storefront, even one that links out. Google Play's own
+// Payments policy turned out to be at least as strict: "consumption-only" means no purchase can be
+// initiated from the app at all, not even via an outbound link (confirmed live — the Android build
+// was pulled to India/Russia-only distribution over this exact Subscribe button). No platform
+// split needed here anymore — everyone gets the sign-in-only treatment.
+const FALLBACK_COPY = {
   headline: 'This story is for subscribers',
   body: 'Already subscribe? Sign in to keep reading.',
-  offerBadge: '',
-};
-const ANDROID_FALLBACK_COPY = {
-  headline: 'Subscribe to keep reading',
-  body: 'This story is for subscribers. Unlock unlimited access to BusinessDay.',
   offerBadge: '',
 };
 
@@ -31,19 +28,7 @@ export function PaywallScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { authUser } = useAppState();
   const appConfig = useAppConfig();
-  const isIOS = Platform.OS === 'ios';
-  const copy = appConfig?.paywallCopy.paid_lock ?? (isIOS ? IOS_FALLBACK_COPY : ANDROID_FALLBACK_COPY);
-
-  const subscribe = () => {
-    if (!authUser) {
-      // Sign in, never register (Apple + Google Play both flagged in-app registration for
-      // paid-content-capable accounts) — also fixes a pre-existing mismatch where this button
-      // was labeled "Sign in" but opened the signup form.
-      navigation.navigate('Auth', { mode: 'login' });
-      return;
-    }
-    openWebSubscribe();
-  };
+  const copy = appConfig?.paywallCopy.paid_lock ?? FALLBACK_COPY;
 
   return (
     <View style={styles.container}>
@@ -63,16 +48,12 @@ export function PaywallScreen({ navigation }: Props) {
         <Text style={[type.bodyUI, { color: theme.inkMuted, marginTop: space.sm }]}>{copy.body}</Text>
 
         <View style={{ marginTop: space.xl, gap: space.md }}>
-          {isIOS ? (
-            authUser ? (
-              <Text style={[type.bodyUI, { color: theme.inkMuted, textAlign: 'center' }]}>
-                Not seeing your subscription? Make sure you're signed in with the same account you subscribed with.
-              </Text>
-            ) : (
-              <Button label="Sign in" onPress={() => navigation.navigate('Auth', { mode: 'login' })} fullWidth />
-            )
+          {authUser ? (
+            <Text style={[type.bodyUI, { color: theme.inkMuted, textAlign: 'center' }]}>
+              Not seeing your subscription? Make sure you're signed in with the same account you subscribed with.
+            </Text>
           ) : (
-            <Button label={authUser ? 'Subscribe' : 'Sign in'} onPress={subscribe} fullWidth />
+            <Button label="Sign in" onPress={() => navigation.navigate('Auth', { mode: 'login' })} fullWidth />
           )}
           {!authUser && (
             <Text style={[type.caption, { color: theme.inkFaint, textAlign: 'center' }]}>
@@ -84,7 +65,7 @@ export function PaywallScreen({ navigation }: Props) {
           </Pressable>
         </View>
         <Text style={[type.mono, { color: theme.inkFaint, textAlign: 'center', marginTop: space.lg }]}>
-          {isIOS ? 'SUBSCRIPTIONS ARE MANAGED ON BUSINESSDAY.NG' : 'CONTINUES ON OUR WEBSITE · CANCEL ANYTIME'}
+          SUBSCRIPTIONS ARE MANAGED ON BUSINESSDAY.NG
         </Text>
       </GlassSheet>
     </View>

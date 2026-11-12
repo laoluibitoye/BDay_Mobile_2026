@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
@@ -8,30 +8,18 @@ import { AppHeader } from '../../components/AppHeader';
 import { Button } from '../../components/Button';
 import { useAppState } from '../../state/AppState';
 import { confirmCancelSubscription } from '../../lib/confirmCancelSubscription';
-import { openWebSubscribe } from '../../lib/webCheckout';
 import { cancelSubscription } from '../../lib/api/auth';
 import { space, type, useTheme } from '../../theme';
 
-// iOS: no plan/price list — Apple's Reader-app exception (3.1.3(a)) doesn't cover an in-app
-// storefront, even one that only links out. Android keeps the Subscribe button that opens the
-// website directly (see webCheckout.ts). An already-subscribed reader manages/cancels here on
-// both platforms — that's not a purchase.
+// No plan/price list on either platform — Apple's Reader-app exception (3.1.3(a)) doesn't cover
+// an in-app storefront even if it only links out, and Google Play's consumption-only rule (see
+// PaywallScreen.tsx's comment) is at least as strict: no purchase path at all, in-app link
+// included. An already-subscribed reader manages/cancels here on both platforms — that's not a
+// purchase.
 export function SubscriptionPlansScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { authUser, isSubscribed, refreshSession } = useAppState();
-  const isIOS = Platform.OS === 'ios';
-
-  const subscribe = () => {
-    if (!authUser) {
-      // Sign in, never register (Apple + Google Play both flagged in-app registration for
-      // paid-content-capable accounts) — also fixes a pre-existing mismatch where this button
-      // was labeled "Sign in" but opened the signup form.
-      navigation.navigate('Auth', { mode: 'login' });
-      return;
-    }
-    openWebSubscribe();
-  };
 
   const cancel = () => {
     confirmCancelSubscription(async () => {
@@ -54,7 +42,7 @@ export function SubscriptionPlansScreen() {
             : "You're on the free plan."}
         </Text>
 
-        {!isSubscribed && isIOS && (
+        {!isSubscribed && (
           <>
             {!authUser && (
               <View style={{ marginTop: space.xl }}>
@@ -63,22 +51,6 @@ export function SubscriptionPlansScreen() {
             )}
             <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.lg, textAlign: 'center' }]}>
               Subscriptions are managed on businessday.ng. Already subscribed? Sign in with the same account.
-            </Text>
-            {!authUser && (
-              <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.xs, textAlign: 'center' }]}>
-                Don't have an account? Create one at businessday.ng
-              </Text>
-            )}
-          </>
-        )}
-
-        {!isSubscribed && !isIOS && (
-          <>
-            <View style={{ marginTop: space.xl }}>
-              <Button label={authUser ? 'Subscribe' : 'Sign in'} onPress={subscribe} fullWidth />
-            </View>
-            <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.lg, textAlign: 'center' }]}>
-              Subscribing continues on businessday.ng. Already subscribed? Sign in with the same account.
             </Text>
             {!authUser && (
               <Text style={[type.caption, { color: theme.inkFaint, marginTop: space.xs, textAlign: 'center' }]}>
